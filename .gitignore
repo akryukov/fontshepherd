@@ -1,6 +1,8 @@
 Makefile
 .qmake.stash
-fontshepherd
+release
+shared
+static
 *.o
 *.so
 *.so.*

@@ -20,6 +20,7 @@ APPNAME=fontshepherd
 LIBNAME=qhexedit
 
 unix: {
+  DESTDIR = release
   isEmpty (PREFIX) {
     PREFIX = /usr/local
   }
