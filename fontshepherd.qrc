@@ -1,0 +1,20 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource>
+    <file>pixmaps/cursor-corner.png</file>
+    <file>pixmaps/cursor-curve.png</file>
+    <file>pixmaps/cursor-tangent.png</file>
+    <file>pixmaps/cursor-zoom-in.png</file>
+    <file>pixmaps/cursor-zoom-out.png</file>
+    <file>pixmaps/palette-corner.png</file>
+    <file>pixmaps/palette-curve.png</file>
+    <file>pixmaps/palette-ellipse.png</file>
+    <file>pixmaps/palette-hand.png</file>
+    <file>pixmaps/palette-knife.png</file>
+    <file>pixmaps/palette-magnify.png</file>
+    <file>pixmaps/palette-pointer.png</file>
+    <file>pixmaps/palette-rect.png</file>
+    <file>pixmaps/palette-tangent.png</file>
+    <file>icons/fontshepherd-crozier.svg</file>
+  </qresource>
+</RCC>

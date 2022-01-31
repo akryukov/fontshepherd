@@ -1,0 +1,9 @@
+Makefile
+.qmake.stash
+fontshepherd
+*.o
+*.so
+*.so.*
+*.log
+*.err
+moc_*.cpp
