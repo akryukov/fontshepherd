@@ -41,7 +41,7 @@ void MaxpTable::unpackData (sFont*) {
     uint32_t pos = 0;
     this->fillup ();
 
-    contents.version = getfixed (pos); pos+=4;
+    contents.version = getvfixed (pos); pos+=4;
     contents.numGlyphs = getushort (pos); pos +=2;
     if (contents.version < 1)
       return;

@@ -268,7 +268,7 @@ private:
     sFont *m_font;
     GlyphNameProvider m_gnp;
     bool m_edited, m_valid;
-    bool m_post_changed, m_cmap_changed, m_gcount_changed;
+    bool m_post_changed, m_cmap_changed, m_gcount_changed, m_gdef_changed;
     FVLayout *m_layout;
     QScrollArea *m_scroll;
     int m_cell_size, m_h_mult, m_v_mult;

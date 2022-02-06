@@ -33,6 +33,8 @@
 #include <vector>
 #include <QtGlobal>
 
+#include "tables/variations.h"
+
 namespace cff {
     const int version = 0;
     const int Notice = 1;
@@ -137,22 +139,6 @@ namespace cff {
     extern const std::vector<std::string> names;
 };
 
-// The following 2 structures are needed to represent variable font data.
-// Currently we are using them only when reading CFF2 tables, so let
-// them be here for now
-
-struct axis_coordinates {
-    double startCoord, peakCoord, endCoord;
-};
-
-struct blend {
-    double base = 0;
-    bool valid = false;
-    std::vector<double> deltas;
-
-    const std::string toString () const;
-};
-
 // Structures needed for reading/writing CFF data,
 // but not directly related to our CFF table representation
 // as a glyph container
@@ -247,18 +233,6 @@ private:
 
 typedef PseudoMap<int, private_entry> PrivateDict;
 typedef PseudoMap<int, top_dict_entry> TopDict;
-
-struct variation_data {
-    uint16_t shortDeltaCount;
-    std::vector<uint16_t> regionIndexes;
-    std::vector<std::vector<int16_t>> deltaSets;
-};
-
-struct variation_store {
-    std::vector<std::vector<struct axis_coordinates>> regions;
-    std::vector<struct variation_data> data;
-    uint16_t format, index;
-};
 
 struct charstring {
     std::string sdata;

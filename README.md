@@ -1,5 +1,4 @@
 # FontShepherd -- OpenType font table editor/viewer
-# Version 0.8
 
 ![Application FontShepherd in Action](fontshepherd.png)
 
@@ -22,8 +21,8 @@ You can delete tables or copy-paste them from one font to another, although
 it is not recommended to do so, unless you know what are you doing.
 Double click on some tables will invoke a specific editing window, where
 you can modify most or all of their parameters. The following tables are
-currently supported for viewing or editing: 'head', 'hhea', 'vhea', 'hmtx',
-'vmtx', 'cmap', 'name', 'OS/2', 'post', 'CPAL', 'CFF ', 'CFF2', 'glyf' and
+currently supported for viewing or editing: 'head', 'hhea', 'vhea', 'cmap',
+'name', 'OS/2', 'post', 'CPAL', 'CFF ', 'CFF2', 'glyf' and
 'SVG '. Currently there is no documentation: you may refer directly to
 [Microsoft](https://docs.microsoft.com/en-us/typography/opentype/spec/) or
 [Apple](https://developer.apple.com/fonts/TrueType-Reference-Manual/) docs

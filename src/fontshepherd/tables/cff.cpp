@@ -1562,124 +1562,6 @@ void CffTable::writefdselect (QDataStream &os, QBuffer &) {
     }
 }
 
-void CffTable::readvstore (struct variation_store &vstore) {
-    uint32_t start = m_pos;
-    /*uint16_t length = */ getushort (m_pos); m_pos +=2;
-    vstore.format = getushort (m_pos); m_pos +=2;
-    uint32_t reg_offset = getlong (m_pos); m_pos +=4;
-    uint16_t data_count = getushort (m_pos); m_pos +=2;
-
-    std::vector<uint32_t> data_off_list;
-    data_off_list.resize (data_count);
-    for (uint16_t i=0; i<data_count; i++) {
-	data_off_list[i] = getlong (m_pos);
-	m_pos +=4;
-    }
-    uint16_t axis_count = getushort (m_pos); m_pos+=2;
-    uint16_t region_count = getushort (m_pos); m_pos+=2;
-    m_pos = start + reg_offset;
-    vstore.regions.reserve (region_count);
-
-    for (uint16_t i=0; i<region_count; i++) {
-	std::vector<struct axis_coordinates> region;
-	for (uint16_t j=0; j<axis_count; j++) {
-	    struct axis_coordinates va;
-	    va.startCoord = get2dot14 (m_pos); m_pos+=2;
-	    va.peakCoord = get2dot14 (m_pos); m_pos+=2;
-	    va.endCoord = get2dot14 (m_pos); m_pos+=2;
-	    region.push_back (va);
-	}
-	vstore.regions.push_back (region);
-    }
-    for (uint16_t i=0; i<data_count; i++) {
-	// this offset is from the start of ItemVariationStore, i. e. VariationStore Data + length field
-	m_pos = start + data_off_list[i] + 2;
-	struct variation_data vd;
-	uint16_t item_count = getushort (m_pos); m_pos+=2;
-	uint16_t short_count = getushort (m_pos); m_pos+=2;
-	uint16_t reg_count = getushort (m_pos); m_pos+=2;
-	vd.shortDeltaCount = short_count;
-	vd.regionIndexes.resize (reg_count);
-	vstore.data.reserve (item_count);
-
-	for (uint16_t j=0; j<reg_count; j++) {
-	    vd.regionIndexes[j] = getushort (m_pos); m_pos+=2;
-	}
-
-	std::vector<std::vector<int16_t>> dsets;
-	for (uint16_t j=0; j<item_count; j++) {
-	    std::vector<int16_t> deltas;
-	    deltas.resize (reg_count);
-	    for (uint16_t k=0; k<short_count; k++) {
-		deltas[k] = getushort (m_pos); m_pos+=2;
-	    }
-	    for (uint16_t k=short_count; k<reg_count; k++) {
-		deltas[k] = data[m_pos]; m_pos++;
-	    }
-	    dsets.push_back (deltas);
-	}
-	vstore.data.push_back (vd);
-    }
-}
-
-void CffTable::writevstore (QDataStream &os, QBuffer &buf) {
-    struct variation_store &vstore = m_core_font.vstore;
-    int init_pos = buf.pos ();
-    int cur_pos;
-    // Table size is uint16, while internal offsets, relative to the
-    // start of the table, are uint32. Is it OK?
-    os << (uint16_t) 0; // placeholder for table size
-    os << vstore.format;
-    os << (uint32_t) 0; // variationRegionListOffset
-    os << (uint16_t) vstore.data.size ();
-
-    for (size_t i=0; i<vstore.data.size (); i++)
-	os << (uint32_t) 0;
-
-    cur_pos = buf.pos ();
-    buf.seek (init_pos + 4);
-    // Table size field is not the part of the table itself,
-    // hence subtract 2 from the offset
-    os << (uint32_t) (cur_pos - init_pos - 2);
-    buf.seek (cur_pos);
-    uint16_t axis_cnt = vstore.regions[0].size ();
-    uint16_t  reg_cnt = vstore.regions.size ();
-    os << axis_cnt;
-    os << reg_cnt;
-    for (size_t i=0; i<reg_cnt; i++) {
-	for (size_t j=0; j<axis_cnt; j++) {
-	    put2dot14 (os, vstore.regions[i][j].startCoord);
-	    put2dot14 (os, vstore.regions[i][j].peakCoord);
-	    put2dot14 (os, vstore.regions[i][j].endCoord);
-	}
-    }
-
-    for (size_t i=0; i<vstore.data.size (); i++) {
-	cur_pos = buf.pos ();
-	buf.seek (init_pos + 10 + i*4);
-	os << (uint32_t) (cur_pos - init_pos - 2);
-	buf.seek (cur_pos);
-
-	os << (uint16_t) vstore.data[i].deltaSets.size ();
-	os << (uint16_t) vstore.data[i].shortDeltaCount;
-	os << (uint16_t) vstore.data[i].regionIndexes.size ();
-	for (size_t j=0; j<vstore.data[i].regionIndexes.size (); j++)
-	    os << vstore.data[i].regionIndexes[j];
-	for (size_t j=0; j<vstore.data[i].deltaSets.size (); j++) {
-	    for (size_t k=0; k<vstore.data[i].regionIndexes.size (); k++) {
-		if (k<vstore.data[i].shortDeltaCount)
-		    os << vstore.data[i].deltaSets[j][k];
-		else
-		    os << (int8_t) vstore.data[i].deltaSets[j][k];
-	    }
-	}
-    }
-    cur_pos = buf.pos ();
-    buf.seek (init_pos);
-    os << (uint16_t) (cur_pos - init_pos - 2);
-    buf.seek (cur_pos);
-}
-
 void CffTable::readCffNames (std::vector<std::string> &names) {
     uint16_t count;
     uint8_t offsize;
@@ -1783,7 +1665,7 @@ void CffTable::unpackData (sFont *font) {
 
     if (m_version > 1 && m_core_font.top_dict.has_key (cff::vstore)) {
 	m_pos = m_core_font.top_dict[cff::vstore].i;
-	readvstore (m_core_font.vstore);
+	FontVariations::readVariationStore (data, m_pos, m_core_font.vstore);
 	m_core_font.vstore.index = m_core_font.top_dict[cff::vsindex].i;
     }
 
@@ -1948,7 +1830,7 @@ void CffTable::packData () {
 	m_core_font.top_dict[cff::vstore].i = cur_pos;
 	buf.seek (cur_pos);
 
-	writevstore (os, buf);
+	FontVariations::writeVariationStore (os, buf, m_core_font.vstore);
     }
     if (m_core_font.top_dict.has_key (cff::CharStrings)) {
 	uint32_t cur_pos = buf.pos ();

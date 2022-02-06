@@ -90,7 +90,7 @@ PostTable::~PostTable () {
 void PostTable::unpackData (sFont*) {
     uint32_t pos = 0;
 
-    contents.version = getfixed (pos); pos+=4;
+    contents.version = getvfixed (pos); pos+=4;
     contents.italicAngle = getfixed (pos); pos+=4;
     contents.underlinePosition = getushort (pos); pos+=2;
     contents.underlineThickness = getushort (pos); pos+=2;

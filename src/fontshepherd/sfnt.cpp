@@ -46,6 +46,7 @@
 #include "tables/colr.h"
 #include "tables/mtx.h"
 #include "tables/glyphnames.h"
+#include "tables/gdef.h"
 
 FontTable *ttffont::table (uint32_t tag) const {
     for (auto tptr: tbls) {
@@ -266,6 +267,9 @@ std::shared_ptr<FontTable> sfntFile::readTableHead (QFile *f, QDataStream *s, in
             break;
         case CHR('C','P','A','L'):
             table = new CpalTable (this, props);
+            break;
+        case CHR('G','D','E','F'):
+            table = new GdefTable (this, props);
             break;
         case CHR('h','e','a','d'):
             table = new HeadTable (this, props);

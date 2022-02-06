@@ -92,12 +92,17 @@ public:
     void clearData ();
     int orderingVal ();
 
+    static uint16_t getushort (char *bdata, uint32_t pos);
+    static uint32_t getlong (char *bdata, uint32_t pos);
+    static double get2dot14 (char *bdata, uint32_t pos);
+
 protected:
     uint16_t getushort (uint32_t pos);
     uint32_t get3bytes (uint32_t pos);
     uint32_t getlong (uint32_t pos);
     double getfixed (uint32_t pos);
     double getvfixed (uint32_t pos);
+    double getversion (uint32_t pos);
     double get2dot14 (uint32_t pos);
     uint32_t getoffset (uint32_t pos, uint8_t size);
 

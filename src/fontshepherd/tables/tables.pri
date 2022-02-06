@@ -27,6 +27,7 @@
 SOURCES += tables/cff.cpp
 SOURCES += tables/cmap.cpp
 SOURCES += tables/colr.cpp
+SOURCES += tables/gdef.cpp
 SOURCES += tables/glyf.cpp
 SOURCES += tables/glyphnames.cpp
 SOURCES += tables/hea.cpp
@@ -36,10 +37,12 @@ SOURCES += tables/mtx.cpp
 SOURCES += tables/name.cpp
 SOURCES += tables/os_2.cpp
 SOURCES += tables/svg.cpp
+SOURCES += tables/variations.cpp
 
 HEADERS += tables/cff.h
 HEADERS += tables/cmap.h
 HEADERS += tables/colr.h
+HEADERS += tables/gdef.h
 HEADERS += tables/glyf.h
 HEADERS += tables/glyphcontainer.h
 HEADERS += tables/glyphnames.h
@@ -50,3 +53,4 @@ HEADERS += tables/mtx.h
 HEADERS += tables/name.h
 HEADERS += tables/os_2.h
 HEADERS += tables/svg.h
+HEADERS += tables/variations.h

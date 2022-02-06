@@ -43,7 +43,7 @@ void HeadTable::unpackData (sFont*) {
     uint32_t pos = 0, date1, date2;
     this->fillup ();
 
-    contents.version = getfixed (pos); pos+=4;
+    contents.version = getversion (pos); pos+=4;
     contents.fontRevision = getfixed (pos); pos+=4;
     contents.checkSumAdjustment = getlong (pos); pos +=4;
     contents.magicNumber = getlong (pos); pos +=4;

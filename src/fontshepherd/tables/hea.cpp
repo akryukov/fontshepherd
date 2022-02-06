@@ -41,7 +41,8 @@ void HeaTable::unpackData (sFont*) {
     uint32_t pos = 0;
     this->fillup ();
 
-    contents.version = getfixed (pos); pos+=4;
+    contents.version = m_tags[0] == CHR('v','h','e','a') ?
+	getvfixed (pos) : getversion (pos); pos+=4;
     contents.ascent = getushort (pos); pos +=2;
     contents.descent = getushort (pos); pos +=2;
     contents.lineGap = getushort (pos); pos +=2;

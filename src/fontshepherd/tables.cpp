@@ -122,12 +122,16 @@ std::string FontTable::stringName (int index) const {
     return sb.str ();
 }
 
+uint16_t FontTable::getushort (char *bdata, uint32_t pos) {
+    uint8_t ch1 = bdata[pos];
+    uint8_t ch2 = bdata[pos+1];
+    return ((ch1<<8)|ch2);
+}
+
 uint16_t FontTable::getushort (uint32_t pos) {
     if (pos+1 >= newlen)
         throw TableDataCorruptException (stringName ().c_str ());
-    uint8_t ch1 = data[pos];
-    uint8_t ch2 = data[pos+1];
-    return ((ch1<<8)|ch2);
+    return getushort (data, pos);
 }
 
 uint32_t FontTable::get3bytes (uint32_t pos) {
@@ -139,14 +143,18 @@ uint32_t FontTable::get3bytes (uint32_t pos) {
     return ((ch1<<16)|(ch2<<8)|ch3);
 }
 
+uint32_t FontTable::getlong (char *bdata, uint32_t pos) {
+    uint8_t ch1 = bdata[pos];
+    uint8_t ch2 = bdata[pos+1];
+    uint8_t ch3 = bdata[pos+2];
+    uint8_t ch4 = bdata[pos+3];
+    return ((ch1<<24)|(ch2<<16)|(ch3<<8)|ch4);
+}
+
 uint32_t FontTable::getlong (uint32_t pos) {
     if (pos+3 >= newlen)
         throw TableDataCorruptException (stringName ().c_str ());
-    uint8_t ch1 = data[pos];
-    uint8_t ch2 = data[pos+1];
-    uint8_t ch3 = data[pos+2];
-    uint8_t ch4 = data[pos+3];
-    return ((ch1<<24)|(ch2<<16)|(ch3<<8)|ch4);
+    return getlong (data, pos);
 }
 
 double FontTable::getfixed (uint32_t pos) {
@@ -160,6 +168,7 @@ double FontTable::getfixed (uint32_t pos) {
 /* GWW: In table version numbers, the high order nibble of mantissa is in bcd, not hex */
 /* I've no idea whether the lower order nibbles should be bcd or hex */
 /* But let's assume some consistancy... */
+// AMK: The following format is solely for 'post', 'maxp' and 'vea'
 double FontTable::getvfixed (uint32_t pos) {
     uint32_t val = getlong (pos);
     int mant = val&0xffff;
@@ -167,12 +176,26 @@ double FontTable::getvfixed (uint32_t pos) {
     return ((double) (val>>16) + (mant/10000.0));
 }
 
-double FontTable::get2dot14 (uint32_t pos) {
-    uint32_t val = getushort (pos);
+// And the following one is for most "normal" tables
+double FontTable::getversion (uint32_t pos) {
+    uint32_t val = getlong (pos);
+    double mant = val&0xffff;
+    for (; mant>1; mant /= 10);
+    return (val>>16) + mant;
+}
+
+double FontTable::get2dot14 (char *bdata, uint32_t pos) {
+    uint32_t val = getushort (bdata, pos);
     int mant = val&0x3fff;
     /* GWW: This oddity may be needed to deal with the first 2 bits being signed */
     /*  and the low-order bits unsigned */
     return ((double) ((val<<16)>>(16+14)) + (mant/16384.0));
+}
+
+double FontTable::get2dot14 (uint32_t pos) {
+    if (pos+2 >= newlen)
+        throw TableDataCorruptException (stringName ().c_str ());
+    return get2dot14 (data, pos);
 }
 
 uint32_t FontTable::getoffset (uint32_t pos, uint8_t size) {

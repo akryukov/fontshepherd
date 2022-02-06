@@ -35,6 +35,7 @@
 #include "editors/fontview.h" // also includes tables.h
 #include "tables/glyphcontainer.h" // also includes splineglyph.h
 #include "tables/cmap.h"
+#include "tables/gdef.h"
 #include "tables/glyf.h"
 #include "tables/cff.h"
 #include "editors/cffedit.h"
@@ -197,7 +198,8 @@ void FVLayout::setPixelSize (int size) {
 FontView::FontView (FontTable* tbl, sFont *fnt, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_table (tbl), m_font (fnt),
     m_gnp (GlyphNameProvider (*fnt)),
-    m_post_changed (false), m_cmap_changed (false), m_gcount_changed (false),
+    m_post_changed (false), m_cmap_changed (false),
+    m_gcount_changed (false), m_gdef_changed (false),
     m_paletteIdx (0), m_gv (nullptr) {
 
     setAttribute (Qt::WA_DeleteOnClose);
@@ -880,6 +882,11 @@ void FontView::loadTables (uint32_t tag) {
             m_cpal = dynamic_cast<CpalTable *> (tbl.get ());
             m_cpal->fillup ();
             m_cpal->unpackData (m_font);
+	    break;
+	  case CHR('G','D','E','F'):
+            GdefTable *gdef = dynamic_cast<GdefTable *> (tbl.get ());
+            gdef->fillup ();
+            gdef->unpackData (m_font);
 	    break;
 	}
     }
