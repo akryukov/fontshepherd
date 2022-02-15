@@ -2068,7 +2068,7 @@ QVariant EncSubModel::data (const QModelIndex &index, int role) const {
       case Qt::DisplayRole:
 	switch (index.column ()) {
 	  case 0:
-	    return m_enc->gidCodeRepr (ret_gid);
+	    return m_enc->codeRepr (ret_code);
 	  break;
 	  case 1:
 	    ret_str = m_listmodel->getGidStr (ret_gid);

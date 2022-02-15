@@ -25,6 +25,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
+#ifndef _FONSHEPHERD_SFNT_H
+#define _FONSHEPHERD_SFNT_H
+
 #include <QtWidgets>
 
 #define CHR(ch1,ch2,ch3,ch4) (((ch1)<<24)|((ch2)<<16)|((ch3)<<8)|(ch4))
@@ -106,3 +109,4 @@ private:
     bool backedup;		/* a backup file has been created */
 };
 
+#endif

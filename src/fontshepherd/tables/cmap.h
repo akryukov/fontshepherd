@@ -120,10 +120,13 @@ public:
     uint16_t gidByUnicode (uint32_t uni) const;
     uint16_t gidByPos (uint32_t pos) const;
     std::vector<uint32_t> unencoded (uint32_t glyph_cnt);
+    const QString codeRepr (uint32_t pos);
     const QString gidCodeRepr (uint16_t gid);
 
     bool deleteMapping (uint32_t code);
+    bool deleteMappingsForGid (uint16_t gid);
     bool insertMapping (uint32_t code, uint16_t gid);
+    bool insertUniMapping (uint32_t uni, uint16_t gid);
     bool setGidByPos (uint32_t pos, uint16_t gid);
     int firstAvailableCode () const;
     int codeAvailable (uint32_t code) const;
@@ -140,7 +143,6 @@ public:
     VarSelRecord *addVariationSequence (uint32_t selector, bool is_dflt, uint32_t code, uint16_t gid);
 
 protected:
-    void setCount (uint32_t);
     void setIndex (uint32_t);
     void setOffset (uint32_t val);
     void setLength (uint32_t val);
@@ -168,7 +170,6 @@ private:
     iconv_t m_codec;
     iconv_t m_unicodec;
     int m_charset;
-    uint32_t m_count;
     uint32_t m_index;
     FontTable *m_parent;
 };
@@ -216,6 +217,7 @@ public:
     void setTablesModified (bool val);
     void setSubTablesModified (bool val);
     void findBestSubTable (sFont *font);
+    void clearMappingsForGid (uint16_t gid);
     void addCommonMapping (uint32_t uni, uint16_t gid);
 
 private:
@@ -230,8 +232,6 @@ private:
     void encodeFormat14 (std::ostream &os, CmapEnc *enc);
 
     uint16_t m_version;
-    uint16_t m_tab_cnt;
-    uint16_t m_enc_cnt;
     std::vector<std::unique_ptr<CmapEncTable>> cmap_tables;
     std::vector<std::unique_ptr<CmapEnc>> cmap_subtables;
     bool m_tables_changed, m_subtables_changed;

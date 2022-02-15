@@ -24,12 +24,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
+#include <iostream>
+#include <sstream>
+#include <ios>
+
 #include "tables.h"
 #include "tables/variations.h"
 
-void FontVariations::readVariationStore (char *data, uint16_t pos, struct variation_store &vstore) {
+void FontVariations::readVariationStore (char *data, uint32_t pos, struct variation_store &vstore) {
     uint32_t start = pos;
-    /*uint16_t length = */ FontTable::getushort (data, pos); pos +=2;
     vstore.format = FontTable::getushort (data, pos); pos +=2;
     uint32_t reg_offset = FontTable::getlong (data, pos); pos +=4;
     uint16_t data_count = FontTable::getushort (data, pos); pos +=2;
@@ -40,9 +43,9 @@ void FontVariations::readVariationStore (char *data, uint16_t pos, struct variat
 	data_off_list[i] = FontTable::getlong (data, pos);
 	pos +=4;
     }
+    pos = start + reg_offset;
     uint16_t axis_count = FontTable::getushort (data, pos); pos+=2;
     uint16_t region_count = FontTable::getushort (data, pos); pos+=2;
-    pos = start + reg_offset;
     vstore.regions.reserve (region_count);
 
     for (uint16_t i=0; i<region_count; i++) {
@@ -57,8 +60,7 @@ void FontVariations::readVariationStore (char *data, uint16_t pos, struct variat
 	vstore.regions.push_back (region);
     }
     for (uint16_t i=0; i<data_count; i++) {
-	// this offset is from the start of ItemVariationStore, i. e. VariationStore Data + length field
-	pos = start + data_off_list[i] + 2;
+	pos = start + data_off_list[i];
 	struct variation_data vd;
 	uint16_t item_count = FontTable::getushort (data, pos); pos+=2;
 	uint16_t short_count = FontTable::getushort (data, pos); pos+=2;
@@ -71,7 +73,7 @@ void FontVariations::readVariationStore (char *data, uint16_t pos, struct variat
 	    vd.regionIndexes[j] = FontTable::getushort (data, pos); pos+=2;
 	}
 
-	std::vector<std::vector<int16_t>> dsets;
+	auto &dsets = vd.deltaSets;
 	for (uint16_t j=0; j<item_count; j++) {
 	    std::vector<int16_t> deltas;
 	    deltas.resize (reg_count);
@@ -90,9 +92,6 @@ void FontVariations::readVariationStore (char *data, uint16_t pos, struct variat
 void FontVariations::writeVariationStore (QDataStream &os, QBuffer &buf, variation_store &vstore) {
     int init_pos = buf.pos ();
     int cur_pos;
-    // Table size is uint16, while internal offsets, relative to the
-    // start of the table, are uint32. Is it OK?
-    os << (uint16_t) 0; // placeholder for table size
     os << vstore.format;
     os << (uint32_t) 0; // variationRegionListOffset
     os << (uint16_t) vstore.data.size ();
@@ -101,10 +100,8 @@ void FontVariations::writeVariationStore (QDataStream &os, QBuffer &buf, variati
 	os << (uint32_t) 0;
 
     cur_pos = buf.pos ();
-    buf.seek (init_pos + 4);
-    // Table size field is not the part of the table itself,
-    // hence subtract 2 from the offset
-    os << (uint32_t) (cur_pos - init_pos - 2);
+    buf.seek (init_pos + 2);
+    os << (uint32_t) (cur_pos - init_pos);
     buf.seek (cur_pos);
     uint16_t axis_cnt = vstore.regions[0].size ();
     uint16_t  reg_cnt = vstore.regions.size ();
@@ -120,8 +117,8 @@ void FontVariations::writeVariationStore (QDataStream &os, QBuffer &buf, variati
 
     for (size_t i=0; i<vstore.data.size (); i++) {
 	cur_pos = buf.pos ();
-	buf.seek (init_pos + 10 + i*4);
-	os << (uint32_t) (cur_pos - init_pos - 2);
+	buf.seek (init_pos + 8 + i*4);
+	os << (uint32_t) (cur_pos - init_pos);
 	buf.seek (cur_pos);
 
 	os << (uint16_t) vstore.data[i].deltaSets.size ();
@@ -138,8 +135,4 @@ void FontVariations::writeVariationStore (QDataStream &os, QBuffer &buf, variati
 	    }
 	}
     }
-    cur_pos = buf.pos ();
-    buf.seek (init_pos);
-    os << (uint16_t) (cur_pos - init_pos - 2);
-    buf.seek (cur_pos);
 }

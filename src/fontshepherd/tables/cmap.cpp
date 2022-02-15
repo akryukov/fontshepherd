@@ -27,6 +27,7 @@
 
 #include <cstring>
 #include <sstream>
+#include <iostream>
 #include <ios>
 #include <assert.h>
 #include <iconv.h>
@@ -38,14 +39,6 @@
 #include "fs_notify.h"
 #include "exceptions.h"
 #include "commonlists.h"
-
-static int rcomp_by_gid  (const struct enc_range r1, const struct enc_range r2) {
-    return (r1.first_gid < r2.first_gid);
-}
-
-static int rcomp_mappings_by_gid  (const struct enc_mapping m1, const struct enc_mapping m2) {
-    return (m1.gid < m2.gid);
-}
 
 static int rcomp_mappings_by_code  (const struct enc_mapping m1, const struct enc_mapping m2) {
     return (m1.code < m2.code);
@@ -59,8 +52,6 @@ static int rcomp_by_code  (const struct enc_range r1, const struct enc_range r2)
 
 CmapTable::CmapTable (sfntFile *fontfile, TableHeader &props) :
     FontTable (fontfile, props),
-    m_tab_cnt (0),
-    m_enc_cnt (0),
     m_tables_changed (false),
     m_subtables_changed (false) {
 }
@@ -85,9 +76,9 @@ void CmapTable::unpackData (sFont *font) {
     this->fillup ();
 
     m_version = this->getushort (0);
-    m_tab_cnt = this->getushort (2);
+    uint16_t tab_cnt = this->getushort (2);
     fpos = 4;
-    for (i=0; i<m_tab_cnt; ++i) {
+    for (i=0; i<tab_cnt; ++i) {
 	uint16_t platform = this->getushort (fpos); fpos += 2;
 	uint16_t specific = this->getushort (fpos); fpos += 2;
 	uint32_t offset = this->getlong (fpos); fpos += 4;
@@ -96,9 +87,9 @@ void CmapTable::unpackData (sFont *font) {
     }
 
     /* read in each encoding table (presuming we understand it) */
-    for (cur=0; cur<m_tab_cnt; cur++) {
+    for (cur=0; cur<tab_cnt; cur++) {
         CmapEncTable *ctabptr = cmap_tables[cur].get ();
-	for (i=0; i<m_enc_cnt && !ctabptr->subtable (); i++) {
+	for (i=0; i<cmap_subtables.size () && !ctabptr->subtable (); i++) {
 	    CmapEnc *tenc = cmap_subtables[i].get ();
 	    if (ctabptr->offset () == tenc->offset ())
 		ctabptr->setSubTable (tenc);
@@ -108,7 +99,6 @@ void CmapTable::unpackData (sFont *font) {
 	enc = new CmapEnc (ctabptr->platform (), ctabptr->specific (), this);
 	cmap_subtables.push_back (std::unique_ptr<CmapEnc> (enc));
 	ctabptr->setSubTable (enc);
-	m_enc_cnt++;
 
 	fpos = ctabptr->offset ();
 	enc->setOffset (ctabptr->offset ());
@@ -129,7 +119,6 @@ void CmapTable::unpackData (sFont *font) {
 	switch (enc->format ()) {
           case 0:
             {
-                enc->setCount (256);
                 for (i=0; i<256; ++i)
                     enc->addMapping (i, (uint8_t) this->data[fpos++]);
             }
@@ -264,9 +253,8 @@ void CmapTable::unpackData (sFont *font) {
           case 6:
 	    {
                 /* For contiguous ranges of codes, such as in 8-bit encodings */
-                uint16_t first, count;
-                first = this->getushort (fpos); fpos+=2;
-                count = this->getushort (fpos); fpos+=2;
+                uint16_t first = this->getushort (fpos); fpos+=2;
+                uint16_t count = this->getushort (fpos); fpos+=2;
                 for (i=0; i<count; ++i) {
                     j = this->getushort (fpos); fpos+=2;
                     enc->addMapping (first+i, j);
@@ -309,15 +297,15 @@ void CmapTable::unpackData (sFont *font) {
 
           case 14: // Variation sequences
 	    {
-		enc->setCount (this->getlong (fpos)); fpos += 4;
-		enc->var_selectors.resize (enc->count ());
-		for (i=0; i<enc->count (); i++) {
+		uint16_t count = this->getlong (fpos); fpos += 4;
+		enc->var_selectors.resize (count);
+		for (i=0; i<count; i++) {
 		    enc->var_selectors[i] = std::unique_ptr<VarSelRecord> (new VarSelRecord ());
 		    enc->var_selectors[i]->selector = this->get3bytes (fpos); fpos += 3;
 		    enc->var_selectors[i]->default_offset = this->getlong (fpos); fpos += 4;
 		    enc->var_selectors[i]->non_default_offset = this->getlong (fpos); fpos += 4;
 		}
-		for (i=0; i<enc->count (); i++) {
+		for (i=0; i<count; i++) {
 		    var_selector_record *cur = enc->var_selectors[i].get ();
 		    if (cur->default_offset) {
 			fpos = enc->offset () + cur->default_offset;
@@ -358,12 +346,12 @@ void CmapTable::unpackData (sFont *font) {
 }
 
 void CmapTable::findBestSubTable (sFont *font) {
-    uint16_t cur, bestval=0;
+    uint16_t bestval=0;
     CmapEnc *best=nullptr;
 
     /* Find the best table we can */
-    for (cur=0; cur<m_enc_cnt; cur++) {
-        CmapEnc *enc = cmap_subtables[cur].get ();
+    for (auto &encptr : cmap_subtables) {
+        CmapEnc *enc = encptr.get ();
 
         if (!enc->isUnicode () && !enc->hasConverter ())
 	    /* Can't parse, unusable */;
@@ -391,12 +379,14 @@ void CmapTable::findBestSubTable (sFont *font) {
     font->enc = best;
 }
 
+void CmapTable::clearMappingsForGid (uint16_t gid) {
+    for (auto &enc: cmap_subtables)
+	changed |= enc->deleteMappingsForGid (gid);
+}
+
 void CmapTable::addCommonMapping (uint32_t uni, uint16_t gid) {
-    for (auto &enc: cmap_subtables) {
-	if (enc->isUnicode () && (uni <= 0xFFFF || enc->numBits () == 32 ))
-	    enc->insertMapping (uni, gid);
-    }
-    changed = true;
+    for (auto &enc: cmap_subtables)
+	changed |= enc->insertUniMapping (uni, gid);
 }
 
 void CmapTable::encodeFormat0 (std::ostream &os, CmapEnc *enc) {
@@ -815,26 +805,24 @@ void CmapTable::encodeFormat14 (std::ostream &os, CmapEnc *enc) {
 }
 
 void CmapTable::packData () {
-    uint16_t i, j;
     int pos;
     std::stringstream s;
     std::string st;
 
     delete[] data; data = nullptr;
     putushort (s, (uint16_t) 0);
-    putushort (s, m_tab_cnt);
-    for (i=0; i<m_tab_cnt; i++) {
-	CmapEncTable *et = cmap_tables[i].get ();
+    putushort (s, cmap_tables.size ());
+    for (auto &et : cmap_tables) {
 	putushort (s, et->platform ());
 	putushort (s, et->specific ());
 	putlong   (s, (uint32_t) 0); // offset
     }
 
-    for (i=0; i<m_enc_cnt; i++) {
-	CmapEnc *enc = cmap_subtables[i].get ();
+    for (auto &encptr : cmap_subtables) {
+	CmapEnc *enc = encptr.get ();
 	pos = s.tellp ();
 	// Set offsets at the header of the cmap table
-	for (j=0; j<m_tab_cnt; j++) {
+	for (size_t j=0; j<cmap_tables.size (); j++) {
 	    if (cmap_tables[j]->subtable () == enc) {
 		s.seekp ((2 + j*4 + 2)*sizeof (uint16_t));
 		putlong (s, (uint32_t) pos);
@@ -882,15 +870,15 @@ void CmapTable::packData () {
 }
 
 uint16_t CmapTable::numTables () {
-    return m_tab_cnt;
+    return cmap_tables.size ();
 }
 
 uint16_t CmapTable::numSubTables () {
-    return m_enc_cnt;
+    return cmap_subtables.size ();
 }
 
 CmapEncTable* CmapTable::getTable (uint16_t idx) {
-    if (idx < m_tab_cnt)
+    if (idx < cmap_tables.size ())
 	return cmap_tables[idx].get ();
     return nullptr;
 }
@@ -907,13 +895,12 @@ bool compareTables (std::unique_ptr<CmapEncTable> &p1, std::unique_ptr<CmapEncTa
 }
 
 uint16_t CmapTable::addTable (uint16_t platform, uint16_t specific, CmapEnc *subtable) {
-    uint16_t i, ret=0;
+    uint16_t ret=0;
     CmapEncTable *newt = new CmapEncTable (platform, specific, 0);
     newt->setSubTable (subtable);
     cmap_tables.push_back (std::unique_ptr<CmapEncTable> (newt));
     std::sort (cmap_tables.begin(), cmap_tables.end(), compareTables);
-    m_tab_cnt = cmap_tables.size ();
-    for (i=0; i<m_tab_cnt; i++) {
+    for (size_t i=0; i<cmap_tables.size (); i++) {
 	CmapEncTable *test = cmap_tables[i].get ();
 	if (test->platform () == platform && test->specific () == specific && test->subtable () == subtable) {
 	    ret = i;
@@ -924,15 +911,13 @@ uint16_t CmapTable::addTable (uint16_t platform, uint16_t specific, CmapEnc *sub
 }
 
 void CmapTable::removeTable (uint16_t idx) {
-    if (idx < m_tab_cnt) {
+    if (idx < cmap_tables.size ())
 	cmap_tables.erase (cmap_tables.begin () + idx);
-	m_tab_cnt--;
-    }
 }
 
 
 CmapEnc* CmapTable::getSubTable (uint16_t idx) {
-    if (idx < m_enc_cnt)
+    if (idx < cmap_subtables.size ())
 	return cmap_subtables[idx].get ();
     return nullptr;
 }
@@ -940,7 +925,7 @@ CmapEnc* CmapTable::getSubTable (uint16_t idx) {
 CmapEnc* CmapTable::addSubTable (std::map<std::string, int> &args, const std::string &encoding, GlyphNameProvider *gnp) {
     CmapEnc *newenc = nullptr;
     uint16_t source_subtable_idx = (uint16_t) args["source"];
-    CmapEnc *source = (source_subtable_idx < m_enc_cnt) ?
+    CmapEnc *source = (source_subtable_idx < cmap_subtables.size ()) ?
 	this->getSubTable (source_subtable_idx) : nullptr;
 
     if (gnp) {
@@ -953,23 +938,20 @@ CmapEnc* CmapTable::addSubTable (std::map<std::string, int> &args, const std::st
 	    args, source, encoding, dynamic_cast<FontTable*> (this));
     }
     if (newenc) {
-	newenc->setIndex (m_enc_cnt);
+	newenc->setIndex (cmap_subtables.size ());
 	cmap_subtables.push_back (std::unique_ptr<CmapEnc> (newenc));
-	m_enc_cnt = cmap_subtables.size ();
     }
 
     return newenc;
 }
 
 void CmapTable::removeSubTable (uint16_t idx, sFont *font) {
-    int i;
-    if (idx < m_enc_cnt) {
+    if (idx < cmap_subtables.size ()) {
 	CmapEnc *subtable = this->getSubTable (idx);
 	bool was_default = subtable->isCurrent ();
 
 	cmap_subtables.erase (cmap_subtables.begin () + idx);
-	m_enc_cnt--;
-	for (i=0; i<m_enc_cnt; i++)
+	for (size_t i=0; i<cmap_subtables.size (); i++)
 	    cmap_subtables[i]->setIndex (i);
 
 	if (was_default)
@@ -982,16 +964,14 @@ bool compareSubTables (std::unique_ptr<CmapEnc> &ce1, std::unique_ptr<CmapEnc> &
 }
 
 void CmapTable::sortSubTables () {
-    int i;
     std::sort (cmap_subtables.begin(), cmap_subtables.end(), compareSubTables);
-    for (i=0; i<m_enc_cnt; i++)
+    for (size_t i=0; i<cmap_subtables.size (); i++)
 	cmap_subtables[i]->setIndex (i);
 }
 
 void CmapTable::reorderSubTables (int from, int to) {
-    int i;
     std::iter_swap (cmap_subtables.begin() + from, cmap_subtables.begin() + to);
-    for (i=0; i<m_enc_cnt; i++)
+    for (size_t i=0; i<cmap_subtables.size (); i++)
 	cmap_subtables[i]->setIndex (i);
 }
 
@@ -1106,7 +1086,7 @@ bool CmapEncTable::isCJK (uint16_t platform, uint16_t specific) {
 
 CmapEnc::CmapEnc (uint16_t platID, uint16_t encID, FontTable *tbl) :
     m_length (0), m_format (0), m_language (0), m_current (false), m_changed (false),
-    m_lockCounter (0), m_count (0), m_index (0), m_parent (tbl) {
+    m_lockCounter (0), m_index (0), m_parent (tbl) {
     const char *csname = nullptr;
 
     switch (platID) {
@@ -1259,7 +1239,7 @@ CmapEnc::CmapEnc (uint16_t platID, uint16_t encID, FontTable *tbl) :
 
 CmapEnc::CmapEnc (std::map<std::string, int> &args, CmapEnc *source, const std::string &encoding, FontTable *tbl) :
     m_length (0), m_current (false), m_changed (true),
-    m_lockCounter (0), m_count (0), m_index (0), m_parent (tbl) {
+    m_lockCounter (0), m_index (0), m_parent (tbl) {
 
     uint16_t i;
     const char *csname = encoding.c_str ();
@@ -1325,7 +1305,7 @@ CmapEnc::CmapEnc (std::map<std::string, int> &args, CmapEnc *source, const std::
 // 32-bit characters can be included
 CmapEnc::CmapEnc (GlyphNameProvider *source, FontTable *tbl) :
     m_length (0), m_format (12), m_current (false), m_changed (true),
-    m_lockCounter (0), m_charset (em_unicode), m_count (0), m_index (0), m_parent (tbl) {
+    m_lockCounter (0), m_charset (em_unicode), m_index (0), m_parent (tbl) {
 
     uint16_t i;
 
@@ -1346,11 +1326,22 @@ CmapEnc::~CmapEnc () {
 }
 
 uint32_t CmapEnc::count () const {
-    return m_count;
-}
-
-void CmapEnc::setCount (uint32_t cnt) {
-    m_count = cnt;
+    uint32_t ret;
+    switch (m_format) {
+      case 0:
+	ret = 256;
+	break;
+      case 13:
+	for (auto &seg : segments)
+	    ret += seg.length;
+	break;
+      case 14:
+	ret = var_selectors.size ();
+	break;
+      default:
+	ret = mappings.size ();
+    }
+    return ret;
 }
 
 bool CmapEnc::hasConverter () const {
@@ -1358,7 +1349,7 @@ bool CmapEnc::hasConverter () const {
 }
 
 bool CmapEnc::isUnicode () const {
-    return (m_charset == em_unicode);
+    return (m_format != 14 && m_charset == em_unicode);
 }
 
 uint8_t CmapEnc::numBits () const {
@@ -1392,7 +1383,7 @@ void CmapEnc::addMapping (uint32_t enc, uint32_t gid, uint32_t len) {
     if (m_format == 0) {
         assert (enc < 256);
         map[enc] = gid;
-    } else {
+    } else if (m_format != 14) {
         struct enc_range seg, last;
 	uint32_t i;
 
@@ -1421,21 +1412,71 @@ void CmapEnc::addMapping (uint32_t enc, uint32_t gid, uint32_t len) {
 		mappings.push_back (m);
 	    }
 	}
-        m_count += len;
         //std::sort (segments.begin (), segments.end (), rcomp_by_code);
     }
 }
 
 bool CmapEnc::deleteMapping (uint32_t code) {
-    uint32_t i;
-    for (i=0; i<this->count (); i++) {
-	if (mappings[i].code == code) {
-	    mappings.erase (mappings.begin () + i);
-	    m_count--;
-	    return true;
+    if (m_format == 14)
+	return false;
+    size_t map_cnt = mappings.size ();
+    mappings.erase (
+        std::remove_if (
+	    mappings.begin (),
+	    mappings.end (),
+	    [code](enc_mapping &em){return em.code == code;}
+	), mappings.end ()
+    );
+    return (map_cnt > mappings.size ());
+}
+
+bool CmapEnc::deleteMappingsForGid (uint16_t gid) {
+    bool ret = false;
+    switch (m_format) {
+      case 0:
+	for (size_t i=0; i<256; i++) {
+	    if (map[i] == gid) {
+		map[i] = 0;
+		ret = true;
+	    }
 	}
+	break;
+      case 6:
+      case 10:
+	for (auto &em : mappings) {
+	    if (em.gid == gid) {
+		em.gid = 0;
+		ret = true;
+	    }
+	}
+	break;
+      case 13: {
+	size_t map_cnt = segments.size ();
+	segments.erase (
+	    std::remove_if (
+		segments.begin (),
+		segments.end (),
+		[gid](enc_range &er) { return er.first_gid == gid; }
+	    ), segments.end ()
+	);
+	ret = (map_cnt > segments.size ());
+	} break;
+      case 14:
+	ret = false;
+	break;
+      default: {
+	size_t map_cnt = mappings.size ();
+	mappings.erase (
+	    std::remove_if (
+		mappings.begin (),
+		mappings.end (),
+		[gid](enc_mapping &em) { return em.gid == gid; }
+	    ), mappings.end ()
+	);
+	ret = (map_cnt > mappings.size ());
+      }
     }
-    return false;
+    return ret;
 }
 
 bool CmapEnc::insertMapping (uint32_t code, uint16_t gid) {
@@ -1449,36 +1490,105 @@ bool CmapEnc::insertMapping (uint32_t code, uint16_t gid) {
 	return false;
       case 6:
       case 10:
-	if (m_count == 0) {
+	if (mappings.empty ()) {
 	    mappings.push_back (add);
-	    m_count++;
 	    return true;
-	} else if (mappings[0].code > 0 && code == mappings[0].code-1) {
+	} else if (mappings.front ().code > 0 && code == mappings.front ().code-1) {
 	    mappings.insert (mappings.begin (), add);
-	    m_count++;
 	    return true;
-	} else if (code == mappings[m_count-1].code + 1) {
+	} else if (code == mappings.back ().code + 1) {
 	    mappings.push_back (add);
-	    m_count++;
 	    return true;
 	} else
 	    return false;
       default:
-	while (mappings[pos].code <= code && pos < m_count) {
+	while (mappings[pos].code <= code && pos < this->count ()) {
 	    if (mappings[pos].code == code)
 		return false;
 	    pos++;
 	}
-	if (pos < m_count)
+	if (pos < this->count ())
 	    mappings.insert (mappings.begin () + pos, add);
 	else
 	    mappings.push_back (add);
-	m_count++;
     }
     return true;
 }
 
+bool CmapEnc::insertUniMapping (uint32_t uni, uint16_t gid) {
+    uint32_t code = uni;
+    if (m_format ==  14 || (!isUnicode () && !hasConverter ()))
+	return false;
+    else if (!isUnicode ())
+	code = recodeChar (uni, false);
+    if (code == 0)
+	return false;
+
+    switch (m_format) {
+      case 0:
+	map[code] = gid;
+	return true;
+      case 6:
+      case 10:
+	for (auto &em : mappings) {
+	    if (em.code == code) {
+		em.gid = gid;
+		break;
+	    }
+	}
+	return true;
+      case 13: {
+	auto &first_seg = segments.front ();
+	auto &last_seg = segments.back ();
+        enc_range er;
+        er.first_gid = gid;
+        er.first_enc = code;
+        er.length = 1;
+	if (gid == first_seg.first_gid && code == first_seg.first_enc - 1) {
+	    first_seg.first_enc = code;
+	    first_seg.length++;
+	    return true;
+	} else if (gid == last_seg.first_gid && code == last_seg.first_enc + last_seg.length) {
+	    last_seg.length++;
+	    return true;
+	} else if (code < first_seg.first_enc) {
+	    segments.insert (segments.begin (), er);
+	    return true;
+	} else if (code >= last_seg.first_enc + last_seg.length) {
+	    segments.insert (segments.end (), er);
+	    return true;
+	}
+
+	for (size_t i=1; i<segments.size (); i++) {
+	    auto &prev = segments[i-1];
+	    auto &seg = segments[i];
+	    if (prev.first_gid == gid && seg.first_gid == gid &&
+		prev.first_enc + prev.length + 1 == seg.first_enc &&
+		seg.first_enc - 1 == code) {
+		prev.length = prev.length + seg.length + 1;
+		segments.erase (segments.begin () + i);
+		return true;
+	    } else if (prev.first_gid == gid && prev.first_enc + prev.length == code) {
+		prev.length++;
+		return true;
+	    } else if (seg.first_gid == gid && seg.first_enc == code + 1) {
+		seg.first_enc--;
+		seg.length++;
+		return true;
+	    } else if (code >= prev.first_enc + prev.length && code < seg.first_enc) {
+		segments.insert (segments.begin () + i, er);
+		return true;
+	    }
+	}
+      } return false;
+      default:
+	return insertMapping (code, gid);
+    }
+}
+
 bool CmapEnc::setGidByPos (uint32_t pos, uint16_t gid) {
+    if (m_format == 14)
+	return false;
     if (pos < mappings.size ()) {
 	mappings[pos].gid = gid;
 	return true;
@@ -1490,6 +1600,7 @@ int CmapEnc::firstAvailableCode () const {
     uint32_t i;
     switch (m_format) {
       case 0:
+      case 14:
 	return -1;
       case 6:
       case 10:
@@ -1516,6 +1627,7 @@ int CmapEnc::codeAvailable (uint32_t code) const {
     uint32_t i;
     switch (m_format) {
       case 0:
+      case 14:
 	return -1;
       case 6:
       case 10:
@@ -1633,15 +1745,15 @@ VarSelRecord *CmapEnc::getVarSelectorRecord (uint32_t idx) {
 }
 
 bool CmapEnc::deleteVarSelectorRecord (uint32_t code) {
-    uint32_t i;
-    for (i=0; i<m_count; i++) {
-	if (var_selectors[i]->selector == code) {
-	    var_selectors.erase (var_selectors.begin () + i);
-	    m_count--;
-	    return true;
-	}
-    }
-    return false;
+    size_t sel_cnt = var_selectors.size ();
+    var_selectors.erase (
+        std::remove_if (
+	    var_selectors.begin (),
+	    var_selectors.end (),
+	    [code](std::unique_ptr<VarSelRecord> &vsr){return vsr->selector == code;}
+	), var_selectors.end ()
+    );
+    return (sel_cnt > var_selectors.size ());
 }
 
 VarSelRecord *CmapEnc::addVariationSequence
@@ -1661,7 +1773,6 @@ VarSelRecord *CmapEnc::addVariationSequence
 
     if (var_selectors.size () == 0 || selector > var_selectors[var_selectors.size () - 1]->selector) {
 	var_selectors.push_back (std::move (add));
-	m_count++;
 	return var_selectors.back ().get ();
     }
     for (i=0; i<var_selectors.size (); i++) {
@@ -1689,7 +1800,6 @@ VarSelRecord *CmapEnc::addVariationSequence
 	    }
 	} else if (var_selectors[i]->selector > selector) {
 	    var_selectors.insert (var_selectors.begin () + i, std::move (add));
-	    m_count++;
 	    return var_selectors[i].get ();
 	}
     }
@@ -1738,7 +1848,7 @@ std::vector<uint32_t> CmapEnc::unicode (uint16_t gid) {
 uint32_t CmapEnc::unicodeByPos (uint32_t pos) const {
     uint32_t i, cur = 0, ret;
 
-    if ((!isUnicode () && !hasConverter ())|| pos > m_count)
+    if ((!isUnicode () && !hasConverter ()) || pos > this->count ())
         return 0;
 
     if (m_format == 0 && hasConverter ()) {
@@ -1770,7 +1880,7 @@ uint32_t CmapEnc::unicodeByPos (uint32_t pos) const {
 uint32_t CmapEnc::encByPos (uint32_t pos) const {
     uint32_t i, cur = 0;
 
-    if (pos > m_count)
+    if (pos > this->count ())
         return 0;
 
     if (m_format == 0) {
@@ -1782,10 +1892,7 @@ uint32_t CmapEnc::encByPos (uint32_t pos) const {
             cur += segments[i].length;
         }
     } else if (numBits () > 8) {
-        for (i=0; i<mappings.size (); i++) {
-	    if (i == pos)
-		return mappings[i].code;
-	}
+	return mappings[pos].code;
     }
     return 0;
 }
@@ -1793,7 +1900,7 @@ uint32_t CmapEnc::encByPos (uint32_t pos) const {
 uint16_t CmapEnc::gidByPos (uint32_t pos) const {
     uint32_t i, j, cur = 0;
 
-    if (pos > m_count)
+    if (pos > this->count ())
         return 0;
 
     if (m_format == 0 && pos < 256) {
@@ -1807,10 +1914,7 @@ uint16_t CmapEnc::gidByPos (uint32_t pos) const {
 	    }
         }
     } else if (numBits () > 8) {
-        for (i=0; i<mappings.size (); i++) {
-	    if (i == pos)
-		return mappings[i].gid;
-	}
+	return mappings[pos].gid;
     }
     return 0;
 }
@@ -1898,7 +2002,13 @@ std::vector<uint32_t> CmapEnc::unencoded (uint32_t glyph_cnt) {
     } else {
 	if (m_format == 13) {
 	    std::vector<struct enc_range> segments_by_gid (segments);
-	    std::sort (segments_by_gid.begin (), segments_by_gid.end (), rcomp_by_gid);
+	    std::sort (
+		segments_by_gid.begin (),
+		segments_by_gid.end (),
+		[](const enc_range &r1, const enc_range &r2) {
+		    return (r1.first_gid < r2.first_gid);
+		}
+	    );
 
 	    uint32_t prev = 0;
 	    for (i=0; i < segments_by_gid.size (); i++) {
@@ -1915,7 +2025,13 @@ std::vector<uint32_t> CmapEnc::unencoded (uint32_t glyph_cnt) {
 	    }
 	} else {
 	    std::vector<struct enc_mapping> mappings_by_gid (mappings);
-	    std::sort (mappings_by_gid.begin (), mappings_by_gid.end (), rcomp_mappings_by_gid);
+	    std::sort (
+		mappings_by_gid.begin (),
+		mappings_by_gid.end (),
+		[](const enc_mapping &m1, const enc_mapping &m2) {
+		    return (m1.gid < m2.gid);
+		}
+	    );
 
 	    uint32_t next = 0;
 	    for (i=0; i < mappings_by_gid.size (); i++) {
@@ -2000,11 +2116,8 @@ int CmapEnc::isLocked () {
     return m_lockCounter;
 }
 
-const QString CmapEnc::gidCodeRepr (uint16_t gid) {
+const QString CmapEnc::codeRepr (uint32_t pos) {
     QString ret_str;
-    const std::vector<uint32_t> &encoded = this->isUnicode () ?
-	this->unicode (gid) : this->encoded (gid);
-    uint32_t pos = encoded.empty () ? 0xFFFF : encoded[0];
 
     if (pos == 0xFFFF)
 	ret_str = QString ("<unencoded>");
@@ -2017,4 +2130,11 @@ const QString CmapEnc::gidCodeRepr (uint16_t gid) {
     } else
 	ret_str = QString ("0x%1").arg (pos, pos <= 0xFFFF ? 4 : 6, 16, QLatin1Char ('0'));
     return ret_str;
+}
+
+const QString CmapEnc::gidCodeRepr (uint16_t gid) {
+    const std::vector<uint32_t> &encoded = this->isUnicode () ?
+	this->unicode (gid) : this->encoded (gid);
+    uint32_t pos = encoded.empty () ? 0xFFFF : encoded[0];
+    return codeRepr (pos);
 }

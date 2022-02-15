@@ -1664,7 +1664,8 @@ void CffTable::unpackData (sFont *font) {
             m_gsubrs.cnt <33900 ? 1131 : 32768;
 
     if (m_version > 1 && m_core_font.top_dict.has_key (cff::vstore)) {
-	m_pos = m_core_font.top_dict[cff::vstore].i;
+	// Skip uint16 table size (not actually needed)
+	m_pos = m_core_font.top_dict[cff::vstore].i + 2;
 	FontVariations::readVariationStore (data, m_pos, m_core_font.vstore);
 	m_core_font.vstore.index = m_core_font.top_dict[cff::vsindex].i;
     }
@@ -1829,8 +1830,14 @@ void CffTable::packData () {
 	encodeSizedInt (os, off_size, cur_pos);
 	m_core_font.top_dict[cff::vstore].i = cur_pos;
 	buf.seek (cur_pos);
+	// placeholder for table size
+	os << (uint16_t) 0;
 
 	FontVariations::writeVariationStore (os, buf, m_core_font.vstore);
+	uint16_t vs_size = buf.pos () - cur_pos;
+	buf.seek (cur_pos);
+	os << vs_size;
+	buf.seek (cur_pos + vs_size);
     }
     if (m_core_font.top_dict.has_key (cff::CharStrings)) {
 	uint32_t cur_pos = buf.pos ();
@@ -2045,8 +2052,8 @@ int CffTable::addString (const std::string &s) {
 
 void CffTable::addGlyphName (uint16_t gid, const std::string &name) {
     int sid = addString (name);
-    if (m_core_font.charset.size () < (uint16_t) (gid+1))
-	m_core_font.charset.resize (gid+1);
+    if (gid >= m_core_font.charset.size ())
+	m_core_font.charset.resize (gid+1, 0);
     m_core_font.charset[gid] = sid;
 }
 
@@ -2276,7 +2283,7 @@ int sub_rule::depth () const {
 // the subr contents directly into the corresponding charstrings. On the
 // other hand, it is also possible to remove the "inner" subrs placing their
 // contents into the "outer" subr. In fact determining which subrs to keep is
-// the key point which that be maintained to achieve an effective
+// the key point which must be maintained to achieve an effective
 // compression instead of making the CFF table even bigger. Now we
 // determine this by comparing the use counter and resetting it to zero
 // for less commonly used subrs

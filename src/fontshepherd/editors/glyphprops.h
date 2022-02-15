@@ -24,38 +24,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
-#ifndef _FONSHEPHERD_VARIATIONS_H
-#define _FONSHEPHERD_VARIATIONS_H
+#include <QtGui>
+#include <QtWidgets>
 
-#include <QtCore>
+class CmapEnc;
+class GlyphContainer;
+class UniSpinBox;
 
-struct axis_coordinates {
-    double startCoord, peakCoord, endCoord;
+class GlyphPropsDialog : public QDialog {
+public:
+    explicit GlyphPropsDialog (sFont* fnt, int gid, GlyphNameProvider &gnp, QWidget *parent = 0);
+
+    std::vector<uint32_t> unicodeList () const;
+    std::string glyphName () const;
+    uint16_t glyphClass () const;
+    uint8_t subFont () const;
+
+public slots:
+    void accept () override;
+
+private slots:
+    void updateGlyphName ();
+    void autoGlyphName ();
+    void autoGlyphUni ();
+    void autoGlyphClass ();
+
+private:
+    CmapEnc *m_enc;
+    int m_gid;
+    GlyphNameProvider &m_gnp;
+
+    QLineEdit *m_uniBox;
+    QLineEdit *m_glyphNameField;
+    QComboBox *m_glyphClassBox;
+    QSpinBox *m_subFontBox;
 };
 
-struct blend {
-    double base = 0;
-    bool valid = false;
-    std::vector<double> deltas;
-
-    const std::string toString () const;
-};
-
-struct variation_data {
-    uint16_t shortDeltaCount;
-    std::vector<uint16_t> regionIndexes;
-    std::vector<std::vector<int16_t>> deltaSets;
-};
-
-struct variation_store {
-    std::vector<std::vector<struct axis_coordinates>> regions;
-    std::vector<struct variation_data> data;
-    uint16_t format, index;
-};
-
-namespace FontVariations {
-    void readVariationStore (char *data, uint32_t pos, variation_store &vstore);
-    void writeVariationStore (QDataStream &os, QBuffer &buf, variation_store &vstore);
-};
-
-#endif

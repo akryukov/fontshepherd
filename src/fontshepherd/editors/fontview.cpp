@@ -50,7 +50,7 @@
 #include "editors/glyphview.h"
 #include "fs_undo.h"
 #include "editors/gvundo.h"
-#include "editors/unispinbox.h"
+#include "editors/glyphprops.h"
 
 #include "fs_notify.h"
 #include "icuwrapper.h"
@@ -358,6 +358,7 @@ void FontView::setMenuBar () {
     unselectAction = new QAction (tr ("Clear &selection"), this);
     selectAllAction = new QAction (tr ("Se&lect all"), this);
     editAction = new QAction (tr ("&Edit glyph..."), this);
+    glyphPropsAction = new QAction (tr ("&Glyph properties..."), this);
     addGlyphAction = new QAction (tr ("&Add glyph..."), this);
     clearSvgGlyphAction = new QAction (tr ("Clear SVG &glyph"), this);
     clearSvgGlyphAction->setVisible (m_content_type & (uint8_t) OutlinesType::SVG);
@@ -383,6 +384,7 @@ void FontView::setMenuBar () {
     connect (unselectAction, &QAction::triggered, this, &FontView::clearSelection);
     connect (selectAllAction, &QAction::triggered, this, &FontView::selectAllGlyphs);
     connect (editAction, &QAction::triggered, this, &FontView::glyphEditCurrent);
+    connect (glyphPropsAction, &QAction::triggered, this, &FontView::showGlyphProps);
     connect (addGlyphAction, &QAction::triggered, this, &FontView::addGlyph);
     connect (clearSvgGlyphAction, &QAction::triggered, this, &FontView::clearSvgGlyph);
 
@@ -518,6 +520,7 @@ void FontView::setMenuBar () {
     editMenu->addAction (unselectAction);
     editMenu->addSeparator ();
     editMenu->addAction (editAction);
+    editMenu->addAction (glyphPropsAction);
     editMenu->addAction (addGlyphAction);
     editMenu->addAction (clearSvgGlyphAction);
     connect (editMenu, &QMenu::aboutToShow, this, &FontView::checkSelection);
@@ -637,6 +640,7 @@ void FontView::contextMenuEvent (QContextMenuEvent *event) {
     menu.addAction (unlinkAction);
     menu.addSeparator ();
     menu.addAction (editAction);
+    menu.addAction (glyphPropsAction);
     menu.addAction (clearSvgGlyphAction);
 
     menu.exec (event->globalPos());
@@ -743,32 +747,41 @@ void FontView::displayEncodedGlyphs (CmapEnc *enc, bool by_enc) {
 }
 
 void FontView::addGlyph () {
-    AddGlyphDialog dlg (m_font->enc, m_gc_table, this);
+    uint16_t gid = m_font->glyph_cnt;
+    GlyphPropsDialog dlg (m_font, gid, m_gnp, this);
     switch (dlg.exec ()) {
       case QDialog::Accepted:
 	break;
       case QDialog::Rejected:
 	return;
     }
-    int64_t uni = dlg.unicode ();
+    GdefTable *gdef = dynamic_cast<GdefTable *> (m_font->table (CHR ('G','D','E','F')));
+    std::vector<uint32_t> uni_list = dlg.unicodeList ();
     std::string gname = dlg.glyphName ();
+    uint16_t gclass = dlg.glyphClass ();
     uint8_t subf = dlg.subFont ();
-    uint16_t gid = m_font->glyph_cnt;
     m_font->glyph_cnt++;
 
     GlyphBox *gb = new GlyphBox (nullptr, gid, m_cell_size);
     gb->setClean (false);
 
     m_gcount_changed = true;
-    if (uni >= 0) {
+    if (!uni_list.empty ()) {
 	CmapTable *cmap = dynamic_cast<CmapTable *> (m_font->table (CHR ('c','m','a','p')));
-	if (cmap) cmap->addCommonMapping (uni, gid);
-	m_cmap_changed = true;
+	if (cmap) {
+	    for (uint32_t uni : uni_list)
+		cmap->addCommonMapping (uni, gid);
+	    m_cmap_changed = true;
+	}
     }
     if (!gname.empty ()) {
 	m_gnp.setGlyphName (gid, gname);
 	if (m_gnp.glyphNameSource () == CHR ('p','o','s','t'))
 	    m_post_changed = true;
+    }
+    if (gdef && gclass != GlyphClassDef::Zero) {
+	gdef->setGlyphClass (gid, gclass);
+	m_gdef_changed = true;
     }
 
     m_glyphs.emplace_back (gid, m_gnp, m_glyphs);
@@ -795,7 +808,7 @@ void FontView::addGlyph () {
 
     m_layout->addWidget (gb);
     m_cells.push_back (gb);
-    gb->attachGlyph (&gctx, uni);
+    gb->attachGlyph (&gctx, uni_list.empty () ? 0 : uni_list[0]);
     gb->select (true);
 }
 
@@ -908,6 +921,7 @@ void FontView::save () {
     HmtxTable *hmtx = dynamic_cast<HmtxTable*> (m_font->table (CHR ('h','m','t','x')));
     CmapTable *cmap = dynamic_cast<CmapTable *> (m_font->table (CHR ('c','m','a','p')));
     PostTable *post = dynamic_cast<PostTable*> (m_font->table (CHR ('p','o','s','t')));
+    GdefTable *gdef = dynamic_cast<GdefTable*> (m_font->table (CHR ('G','D','E','F')));
 
     if (m_gcount_changed) {
 	if (maxp) {
@@ -931,6 +945,11 @@ void FontView::save () {
 	    if (pe) pe->resetData ();
 	}
 	m_post_changed = false;
+    }
+
+    if (gdef && m_gdef_changed) {
+	gdef->packData ();
+	m_gdef_changed = false;
     }
 
     // If we have added any glyphs while the contents of the SVG table was displayed
@@ -1233,6 +1252,7 @@ void FontView::checkSelection () {
     clearAction->setEnabled (has_sel);
     unselectAction->setEnabled (has_sel);
     editAction->setEnabled (has_sel);
+    glyphPropsAction->setEnabled (has_sel);
     clearSvgGlyphAction->setEnabled (has_sel);
 
     QClipboard *clipboard = QApplication::clipboard ();
@@ -1263,6 +1283,7 @@ void FontView::clearSelection () {
     unlinkAction->setEnabled (false);
     unselectAction->setEnabled (false);
     editAction->setEnabled (false);
+    glyphPropsAction->setEnabled (false);
     clearSvgGlyphAction->setEnabled (false);
 }
 
@@ -1276,6 +1297,7 @@ void FontView::selectAllGlyphs () {
     unlinkAction->setEnabled (true);
     unselectAction->setEnabled (true);
     editAction->setEnabled (true);
+    glyphPropsAction->setEnabled (true);
     clearSvgGlyphAction->setEnabled (true);
 }
 
@@ -1402,6 +1424,59 @@ void FontView::glyphEdit (GlyphBox *gb) {
 void FontView::glyphEditCurrent () {
     if (m_current_cell)
 	glyphEdit (m_current_cell);
+}
+
+void FontView::showGlyphProps () {
+    if (!m_current_cell)
+	return;
+    uint16_t gid = m_current_cell->gid ();
+    GlyphContext &gctx = m_glyphs[gid];
+    GdefTable *gdef = dynamic_cast<GdefTable *> (m_font->table (CHR ('G','D','E','F')));
+    GlyphPropsDialog dlg (m_font, gid, m_gnp, this);
+    switch (dlg.exec ()) {
+      case QDialog::Accepted:
+	break;
+      case QDialog::Rejected:
+	return;
+    }
+
+    std::vector<uint32_t> uni_list = dlg.unicodeList ();
+    std::string gname = dlg.glyphName ();
+    uint16_t gclass = dlg.glyphClass ();
+    uint8_t subf = dlg.subFont ();
+
+    std::vector<uint32_t> old_uni_list = m_font->enc->unicode (gid);
+    std::string oldname = gctx.name ().toStdString ();
+
+    if (uni_list != old_uni_list) {
+	CmapTable *cmap = dynamic_cast<CmapTable *> (m_font->table (CHR ('c','m','a','p')));
+	if (cmap) {
+	    cmap->clearMappingsForGid (gid);
+	    for (uint32_t uni : uni_list)
+		cmap->addCommonMapping (uni, gid);
+	    m_cmap_changed = true;
+	}
+	// would get some large positive number without an explicit cast to int64_t
+	m_current_cell->setUnicode (uni_list.empty () ? static_cast<int64_t> (-1) : uni_list[0]);
+    }
+
+    if (gname.compare (oldname) != 0) {
+	m_gnp.setGlyphName (gid, gname);
+	gctx.setName (gname);
+	if (m_gnp.glyphNameSource () == CHR ('p','o','s','t'))
+	    m_post_changed = true;
+    }
+    if (gdef && gclass != gdef->glyphClass (gid)) {
+	gdef->setGlyphClass (gid, gclass);
+	m_gdef_changed = true;
+    }
+    if (m_cff_table) {
+	CffTable *cff = dynamic_cast<CffTable *> (m_cff_table);
+	if (cff->cidKeyed ())
+	    cff->setFdSelect (gid, subf);
+    }
+    //m_current_cell->setClean (false);
+    updateStatusBar (m_current_cell);
 }
 
 void FontView::editCFF () {
@@ -2263,76 +2338,6 @@ int64_t GlyphBox::unicode () const {
     return m_uni;
 }
 
-AddGlyphDialog::AddGlyphDialog (CmapEnc *enc, GlyphContainer *gc, QWidget *parent) :
-    QDialog (parent), m_enc (enc) {
-    int fcnt = 0;
-    if (CffTable *cff = dynamic_cast<CffTable *> (gc))
-	fcnt = cff->numSubFonts ();
-
-    setWindowTitle (tr ("Add a new glyph to the font"));
-
-    QVBoxLayout *layout = new QVBoxLayout ();
-    QGridLayout *glay = new QGridLayout;
-    layout->addLayout (glay);
-
-    glay->addWidget (new QLabel ("Unicode"), 0, 0);
-    m_uniBox = new UniSpinBox ();
-    m_uniBox->setMinimum (-1);
-    m_uniBox->setMaximum (0xffffff);
-    m_uniBox->setValue (-1);
-    glay->addWidget (m_uniBox, 0, 1);
-
-    glay->addWidget (new QLabel ("Glyph name"), 1, 0);
-    m_glyphNameField = new QLineEdit ();
-    glay->addWidget (m_glyphNameField, 1, 1);
-    m_glyphNameField->setValidator (new QRegExpValidator (QRegExp ("[A-Za-z0-9_.]*"), this));
-
-    QLabel *subLabel = new QLabel ("CFF subfont");
-    glay->addWidget (subLabel, 2, 0);
-    m_subFontBox = new QSpinBox ();
-    glay->addWidget (m_subFontBox, 2, 1);
-
-    if (!fcnt) {
-	subLabel->setVisible (false);
-	m_subFontBox->setVisible (false);
-    } else {
-	m_subFontBox->setMaximum (fcnt-1);
-    }
-
-    QHBoxLayout *butt_layout = new QHBoxLayout ();
-    QPushButton* okBtn = new QPushButton ("OK");
-    connect (okBtn, &QPushButton::clicked, this, &QDialog::accept);
-    butt_layout->addWidget (okBtn);
-
-    QPushButton* cancelBtn = new QPushButton (tr ("Cancel"));
-    connect (cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
-    butt_layout->addWidget (cancelBtn);
-    layout->addLayout (butt_layout);
-
-    setLayout (layout);
-}
-
-int64_t AddGlyphDialog::unicode () const {
-    return m_uniBox->value ();
-}
-
-std::string AddGlyphDialog::glyphName () const {
-    return m_glyphNameField->text ().toStdString ();
-}
-
-uint8_t AddGlyphDialog::subFont () const {
-    return m_subFontBox->value ();
-}
-
-void AddGlyphDialog::accept () {
-    uint32_t uni = unicode ();
-    if (m_enc->gidByUnicode (uni))
-        FontShepherd::postError (
-	    QCoreApplication::tr ("Can't insert glyph"),
-            QCoreApplication::tr (
-    	    "There is already a glyph mapped to U+%1.")
-		.arg (uni, uni <= 0xFFFF ? 4 : 6, 16, QLatin1Char ('0')),
-            this);
-    else
-	QDialog::accept ();
+void GlyphBox::setUnicode (int64_t uni) {
+    m_uni = uni;
 }

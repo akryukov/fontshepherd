@@ -30,7 +30,7 @@
 
 namespace GlyphClassDef {
     enum GlyphClass {
-	Base = 1, Ligature = 2, Mark = 3, Component = 4
+	Zero = 0, Base = 1, Ligature = 2, Mark = 3, Component = 4
     };
 };
 
@@ -57,9 +57,21 @@ struct device_table {
 };
 
 namespace OpenType {
+    struct class_range {
+	uint16_t startGlyphID, endGlyphID;
+	union {
+	    uint16_t glyphClass;
+	    uint16_t startCoverageIndex;
+	};
+    };
+
     void readClassDefTable (char *data, uint16_t pos, std::vector<uint16_t> &glyph_list);
     void readCoverageTable (char *data, uint16_t pos, std::vector<uint16_t> &glyph_list);
     void readDeviceTable (char *data, uint16_t pos, device_table &dtab);
+
+    void writeClassDefTable (QBuffer &buf, QDataStream &os, std::vector<uint16_t> &glyph_list);
+    void writeCoverageTable (QBuffer &buf, QDataStream &os, std::vector<uint16_t> &glyph_list);
+    void writeDeviceTable (QBuffer &buf, QDataStream &os, device_table &dtab);
 };
 
 class ConicGlyph;
@@ -67,7 +79,7 @@ class ConicGlyph;
 struct caret_value {
     uint16_t format;
     uint16_t point_index;
-    int coord;
+    int16_t coord;
     uint16_t table_off;
     device_table dev_table;
 };
@@ -81,11 +93,17 @@ public:
     void packData ();
 
     double version () const;
+    uint16_t glyphClass (uint16_t gid) const;
+    void setGlyphClass (uint16_t gid, uint16_t val);
 
 private:
     void readAttachList ();
     void readLigCaretList ();
     void readMarkGlyphSets ();
+
+    void writeAttachList (QBuffer &buf, QDataStream &os);
+    void writeLigCaretList (QBuffer &buf, QDataStream &os);
+    void writeMarkGlyphSets (QBuffer &buf, QDataStream &os);
 
     double m_version;
     uint16_t glyphClassDefOffset = 0;
@@ -93,7 +111,7 @@ private:
     uint16_t ligCaretListOffset = 0;
     uint16_t markAttachClassDefOffset = 0;
     uint16_t markGlyphSetsDefOffset = 0;
-    uint16_t itemVarStoreOffset = 0;
+    uint32_t itemVarStoreOffset = 0;
 
     std::vector<uint16_t> m_glyphClasses;
     std::map<uint16_t, std::vector<uint16_t>> m_attachList;

@@ -33,33 +33,11 @@
 #include "charbuffer.h"
 #include "tables/glyphnames.h"
 
-class UniSpinBox;
 class LocaTable;
 class ConicGlyph;
 class UndoGroupContainer;
 class GlyphContainer;
 typedef struct ttffont sFont;
-
-class AddGlyphDialog : public QDialog {
-    Q_OBJECT;
-
-public:
-    explicit AddGlyphDialog (CmapEnc *enc, GlyphContainer *gc, QWidget *parent = 0);
-
-    int64_t unicode () const;
-    std::string glyphName () const;
-    uint8_t subFont () const;
-
-public slots:
-    void accept () override;
-
-private:
-    CmapEnc *m_enc;
-
-    UniSpinBox *m_uniBox;
-    QLineEdit *m_glyphNameField;
-    QSpinBox *m_subFontBox;
-};
 
 class FVLayout : public QLayout {
 
@@ -111,6 +89,7 @@ public:
     int gid () const;
     uint32_t position () const;
     int64_t unicode () const;
+    void setUnicode (int64_t uni);
     void resizeCell (int size);
 
     static QString styleSheet;
@@ -207,6 +186,7 @@ private slots:
     void glyphSelected (GlyphBox *gb, Qt::KeyboardModifiers flags, bool val);
     void glyphEdit (GlyphBox *gb);
     void glyphEditCurrent ();
+    void showGlyphProps ();
     void editCFF ();
     void switchOutlinesByAction (QAction *action);
 
@@ -250,7 +230,7 @@ private:
     QAction *saveAction, *closeAction, *cffAction;
     QAction *undoAction, *redoAction;
     QAction *cutAction, *copyAction, *svgCopyAction, *pasteAction, *clearAction;
-    QAction *unselectAction, *selectAllAction, *editAction;
+    QAction *unselectAction, *selectAllAction, *editAction, *glyphPropsAction;
     QAction *copyRefAction, *pasteIntoAction;
     QAction *addExtremaAction, *simplifyAction, *roundAction, *overlapAction, *corrDirAction;
     QAction *unlinkAction;

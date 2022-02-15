@@ -8,4 +8,5 @@ static
 *.so.*
 *.log
 *.err
+*.out
 moc_*.cpp

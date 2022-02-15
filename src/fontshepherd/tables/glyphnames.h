@@ -77,6 +77,7 @@ public:
     ~GlyphNameProvider ();
 
     std::string nameByGid (uint16_t gid);
+    std::string nameByUni (uint32_t uni);
     uint32_t uniByName (std::string &name);
     bool fontHasGlyphNames ();
     uint16_t countGlyphs ();

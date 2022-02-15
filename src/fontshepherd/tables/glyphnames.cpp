@@ -378,6 +378,22 @@ void GlyphNameProvider::parseGlyphlist (std::string &path) {
     infile.close ();
 }
 
+std::string GlyphNameProvider::nameByUni (uint32_t uni) {
+    std::string ret;
+    if (by_uni.count (uni))
+        ret = by_uni[uni];
+    else {
+        std::stringstream ss;
+        ss << std::uppercase << std::hex;
+        if (uni <= 0xFFFF)
+            ss << "uni" << std::setw (4) << std::setfill ('0') << uni;
+        else
+            ss << "u"   << std::setw (6) << std::setfill ('0') << uni;
+        ret = ss.str ();
+    }
+    return ret;
+}
+
 std::string GlyphNameProvider::nameByGid (uint16_t gid) {
     std::string ret = "";
 
@@ -389,18 +405,7 @@ std::string GlyphNameProvider::nameByGid (uint16_t gid) {
         std::vector<uint32_t> unis = m_enc->unicode (gid);
         if (unis.size () > 0 ) {
             uint32_t uni = unis[0];
-
-            if (by_uni.count (uni))
-                ret = by_uni[uni];
-            else {
-                std::stringstream ss;
-                ss << std::uppercase << std::hex;
-                if (uni <= 0xFFFF)
-                    ss << "uni" << std::setw (4) << std::setfill ('0') << uni;
-                else
-                    ss << "u"   << std::setw (6) << std::setfill ('0') << uni;
-                ret = ss.str ();
-            }
+	    ret = nameByUni (uni);
         }
     }
     if (ret.empty ()) {

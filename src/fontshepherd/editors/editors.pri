@@ -39,6 +39,7 @@ SOURCES += editors/os_2edit.cpp
 SOURCES += editors/postedit.cpp
 SOURCES += editors/qdruler.cpp
 SOURCES += editors/unispinbox.cpp
+SOURCES += editors/glyphprops.cpp
 
 HEADERS += editors/cffedit.h
 HEADERS += editors/commondelegates.h
@@ -55,3 +56,4 @@ HEADERS += editors/nameedit.h
 HEADERS += editors/os_2edit.h
 HEADERS += editors/postedit.h
 HEADERS += editors/unispinbox.h
+SOURCES += editors/glyphprops.h
