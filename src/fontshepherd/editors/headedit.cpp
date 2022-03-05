@@ -352,6 +352,10 @@ void HeadEdit::save () {
     hd.unitsPerEm = m_unitsPerEmBox->value ();
     hd.created = m_createdBox->dateTime ().toTime_t ();
     hd.modified = m_modifiedBox->dateTime ().toTime_t ();
+    hd.xMin = m_xMinBox->value ();
+    hd.yMin = m_yMinBox->value ();
+    hd.xMax = m_xMaxBox->value ();
+    hd.yMax = m_yMaxBox->value ();
     for (int i=0; i<7; i++) {
 	auto item = m_macStyleList->item (i);
 	hd.macStyle[i] = (item->checkState () == Qt::Checked);

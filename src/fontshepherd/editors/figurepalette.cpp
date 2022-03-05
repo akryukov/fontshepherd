@@ -32,7 +32,7 @@
 #include "editors/gvundo.h"
 #include "fs_undo.h"
 
-FigurePalette::FigurePalette (GlyphContext &ctx, FigureModel *model, uint8_t otype, QWidget *topwin, QWidget *parent) :
+FigurePalette::FigurePalette (GlyphContext &ctx, FigureModel *model, OutlinesType otype, QWidget *topwin, QWidget *parent) :
     QTableView (parent), m_context (ctx), m_outlines_type (otype), m_topWin (topwin) {
 
     setModel (model);
@@ -53,7 +53,7 @@ FigurePalette::FigurePalette (GlyphContext &ctx, FigureModel *model, uint8_t oty
     connect (this, &QTableView::doubleClicked, this, &FigurePalette::startColorEditor);
 }
 
-void FigurePalette::setOutlinesType (uint8_t otype) {
+void FigurePalette::setOutlinesType (OutlinesType otype) {
     m_outlines_type = otype;
 }
 
@@ -163,7 +163,7 @@ void FigurePalette::unsetColorIndeed (bool fill) {
 	auto it = g->figures.begin ();
 	std::advance (it, row);
 	auto &fig = *it;
-	SvgState state = fig.state;
+	SvgState state = fig.svgState;
 
 	bool &set = fill ? state.fill_set : state.stroke_set;
 	rgba_color &color = fill ? state.fill : state.stroke;
@@ -172,7 +172,7 @@ void FigurePalette::unsetColorIndeed (bool fill) {
 
 	FigurePropsChangeCommand *ucmd =
 	    new FigurePropsChangeCommand (m_context, m_outlines_type, state, row);
-	fig.state = state;
+	fig.svgState = state;
 	m_context.updateFill ();
 	m_context.render (m_outlines_type);
 	m_context.update (m_outlines_type);
@@ -219,7 +219,7 @@ QPixmap FigurePalette::colorPixmap (const QSize &size, ConicGlyph *g, const SvgS
     QPen pen (Qt::black);
     pen.setWidth (4);
     p.setPen (pen);
-    p.setBrush (GlyphContext::figureBrush (state, g->gradients, fill));
+    p.setBrush (GlyphContext::figureBrush (state, nullptr, g->gradients, fill));
     p.drawRect (0,0, w,h);
     return pm;
 }
@@ -234,7 +234,7 @@ FigureModel::FigureModel (QGraphicsItem *figRoot, ConicGlyph *g, QWidget *parent
 	    FigureItem *figItem = dynamic_cast<FigureItem *> (child);
 	    if (figItem) {
 		m_typeList.push_back (QLatin1String (figItem->svgFigure ().type.c_str ()));
-		m_stateList.push_back (figItem->svgFigure ().state);
+		m_stateList.push_back (figItem->svgFigure ().svgState);
 	    }
 	}
     }
@@ -371,7 +371,7 @@ void FigureModel::reset (QGraphicsItem *figRoot, ConicGlyph *g) {
 	if (child->isPanel ()) {
 	    FigureItem *figItem = dynamic_cast<FigureItem *> (child);
 	    if (figItem) {
-		m_stateList.push_back (figItem->svgFigure ().state);
+		m_stateList.push_back (figItem->svgFigure ().svgState);
 		m_typeList.push_back (QLatin1String (figItem->svgFigure ().type.c_str ()));
 	    }
 	}
@@ -383,10 +383,10 @@ void FigureModel::addFigure (QGraphicsItem *item, int pos) {
     FigureItem *figItem = dynamic_cast<FigureItem *> (item);
     beginInsertRows (QModelIndex (), pos, pos);
     if (pos <= m_typeList.size ()) {
-        m_stateList.insert (m_stateList.begin () + pos, figItem->svgFigure ().state);
+        m_stateList.insert (m_stateList.begin () + pos, figItem->svgFigure ().svgState);
         m_typeList.insert (m_typeList.begin () + pos, QLatin1String (figItem->svgFigure ().type.c_str ()));
     } else {
-        m_stateList.push_back (figItem->svgFigure ().state);
+        m_stateList.push_back (figItem->svgFigure ().svgState);
         m_typeList.push_back (QLatin1String (figItem->svgFigure ().type.c_str ()));
     }
     endInsertRows ();

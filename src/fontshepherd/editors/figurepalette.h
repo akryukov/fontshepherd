@@ -31,8 +31,8 @@ class GlyphContext;
 
 class FigurePalette : public QTableView {
 public:
-    FigurePalette (GlyphContext &ctx, FigureModel *model, uint8_t otype, QWidget *topwin, QWidget *parent = nullptr);
-    void setOutlinesType (uint8_t otype);
+    FigurePalette (GlyphContext &ctx, FigureModel *model, OutlinesType otype, QWidget *topwin, QWidget *parent = nullptr);
+    void setOutlinesType (OutlinesType otype);
 
     static QPixmap defaultPixmap (const QSize &size);
     static QPixmap colorPixmap (const QSize &size, ConicGlyph *g, const SvgState &state, bool fill);
@@ -52,7 +52,7 @@ private:
     void swapRows (int idx1, int idx2);
 
     GlyphContext &m_context;
-    uint8_t m_outlines_type;
+    OutlinesType m_outlines_type;
     QWidget *m_topWin;
 };
 

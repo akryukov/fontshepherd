@@ -136,3 +136,16 @@ void FontVariations::writeVariationStore (QDataStream &os, QBuffer &buf, variati
 	}
     }
 }
+
+void FontVariations::readIndexMap (char *data, uint32_t pos, struct delta_set_index_map &map) {
+    map.format = data[pos]; pos++;
+    map.entryFormat = data[pos]; pos++;
+    uint32_t cnt;
+    if (map.format == 0) {
+	cnt = FontTable::getushort (data, pos); pos+=2;
+    } else {
+	cnt = FontTable::getlong (data, pos); pos+=4;
+    }
+    size_t entry_size = ((map.entryFormat & MAP_ENTRY_SIZE_MASK) >> 4) + 1;
+    map.data = std::string (data, pos, cnt*entry_size);
+}

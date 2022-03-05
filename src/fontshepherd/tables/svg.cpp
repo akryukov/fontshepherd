@@ -309,6 +309,24 @@ std::string SvgTable::getSvgDocument (uint16_t gid) {
     }
 }
 
+bool SvgTable::loadGlyphDocument (ConicGlyph *g, std::istream &buf, svg_document_index_entry &entry) {
+    pugi::xml_parse_result result = entry.doc.load (buf);
+
+    if (result.status != pugi::status_ok) {
+	buf.seekg (0);
+	std::string s (std::istreambuf_iterator<char> (buf), {});
+	std::cerr << s << std::endl;
+        FontShepherd::postError (
+            QCoreApplication::tr ("Bad glyf data"),
+            QCoreApplication::tr (
+                "Could not load SVG data for glyph %1: "
+                "doesn't seem to be an SVG document").arg (g->gid ()),
+            nullptr);
+        return false;
+    }
+    return g->fromSVG (entry.doc);
+}
+
 ConicGlyph* SvgTable::glyph (sFont* fnt, uint16_t gid) {
     if (!m_usable || gid >= m_glyphs.size ())
 	return nullptr;
@@ -325,16 +343,18 @@ ConicGlyph* SvgTable::glyph (sFont* fnt, uint16_t gid) {
 
     if (m_hmtx)
         g->setHMetrics (m_hmtx->lsb (gid), m_hmtx->aw (gid));
-    if (is_compressed (data, m_offsetToSVGDocIndex + entry.svgDocOffset)) {
+    if (entry.loaded) {
+	g->fromSVG (entry.doc);
+    } else if (is_compressed (data, m_offsetToSVGDocIndex + entry.svgDocOffset)) {
 	boost::iostreams::array_source src
 	    (data + m_offsetToSVGDocIndex + entry.svgDocOffset, entry.svgDocLength);
 	boost::iostreams::filtering_istream buf;
 	buf.push (boost::iostreams::gzip_decompressor ());
 	buf.push (src);
-	g->fromSVG (buf);
+	entry.loaded = loadGlyphDocument (g, buf, entry);
     } else {
 	BoostIn buf (data + m_offsetToSVGDocIndex + entry.svgDocOffset, entry.svgDocLength);
-	g->fromSVG (buf);
+	entry.loaded = loadGlyphDocument (g, buf, entry);
     }
     return g;
 }

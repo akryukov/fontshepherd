@@ -15,7 +15,7 @@ SOURCES += fs_notify.cpp fs_math.cpp fs_undo.cpp commonlists.cpp
 SOURCES += ftwrapper.cpp icuwrapper.cpp
 SOURCES += stemdb.cpp
 
-HEADERS += fontshepherd.h tableview.h sfnt.h cffstuff.h
+HEADERS += fontshepherd.h tableview.h sfnt.h cffstuff.h colors.h
 HEADERS += tables.h splineglyph.h charbuffer.h commonlists.h
 HEADERS += exceptions.h fs_notify.h fs_math.h fs_undo.h
 HEADERS += ftwrapper.h icuwrapper.h

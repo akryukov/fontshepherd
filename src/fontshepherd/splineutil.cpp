@@ -3378,11 +3378,7 @@ void Conic::findBounds (DBounds &bounds) {
     }
 }
 
-DrawableFigure::DrawableFigure () {
-    state = SvgState ();
-    transform[1] = transform[2] = transform[4] = transform[5] = 0;
-    transform[0] = transform[3] = 1;
-}
+DrawableFigure::DrawableFigure () {}
 
 DrawableFigure::DrawableFigure (const DrawableFigure &fig) {
     uint16_t i;
@@ -3392,7 +3388,7 @@ DrawableFigure::DrawableFigure (const DrawableFigure &fig) {
         transform[i] = fig.transform[i];
     props = fig.props;
     points = fig.points;
-    state = fig.state;
+    svgState = fig.svgState;
     contours.clear ();
     order2 = fig.order2;
 
@@ -3608,16 +3604,19 @@ void DrawableFigure::realBounds (DBounds &b, bool do_init) {
         b.maxx = b.maxy = -1e10;
     }
     if (type.compare ("circle") == 0 || type.compare ("ellipse") == 0) {
-	// Got negative ry in EmojiOneColor.otf. Is it a result of
+	// May get negative ry as a result of
 	// a previous transformation applied?
-	double minx = props["cx"] - std::abs (props["rx"]);
-	double maxx = props["cx"] + std::abs (props["rx"]);
-	double miny = props["cy"] - std::abs (props["ry"]);
-	double maxy = props["cy"] + std::abs (props["ry"]);
-	if (minx < b.minx) b.minx = minx;
-	if (maxx > b.maxx) b.maxx = maxx;
-	if (miny < b.miny) b.miny = miny;
-	if (maxy > b.maxy) b.maxy = maxy;
+	b.minx = props["cx"] - std::abs (props["rx"]);
+	b.maxx = props["cx"] + std::abs (props["rx"]);
+	b.miny = props["cy"] - std::abs (props["ry"]);
+	b.maxy = props["cy"] + std::abs (props["ry"]);
+    } else if (type.compare ("rect") == 0) {
+	b.minx = props["x"];
+	b.miny = props["y"];
+	b.maxx = props["x"] + props["width"];
+	b.maxy = props["y"] + props["height"];
+	if (b.minx < b.maxx) std::swap (b.minx, b.maxx);
+	if (b.miny < b.maxy) std::swap (b.miny, b.maxy);
     } else if (!contours.empty ()) {
 	for (auto &spls: contours) {
 	    /* GWW: Ignore contours consisting of a single point (used for hinting, anchors */
@@ -3645,7 +3644,8 @@ void DrawableFigure::realBounds (DBounds &b, bool do_init) {
 }
 
 void DrawableFigure::quickBounds (DBounds &b) {
-    if (type.compare ("circle") == 0 || type.compare ("ellipse") == 0) {
+    if (type.compare ("circle") == 0 || type.compare ("ellipse") == 0 ||
+	type.compare ("rect") == 0) {
 	realBounds (b, false);
     } else if (!contours.empty ()) {
 	for (auto &spls: contours) {
@@ -3674,7 +3674,7 @@ bool DrawableFigure::hasSelected () const {
 bool DrawableFigure::mergeWith (const DrawableFigure &fig) {
     if (type.compare ("path") != 0 || fig.contours.empty ())
         return false;
-    if (state != fig.state)
+    if (svgState != fig.svgState)
         return false;
 
     contours.reserve (contours.size () + fig.contours.size ());

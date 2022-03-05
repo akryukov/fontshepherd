@@ -44,9 +44,9 @@ bool UniquePoint::operator!=(const UniquePoint &rsp) const {
 }
 
 UniqueFigure::unique_figure (DrawableFigure &fig) {
-    type = fig.svgFigureType ();
+    type = fig.elementType ();
     props = fig.props;
-    state = fig.state;
+    state = fig.svgState;
     transform = fig.transform;
 
     if (!fig.contours.empty ()) {
@@ -95,7 +95,7 @@ bool UniqueManipulator::operator!=(const UniqueManipulator &rsm) const {
     return !(*this == rsm);
 }
 
-MoveCommand::MoveCommand (QPointF move, GlyphContext &gctx, uint8_t gtype, QUndoCommand *parent) :
+MoveCommand::MoveCommand (QPointF move, GlyphContext &gctx, OutlinesType gtype, QUndoCommand *parent) :
      QUndoCommand (parent),
      m_move (move),
      m_context (gctx),
@@ -231,7 +231,7 @@ bool MoveCommand::mergeWith (const QUndoCommand *cmd) {
 	    add.setX (0);
         if (!(cmp.edge & Qt::TopEdge) && !(cmp.edge & Qt::BottomEdge))
 	    add.setY (0);
-	if (fig.type == FigureType::Circle || fig.type == FigureType::Ellipse) {
+	if (fig.type == ElementType::Circle || fig.type == ElementType::Ellipse) {
 	    fig.props["rx"] += add.x ();
 	    fig.props["ry"] -= add.y ();
 	    if (m_manipulators.back () == cmp) {
@@ -241,7 +241,7 @@ bool MoveCommand::mergeWith (const QUndoCommand *cmd) {
 		return true;
 	    }
 	    return false;
-	} else if (fig.type == FigureType::Rect) {
+	} else if (fig.type == ElementType::Rect) {
 	    if (cmp.edge & Qt::LeftEdge)
 		fig.props["width"] += add.x ();
 	    else if (cmp.edge & Qt::RightEdge)
@@ -296,9 +296,9 @@ bool MoveCommand::mergeWith (const QUndoCommand *cmd) {
         UniqueFigure cmp = moveCommand->m_figs[i];
 	if (m_figs[i].type != cmp.type) {
 	    return false;
-	} else if (cmp.type == FigureType::Ellipse || cmp.type == FigureType::Circle) {
+	} else if (cmp.type == ElementType::Ellipse || cmp.type == ElementType::Circle) {
 	    cmp.props["cx"] -= add.x (); cmp.props["cy"] -= add.y ();
-	} else if (cmp.type == FigureType::Rect) {
+	} else if (cmp.type == ElementType::Rect) {
 	    cmp.props["x"] -= add.x (); cmp.props["y"] -= add.y ();
 	} else {
 	    if (m_figs[i].onPoints.size () != cmp.onPoints.size ())
@@ -329,10 +329,10 @@ bool MoveCommand::mergeWith (const QUndoCommand *cmd) {
         return false;
 
     for (auto &fig : m_figs) {
-	if (fig.type == FigureType::Ellipse || fig.type == FigureType::Circle) {
+	if (fig.type == ElementType::Ellipse || fig.type == ElementType::Circle) {
 	    fig.props["cx"] += add.x ();
 	    fig.props["cy"] += add.y ();
-	} else if (fig.type == FigureType::Rect) {
+	} else if (fig.type == ElementType::Rect) {
 	    fig.props["x"] += add.x ();
 	    fig.props["y"] += add.y ();
 	} else {
@@ -404,17 +404,17 @@ void MoveCommand::checkManipulator (bool undo) {
     QPointF vector = m_move;
     if (undo) vector *= -1;
     DrawableFigure *figptr = m_context.activeFigure ();
-    FigureType ftype = figptr->svgFigureType ();
+    ElementType ftype = figptr->elementType ();
 
     if (!figptr || m_manipulators.empty ())
     	return;
     auto &um = m_manipulators.back ();
 
-    if (ftype == FigureType::Ellipse || ftype == FigureType::Circle) {
+    if (ftype == ElementType::Ellipse || ftype == ElementType::Circle) {
 	FigureEllipseItem *item = dynamic_cast<FigureEllipseItem *> (figptr->item);
 	ManipulatorItem *manItem = item->manipulator (um.edge);
 	item->manipulatorMoved (vector, manItem);
-    } else if (ftype == FigureType::Rect) {
+    } else if (ftype == ElementType::Rect) {
 	FigureRectItem *item = dynamic_cast<FigureRectItem *> (figptr->item);
 	ManipulatorItem *manItem = item->manipulator (um.edge);
 	item->manipulatorMoved (vector, manItem);
@@ -507,7 +507,7 @@ void MoveCommand::iterateRefs (bool undo) {
     std::fill (moved.begin (), moved.end (), 0);
 
     for (i=0; i<m_glyph->refs.size () && cnt<m_refs.size (); i++) {
-        RefGlyph &rg = m_glyph->refs[i];
+        DrawableReference &rg = m_glyph->refs[i];
         for (j=0; j<m_refs.size () && cnt<m_refs.size (); j++) {
             UniqueRef ur = {rg.transform[4], rg.transform[5], i, rg.GID};
             if (!moved[j] && ur == m_refs[j]) {
@@ -524,7 +524,7 @@ void MoveCommand::iterateRefs (bool undo) {
     }
 }
 
-GlyphChangeCommand::GlyphChangeCommand (GlyphContext &ctx, uint8_t gtype, QUndoCommand *parent) :
+GlyphChangeCommand::GlyphChangeCommand (GlyphContext &ctx, OutlinesType gtype, QUndoCommand *parent) :
     QUndoCommand (parent),
     m_context (ctx),
     m_outlines_type (gtype),
@@ -545,7 +545,7 @@ void GlyphChangeCommand::undo () {
     g->fromSVG (buf);
     m_context.resolveRefs (m_outlines_type);
     m_context.render (m_outlines_type);
-    m_context.drawGlyph (g);
+    m_context.drawGlyph (g, g->gradients);
     m_context.update (m_outlines_type);
     m_undone = true;
 }
@@ -562,7 +562,7 @@ void GlyphChangeCommand::redo () {
     g->fromSVG (buf);
     m_context.resolveRefs (m_outlines_type);
     m_context.render (m_outlines_type);
-    m_context.drawGlyph (g);
+    m_context.drawGlyph (g, g->gradients);
     m_context.update (m_outlines_type);
 }
 
@@ -574,12 +574,12 @@ void GlyphChangeCommand::undoInvalid () {
     g->fromSVG (buf);
     m_context.resolveRefs (m_outlines_type);
     m_context.render (m_outlines_type);
-    m_context.drawGlyph (g);
+    m_context.drawGlyph (g, g->gradients);
     m_context.update (m_outlines_type);
 }
 
 FigurePropsChangeCommand::FigurePropsChangeCommand
-    (GlyphContext &ctx, uint8_t otype, SvgState &newstate, int pos, QUndoCommand *parent) :
+    (GlyphContext &ctx, OutlinesType otype, SvgState &newstate, int pos, QUndoCommand *parent) :
     QUndoCommand (parent),
     m_context (ctx),
     m_outlinesType (otype),
@@ -593,11 +593,11 @@ FigurePropsChangeCommand::FigurePropsChangeCommand
     auto it = g->figures.begin ();
     std::advance (it, m_idx);
     m_figptr = &(*it);
-    m_undoState = m_figptr->state;
+    m_undoState = m_figptr->svgState;
 }
 
 void FigurePropsChangeCommand::undo () {
-    m_figptr->state = m_undoState;
+    m_figptr->svgState = m_undoState;
     m_context.updateFill ();
     m_context.render (m_outlinesType);
     m_context.update (m_outlinesType);
@@ -609,7 +609,7 @@ void FigurePropsChangeCommand::undo () {
 void FigurePropsChangeCommand::redo () {
     if (!m_undone)
 	return;
-    m_figptr->state = m_redoState;
+    m_figptr->svgState = m_redoState;
     m_context.updateFill ();
     m_context.render (m_outlinesType);
     m_context.update (m_outlinesType);

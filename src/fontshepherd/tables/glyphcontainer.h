@@ -24,6 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
+#ifndef _FONSHEPHERD_GLYPHCONTAINER_H
+#define _FONSHEPHERD_GLYPHCONTAINER_H
+
 #include <stdint.h>
 
 #include "splineglyph.h"
@@ -50,3 +53,5 @@ protected:
     std::vector<ConicGlyph *> m_glyphs;
     boost::object_pool<ConicGlyph> glyph_pool;
 };
+
+#endif

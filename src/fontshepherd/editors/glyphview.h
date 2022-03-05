@@ -100,7 +100,7 @@ class GlyphScene : public QGraphicsScene {
     Q_OBJECT;
 
 public:
-    GlyphScene (sFont &fnt, GlyphContext &gctx, uint8_t gtype, QObject *parent = nullptr);
+    GlyphScene (sFont &fnt, GlyphContext &gctx, OutlinesType gtype, QObject *parent = nullptr);
 
     void drawBackground (QPainter *painter, const QRectF &exposed);
     void drawForeground (QPainter *painter, const QRectF &exposed);
@@ -127,15 +127,15 @@ public:
     void setActiveTool (GVPaletteTool active);
     GVPaletteTool activeTool ();
 
-    void switchOutlines (uint8_t val);
-    uint8_t outlinesType ();
+    void switchOutlines (OutlinesType val);
+    OutlinesType outlinesType ();
 
 signals:
     void mousePointerMoved (QPointF pos);
     void panelAdded (QGraphicsItem *item, const int pos);
     void panelRemoved (const int pos);
     void panelsSwapped (const int pos1, const int pos2);
-    void glyphRedrawn (uint8_t otype, int pidx);
+    void glyphRedrawn (OutlinesType otype, int pidx);
     void figurePropsChanged (QGraphicsItem *panel, const int pidx);
     void activePanelChanged (const int pos);
 
@@ -157,7 +157,7 @@ private:
 
     sFont &m_font;
     GlyphContext &m_context;
-    uint8_t m_outlines_type;
+    OutlinesType m_outlines_type;
     bool m_dragValid;
     QGraphicsItem *m_grabber;
     bool m_hasChanges;
@@ -203,7 +203,7 @@ public:
     void updatePoints ();
     void updateFill ();
     void switchOutlines (OutlinesType val);
-    uint8_t outlinesType ();
+    OutlinesType outlinesType ();
 
     void doCopyClear (bool copy, bool clear);
     void doPaste ();
@@ -233,7 +233,7 @@ private slots:
     void onAddFigure (QGraphicsItem *item, const int pos);
     void onRemoveFigure (const int pos);
     void onSwapPanels (const int pos1, const int pos2);
-    void glyphRedrawn (uint8_t otype, const int pidx);
+    void glyphRedrawn (OutlinesType otype, const int pidx);
     void figurePropsChanged (QGraphicsItem *panel, const int pidx);
     void onFigurePaletteUpdate (const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
     void setActiveFigure (const QItemSelection &selected, const QItemSelection &deselected);
@@ -262,11 +262,11 @@ public:
     GlyphViewContainer (FontView *fv, sFont &font, GlyphContainer *tab);
     ~GlyphViewContainer ();
 
-    void addGlyph (GlyphContext &gctx, uint8_t content_type);
+    void addGlyph (GlyphContext &gctx, OutlinesType content_type);
     void closeEvent (QCloseEvent *event);
     bool hasGlyph (const uint16_t gid) const;
     int glyphTabIndex (const uint16_t gid) const;
-    void switchToGlyph (const uint16_t gid, uint8_t ctype);
+    void switchToGlyph (const uint16_t gid, OutlinesType ctype);
 
     static bool showPoints ();
     static bool showControlPoints ();

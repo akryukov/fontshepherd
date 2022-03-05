@@ -44,7 +44,7 @@ typedef struct unique_point {
 } UniquePoint;
 
 typedef struct unique_figure {
-    FigureType type;
+    ElementType type;
     std::map<std::string, double> props;
     SvgState state;
     std::array<double, 6> transform;
@@ -79,7 +79,7 @@ class ConicGlyph;
 class MoveCommand : public QUndoCommand {
 
 public:
-    MoveCommand (QPointF move, GlyphContext &gctx, uint8_t gtype, QUndoCommand *parent=nullptr);
+    MoveCommand (QPointF move, GlyphContext &gctx, OutlinesType gtype, QUndoCommand *parent=nullptr);
 
     void appendOffCurvePoint (QPointF cp, int base_idx, int next_idx, bool is_next);
     void appendOnCurvePoint (QPointF pt, int base_idx, int next_idx);
@@ -102,7 +102,7 @@ private:
 
     QPointF m_move;
     GlyphContext &m_context;
-    uint8_t m_outlines_type;
+    OutlinesType m_outlines_type;
     ConicGlyph *m_glyph;
     bool m_undone;
 
@@ -117,14 +117,14 @@ private:
 class FigurePropsChangeCommand : public QUndoCommand {
 
 public:
-    FigurePropsChangeCommand (GlyphContext &ctx, uint8_t otype, SvgState &newstate, int pos, QUndoCommand *parent=nullptr);
+    FigurePropsChangeCommand (GlyphContext &ctx, OutlinesType otype, SvgState &newstate, int pos, QUndoCommand *parent=nullptr);
 
     void undo ();
     void redo ();
 
 private:
     GlyphContext &m_context;
-    uint8_t m_outlinesType;
+    OutlinesType m_outlinesType;
     DrawableFigure *m_figptr;
     SvgState m_undoState, m_redoState;
     int m_idx;
@@ -136,7 +136,7 @@ private:
 class GlyphChangeCommand : public QUndoCommand {
 
 public:
-    GlyphChangeCommand (GlyphContext &ctx, uint8_t gtype, QUndoCommand *parent=nullptr);
+    GlyphChangeCommand (GlyphContext &ctx, OutlinesType gtype, QUndoCommand *parent=nullptr);
 
     void undo ();
     void redo ();
@@ -146,7 +146,7 @@ public:
 
 private:
     GlyphContext &m_context;
-    uint8_t m_outlines_type;
+    OutlinesType m_outlines_type;
     bool m_undone;
     std::string undo_svg, redo_svg;
 };

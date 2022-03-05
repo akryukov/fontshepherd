@@ -216,10 +216,17 @@ void sfntFile::getGlyphCnt (sFont *tf) {
 
 void sfntFile::getEmSize (sFont *tf) {
     HeadTable *head = dynamic_cast<HeadTable *> (tf->table (CHR ('h','e','a','d')));
+    HeaTable *hhea = dynamic_cast<HeaTable *> (tf->table (CHR ('h','h','e','a')));
     head->unpackData (tf);
     tf->units_per_em = head->unitsPerEm ();
     tf->descent = head->yMin ();
     tf->ascent = head->yMax ();
+    // Just for the case the ascent field is not properly filled in the head table...
+    if (!tf->ascent && hhea) {
+	tf->ascent = hhea->ascent ();
+	if (tf->units_per_em > tf->ascent)
+	    tf->descent = tf->units_per_em - tf->ascent;
+    }
 }
 
 std::shared_ptr<FontTable> sfntFile::readTableHead (QFile *f, QDataStream *s, int file_idx) {

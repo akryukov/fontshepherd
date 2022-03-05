@@ -32,23 +32,30 @@
 #include <limits>
 #include <QtSvg>
 
-#include "fs_notify.h"
-#include "fs_math.h"
-
 #include "sfnt.h"
 #include "fontview.h"
-#include "splineglyph.h"
+// also includes splineglyph.h
+#include "tables/colr.h"
 #include "glyphview.h"
 #include "glyphcontext.h"
+
+#include "fs_notify.h"
+#include "fs_math.h"
 #include "fs_undo.h"
 
 GlyphContext::GlyphContext (uint16_t gid, GlyphNameProvider &gnp, std::deque<GlyphContext> &glyphs) :
-    awItem (nullptr), m_gnp (gnp), m_fv_type (0), m_gid (gid), m_glyphSet (glyphs), m_scene (nullptr) {
+    awItem (nullptr),
+    m_gnp (gnp),
+    m_fv_type (OutlinesType::NONE),
+    m_gid (gid),
+    m_palette (nullptr),
+    m_glyphSet (glyphs),
+    m_scene (nullptr) {
 
     m_fv_size = 72;
     m_name = QString::fromStdString (m_gnp.nameByGid (m_gid));
     m_pixmap = QPixmap ();
-    m_tt_glyph = m_ps_glyph = m_svg_glyph = nullptr;
+    m_tt_glyph = m_ps_glyph = m_svg_glyph = m_colr_glyph = nullptr;
 
     m_fvUndoGroup = std::unique_ptr<NonExclusiveUndoGroup> (new NonExclusiveUndoGroup ());
     m_gvUndoGroup = std::unique_ptr<NonExclusiveUndoGroup> (new NonExclusiveUndoGroup ());
@@ -59,15 +66,25 @@ GlyphContext::~GlyphContext () {
     deleteScene ();
 }
 
-void GlyphContext::setGlyph (uint8_t gtype, ConicGlyph *g) {
+void GlyphContext::setGlyph (OutlinesType gtype, ConicGlyph *g) {
     if (m_gid == -1 && g)
         m_gid = g->gid ();
-    if (gtype & (uint8_t) OutlinesType::TT)
+    switch (gtype) {
+      case OutlinesType::TT:
         m_tt_glyph = g;
-    else if (gtype & (uint8_t) OutlinesType::PS)
+	break;
+      case OutlinesType::PS:
         m_ps_glyph = g;
-    else if (gtype & (uint8_t) OutlinesType::SVG)
+	break;
+      case OutlinesType::SVG:
         m_svg_glyph = g;
+	break;
+      case OutlinesType::COLR:
+        m_colr_glyph = g;
+	break;
+      default:
+	;
+    }
     if (g) {
 	m_fvUndoGroup->addStack (g->undoStack ());
 	m_gvUndoGroup->addStack (g->undoStack ());
@@ -80,22 +97,26 @@ void GlyphContext::clearSvgGlyph () {
 	m_gvUndoGroup->removeStack (m_svg_glyph->undoStack ());
 	m_svg_glyph = nullptr;
     }
-    if (m_fv_type & (uint8_t) OutlinesType::SVG)
+    if (m_fv_type == OutlinesType::SVG)
 	render (m_fv_type, m_fv_size);
 }
 
-bool GlyphContext::hasOutlinesType (uint8_t gtype) {
-    if (gtype & (uint8_t) OutlinesType::TT)
+bool GlyphContext::hasOutlinesType (OutlinesType gtype) {
+    switch (gtype) {
+      case OutlinesType::TT:
         return (m_tt_glyph != nullptr);
-    else if (gtype & (uint8_t) OutlinesType::PS)
+      case OutlinesType::PS:
         return (m_ps_glyph != nullptr);
-    else if (gtype & (uint8_t) OutlinesType::SVG)
+      case OutlinesType::SVG:
         return (m_svg_glyph != nullptr);
-    else
+      case OutlinesType::COLR:
+        return (m_colr_glyph != nullptr);
+      default:
         return false;
+    }
 }
 
-void GlyphContext::switchOutlinesType (uint8_t gtype, bool gv) {
+void GlyphContext::switchOutlinesType (OutlinesType gtype, bool gv) {
     NonExclusiveUndoGroup *ug = gv ? m_gvUndoGroup.get () : m_fvUndoGroup.get ();
     if (!gv) m_fv_type = gtype;
     m_pixmap = QPixmap ();
@@ -110,15 +131,19 @@ void GlyphContext::setFontViewSize (uint16_t size) {
     m_fv_size = size;
 }
 
-ConicGlyph* GlyphContext::glyph (uint8_t gtype) {
-    if (gtype & (uint8_t) OutlinesType::TT)
+ConicGlyph* GlyphContext::glyph (OutlinesType gtype) {
+    switch (gtype) {
+      case OutlinesType::TT:
         return (m_tt_glyph);
-    else if (gtype & (uint8_t) OutlinesType::PS)
+      case OutlinesType::PS:
         return (m_ps_glyph);
-    else if (gtype & (uint8_t) OutlinesType::SVG)
+      case OutlinesType::SVG:
         return (m_svg_glyph);
-    else
+      case OutlinesType::COLR:
+        return (m_colr_glyph);
+      default:
         return (nullptr);
+    }
 }
 
 int GlyphContext::gid () {
@@ -131,6 +156,10 @@ QString GlyphContext::name () {
 
 void GlyphContext::setName (const std::string &name) {
     m_name = QString::fromStdString (name);
+}
+
+void GlyphContext::providePalette (cpal_palette *palette) {
+    m_palette = palette;
 }
 
 QPixmap& GlyphContext::pixmap () {
@@ -147,19 +176,22 @@ void GlyphContext::addCell (GlyphBox *gb) {
     m_cells.push_back (gb);
 }
 
-bool GlyphContext::resolveRefs (uint8_t gtype) {
+bool GlyphContext::resolveRefs (OutlinesType gtype) {
     static bool seac_warned = false;
     ConicGlyph *g = glyph (gtype);
     if (!g) return false;
-    std::vector<uint16_t> refs = g->refersTo ();
-    uint16_t i, cnt=0;
+    uint16_t cnt=0;
 
-    if (!refs.empty ()) {
-        for (i=0; i<refs.size (); i++)
-            g->provideRef (m_glyphSet[refs[i]].glyph (gtype), cnt++);
+    if (!g->refs.empty ()) {
+        for (auto &ref : g->refs) {
+	    if (ref.outType == OutlinesType::NONE && hasOutlinesType (OutlinesType::COLR))
+		ref.outType = hasOutlinesType (OutlinesType::TT) ?
+		    OutlinesType::TT : OutlinesType::PS;
+            g->provideRef (m_glyphSet[ref.GID].glyph (ref.outType), cnt++);
+	}
         if (g->checkRefs (g->gid (), m_glyphSet.size ()) != 0)
             return false;
-	if (gtype & (uint8_t) OutlinesType::PS) {
+	if (gtype == OutlinesType::PS) {
 	    if (!seac_warned) {
 		FontShepherd::postWarning (
 		    tr ("Deprecated CFF operator"),
@@ -174,8 +206,8 @@ bool GlyphContext::resolveRefs (uint8_t gtype) {
 	    g->checkBounds (g->bb, false);
 	    g->setModified (true);
 	} else {
-	    for (i=0; i<refs.size (); i++)
-		m_glyphSet[refs[i]].addDependent (g->gid ());
+	    for (auto &ref : g->refs)
+		m_glyphSet[ref.GID].addDependent (g->gid ());
 	    g->finalizeRefs ();
 	    g->checkBounds (g->bb, false);
 	}
@@ -183,14 +215,15 @@ bool GlyphContext::resolveRefs (uint8_t gtype) {
     return true;
 }
 
-void GlyphContext::update (uint8_t gtype) {
+void GlyphContext::update (OutlinesType gtype) {
     uint16_t i;
     for (i=0; i<m_cells.size (); i++)
         m_cells[i]->update ();
     for (uint16_t gid: m_dependent) {
         GlyphContext &depctx = m_glyphSet[gid];
+	ConicGlyph *g = depctx.glyph (gtype);
         depctx.render (gtype, m_fv_size);
-        depctx.drawGlyph (depctx.glyph (gtype));
+        depctx.drawGlyph (g, g->gradients);
         depctx.update (gtype);
     }
 }
@@ -268,12 +301,16 @@ static void drawPoints (DrawableFigure &fig, QGraphicsPathItem *path, bool is_re
     }
 }
 
-QBrush GlyphContext::figureBrush (const SvgState &state, std::map<std::string, Gradient> &gradients, bool fill) {
+QBrush GlyphContext::figureBrush (const SvgState &state, cpal_palette *pal, std::map<std::string, Gradient> &gradients, bool fill) {
     QBrush ret = QBrush ();
     const std::string &source_id = fill ? state.fill_source_id : state.stroke_source_id;
-    auto &rgba = fill ? state.fill : state.stroke;
+    const bool color_set = fill ? state.fill_set : state.stroke_set;
+    const uint16_t color_idx = fill ? state.fill_idx : state.stroke_idx;
 
     if (source_id.empty ()) {
+	auto &rgba = color_set && pal && color_idx < 0xFFFF ?
+	    pal->color_records[color_idx] :
+	    fill ? state.fill : state.stroke;
         ret.setStyle (Qt::SolidPattern);
         ret.setColor (QColor (
             rgba.red, rgba.green, rgba.blue, rgba.alpha));
@@ -281,27 +318,58 @@ QBrush GlyphContext::figureBrush (const SvgState &state, std::map<std::string, G
         QGradient qgrad;
         Gradient &grad = gradients[source_id];
         QGradientStops stops;
-        uint16_t i;
 
-        if (grad.is_linear) {
+	// CoordinateMode actually seems to have no significant effect, as
+	// we have to specify such parameters as Start/FinalStop/Center
+	// in logical object coordinates anyway. How odd...
+	qgrad.setCoordinateMode (QGradient::ObjectMode);
+        if (grad.type == GradientType::LINEAR) {
             qgrad = QLinearGradient ();
-	    qgrad.setCoordinateMode (QGradient::ObjectMode);
-            QLinearGradient &lg = (QLinearGradient &) qgrad;
-            lg.setStart (grad.props["x1"], grad.props["y1"]);
-            lg.setFinalStop (grad.props["x2"], grad.props["y2"]);
-        } else {
+            QLinearGradient &lg = static_cast<QLinearGradient &> (qgrad);
+	    double x1, x2, y1, y2;
+	    if (grad.units == GradientUnits::userSpaceOnUse) {
+		x1 = grad.props["x1"] - grad.bbox.minx;
+		x2 = grad.props["x2"] - grad.bbox.minx;
+		y1 = grad.bbox.maxy - grad.props["y1"];
+		y2 = grad.bbox.maxy - grad.props["y2"];
+	    } else {
+		x1 = grad.props["x1"] * (grad.bbox.maxx - grad.bbox.minx);
+		x2 = grad.props["x2"] * (grad.bbox.maxx - grad.bbox.minx);
+		y2 = grad.props["y1"] * (grad.bbox.miny - grad.bbox.maxy);
+		y1 = grad.props["y2"] * (grad.bbox.miny - grad.bbox.maxy);
+	    }
+            lg.setStart (x1, y1);
+            lg.setFinalStop (x2, y2);
+        } else if (grad.type == GradientType::RADIAL) {
             qgrad = QRadialGradient ();
-	    qgrad.setCoordinateMode (QGradient::ObjectMode);
-            QRadialGradient &rg = (QRadialGradient &) qgrad;
-            rg.setCenter (grad.props["cx"], grad.props["cy"]);
-            rg.setFocalPoint (grad.props["fx"], grad.props["fy"]);
-            rg.setRadius (grad.props["radius"]);
+            QRadialGradient &rg = static_cast<QRadialGradient &> (qgrad);
+	    double cx, cy, fx, fy;
+	    if (grad.units == GradientUnits::userSpaceOnUse) {
+		cx = grad.props["cx"] - grad.bbox.minx;
+		cy = grad.bbox.maxy - grad.props["cy"];
+	    } else {
+		cx = grad.props["cx"] * (grad.bbox.maxx - grad.bbox.minx);
+		cy = grad.props["cy"] * (grad.bbox.miny - grad.bbox.maxy);
+	    }
+            rg.setCenter (cx, cy);
+	    if (grad.props.count ("fx")) {
+		if (grad.units == GradientUnits::userSpaceOnUse) {
+		    fx = grad.props["fx"] - grad.bbox.minx;
+		    fy = grad.bbox.maxy - grad.props["fy"];
+		} else {
+		    fx = grad.props["fx"] * (grad.bbox.maxx - grad.bbox.minx);
+		    fy = grad.props["fy"] * (grad.bbox.miny - grad.bbox.maxy);
+		}
+		rg.setFocalPoint (fx, fy);
+	    }
+            rg.setRadius (grad.props["r"]);
         }
         qgrad.setSpread (
-            grad.sm == sm_pad ? QGradient::PadSpread :
-            grad.sm == sm_reflect ? QGradient::RepeatSpread : QGradient::ReflectSpread);
-        for (i=0; i<grad.stops.size (); i++) {
-            struct gradient_stop &st = grad.stops[i];
+            grad.sm == GradientExtend::EXTEND_PAD ? QGradient::PadSpread :
+		grad.sm == GradientExtend::EXTEND_REFLECT ?
+		QGradient::RepeatSpread : QGradient::ReflectSpread
+	);
+        for (auto &st : grad.stops) {
             QGradientStop qst = QPair<double, QColor> (st.offset, QColor (
                 st.color.red, st.color.green, st.color.blue, st.color.alpha));
             stops.append (qst);
@@ -347,9 +415,11 @@ GlyphScene* GlyphContext::scene () const {
     return m_scene;
 }
 
-void GlyphContext::drawGlyph (ConicGlyph *gref, RefItem *group) {
+void GlyphContext::drawGlyph (ConicGlyph *gref, std::map<std::string, Gradient> &gradients, RefItem *group) {
+    QGraphicsPathItem *item;
     if (!m_scene)
         return;
+    SvgState gstate = group ? group->ref ().svgState : SvgState ();
 
     // If group is specified, then the function has been called
     // recursively. Otherwise clear the scene before drawing a glyph.
@@ -357,10 +427,11 @@ void GlyphContext::drawGlyph (ConicGlyph *gref, RefItem *group) {
 	clearScene ();
 
     for (auto &fig : gref->figures) {
-	FigureType ftype = fig.svgFigureType ();
-        if (ftype == FigureType::Circle || ftype == FigureType::Ellipse || ftype == FigureType::Rect) {
+	ElementType ftype = fig.elementType ();
+	SvgState figstate = gstate + fig.svgState;
+        if (ftype == ElementType::Circle || ftype == ElementType::Ellipse || ftype == ElementType::Rect) {
 	    QAbstractGraphicsShapeItem *item;
-	    if (ftype == FigureType::Rect)
+	    if (ftype == ElementType::Rect)
 		item = new FigureRectItem (fig);
 	    else
 		item = new FigureEllipseItem (fig);
@@ -370,41 +441,38 @@ void GlyphContext::drawGlyph (ConicGlyph *gref, RefItem *group) {
             } else {
                 group->addToGroup (item);
 	    }
-            if (fig.state.fill_set && GlyphViewContainer::showFill ()) {
-                QBrush brush = figureBrush (fig.state, gref->gradients);
-                item->setBrush (brush);
-            } else if (GlyphViewContainer::showFill ())
-                item->setBrush (QColor (0x80, 0x70, 0x70, 0x70));
         } else if (/*fig.type.compare ("path") == 0*/ !fig.contours.empty ()) {
             QPainterPath path;
             drawPath (fig, path);
-	    QGraphicsPathItem *item = new FigurePathItem (path, fig);
+	    item = new FigurePathItem (path, fig);
             if (!group) {
 		item->setParentItem (m_topItem);
 		m_scene->setActivePanel (item);
             } else {
                 group->addToGroup (item);
 	    }
-            QPen pen = figurePenProps (fig.state, 0);
+            QPen pen = figurePenProps (figstate, 0);
             item->setPen (pen);
-            if (fig.state.fill_set && GlyphViewContainer::showFill ()) {
-                QBrush brush = figureBrush (fig.state, gref->gradients);
-                item->setBrush (brush);
-            } else if (GlyphViewContainer::showFill ())
-                item->setBrush (QColor (0x80, 0x70, 0x70, 0x70));
-            drawPoints (fig, item, group != nullptr);
         }
+        if (figstate.fill_set && GlyphViewContainer::showFill ()) {
+            QBrush brush = figureBrush (figstate, m_palette, gradients);
+            item->setBrush (brush);
+        } else if (GlyphViewContainer::showFill ())
+            item->setBrush (QColor (0x80, 0x70, 0x70, 0x70));
+	// Will have no effect for ellipses and rects, where there is no contours
+	drawPoints (fig, item, group != nullptr);
     }
     if (!gref->figures.empty () && !group)
 	updatePoints ();
     for (size_t i=0; i<gref->refs.size (); i++) {
-        RefGlyph &ref = gref->refs[i];
+        DrawableReference &ref = gref->refs[i];
         RefItem *g = new RefItem (ref, i, m_gnp.nameByGid (ref.GID));
         QTransform reftrans (
             ref.transform[0], ref.transform[1], ref.transform[2],
             ref.transform[3], ref.transform[4], ref.transform[5]
         );
-        drawGlyph (ref.cc, g);
+        drawGlyph (ref.cc, gref->gradients, g);
+
         if (group) {
             for (QGraphicsItem *item: g->childItems ()) {
                 if (!(item->flags () & QGraphicsItem::ItemHasNoContents)) {
@@ -438,54 +506,61 @@ void GlyphContext::updatePoints () {
     }
 }
 
+void GlyphContext::colorizeFigure (QGraphicsItem *item, SvgState state) {
+    ConicGlyph *scene_glyph = glyph (m_scene->outlinesType ());
+    FigureItem *figItem = dynamic_cast<FigureItem *> (item);
+    if (figItem) {
+	DrawableFigure &fig = figItem->svgFigure ();
+	SvgState newstate = state + fig.svgState;
+	QAbstractGraphicsShapeItem *shape =
+	    qgraphicsitem_cast<QAbstractGraphicsShapeItem  *> (item);
+	QPen pen = figurePenProps (newstate, 0);
+	shape->setPen (pen);
+	if (newstate.fill_set && GlyphViewContainer::showFill ()) {
+	    QBrush brush = figureBrush (newstate, m_palette, scene_glyph->gradients);
+	    shape->setBrush (brush);
+	} else if (GlyphViewContainer::showFill ())
+	    shape->setBrush (QColor (0x80, 0x70, 0x70, 0x70));
+	else
+	    shape->setBrush (QBrush ());
+    }
+}
+
 void GlyphContext::updateFill () {
     QList<QGraphicsItem *> items = m_scene->items ();
     ConicGlyph *scene_glyph = glyph (m_scene->outlinesType ());
     if (!scene_glyph) return;
 
-    for (QGraphicsItem *item: items) {
-	if (item->isPanel ()) {
-	    FigureItem *figItem = dynamic_cast<FigureItem *> (item);
-	    QAbstractGraphicsShapeItem *shape =
-		qgraphicsitem_cast<QAbstractGraphicsShapeItem  *> (item);
-	    if (figItem) {
-		DrawableFigure &fig = figItem->svgFigure ();
-		QPen pen = figurePenProps (fig.state, 0);
-		shape->setPen (pen);
-		if (fig.state.fill_set && GlyphViewContainer::showFill ()) {
-		    QBrush brush = figureBrush (fig.state, scene_glyph->gradients);
-		    shape->setBrush (brush);
-		} else if (GlyphViewContainer::showFill ())
-		    shape->setBrush (QColor (0x80, 0x70, 0x70, 0x70));
-		else
-		    shape->setBrush (QBrush ());
+    for (QGraphicsItem *item : m_topItem->childItems ()) {
+	if (item->type () == RefItem::Type) {
+	    for (QGraphicsItem *child : item->childItems ()) {
+		if (child->isPanel ())
+		    colorizeFigure (child, SvgState ());
 	    }
+	} else if (item->isPanel ()) {
+	    colorizeFigure (item, SvgState ());
 	}
     }
 }
 
-void GlyphContext::renderGlyph (
-    ConicGlyph *gref, QTransform trans, QPainter &painter, struct rgba_color *palette) {
-    uint16_t i;
-
+void GlyphContext::renderGlyph
+    (ConicGlyph *gref, QTransform trans, SvgState &state, std::map<std::string, Gradient> &gradients, QPainter &painter) {
     for (auto &fig : gref->figures) {
-        QPen pen = figurePenProps (fig.state, 1);
+	SvgState newstate = state + fig.svgState;
+        QPen pen = figurePenProps (newstate, 1);
         QBrush brush = QBrush (QColor (Qt::black));
 
-        if (fig.state.fill_set)
-            brush = figureBrush (fig.state, gref->gradients);
-        else if (palette)
-            brush.setColor (QColor (
-                palette->red, palette->green, palette->blue, palette->alpha));
+	if (newstate.fill_set)
+            brush = figureBrush (newstate, m_palette, gradients);
 
-	FigureType ftype = fig.svgFigureType ();
-        if (ftype == FigureType::Circle || ftype == FigureType::Ellipse) {
+	ElementType ftype = fig.elementType ();
+        if (ftype == ElementType::Circle || ftype == ElementType::Ellipse) {
             painter.setPen (pen);
             painter.setBrush (brush);
 	    double x, y;
 	    trans.map (fig.props["cx"], fig.props["cy"], &x, &y);
             painter.drawEllipse (QPointF (x, y), fig.props["rx"], fig.props["ry"]);
-	} else if (ftype == FigureType::Rect) {
+	} else if (ftype == ElementType::Rect) {
             painter.setPen (pen);
             painter.setBrush (brush);
 	    double x, y;
@@ -500,14 +575,17 @@ void GlyphContext::renderGlyph (
             painter.drawPath (tpath);
         }
     }
-    for (i=0; i<gref->refs.size (); i++) {
-        RefGlyph &ref = gref->refs[i];
+    for (auto &ref : gref->refs) {
+	SvgState newstate = state + ref.svgState;
+	// May occasionally get zero GIDs in glyphs generated from the COLR table
+	if (ref.GID == 0)
+	    continue;
         QTransform reftrans (
             ref.transform[0], ref.transform[1], ref.transform[2],
             ref.transform[3], ref.transform[4], ref.transform[5]
         );
         assert (ref.cc);
-        renderGlyph (ref.cc, reftrans*trans, painter, palette);
+        renderGlyph (ref.cc, reftrans*trans, newstate, gref->gradients, painter);
     }
 }
 
@@ -520,24 +598,19 @@ void GlyphContext::renderNoGlyph (uint16_t size) {
     p.drawLine (0,size, size,0);
 }
 
-void GlyphContext::render (uint8_t gtype, uint16_t size) {
-    uint16_t i;
+void GlyphContext::render (OutlinesType gtype, uint16_t size) {
     m_fv_size = size;
     QPainter p;
     QImage canvas (size, size, QImage::Format_ARGB32_Premultiplied);
     ConicGlyph *fv_glyph = glyph (m_fv_type);
 
     // Return if the requested outlines type is not the one displayed in fontview
-    if (!fv_glyph || !(gtype & m_fv_type)) {
+    if (!fv_glyph || gtype != m_fv_type) {
 	renderNoGlyph (size);
         return;
     }
 
-    bool do_colors = ((gtype & (uint8_t) OutlinesType::COLR) && fv_glyph->clayers.size () > 0);
-
     float scale = ((float) m_fv_size)/(fv_glyph->m_ascent-fv_glyph->m_descent);
-    float minx = std::numeric_limits<float>::max ();
-    float maxx = std::numeric_limits<float>::min ();
 
     // NB: may draw directly on a pixmap (which probably would take less time),
     // but converting from an image seems to be the only method to replace
@@ -549,104 +622,26 @@ void GlyphContext::render (uint8_t gtype, uint16_t size) {
     p.setRenderHints (
         QPainter::SmoothPixmapTransform | QPainter::Antialiasing | QPainter::HighQualityAntialiasing);
 
-    if (do_colors) {
-        // check common bounding box for all layers
-        for (i=0; i<fv_glyph->clayers.size (); i++) {
-            ConicGlyph *clg = fv_glyph->clayers[i].glyph;
-            if (clg->bb.minx < minx) minx = clg->bb.minx;
-            if (clg->bb.maxx > maxx) maxx = clg->bb.maxx;
-        }
-    }
+    float xshift, yshift;
+    ConicGlyph *g = fv_glyph;
 
-    for (i=0; i<(do_colors ? fv_glyph->clayers.size () : 1); i++) {
-        float xshift, yshift;
-        ConicGlyph *clg = do_colors ? fv_glyph->clayers[i].glyph : fv_glyph;
-        struct rgba_color *palette = nullptr;
+    xshift = ((g->m_ascent-g->m_descent) - (g->bb.maxx-g->bb.minx))/2 - g->bb.minx;
+    yshift = -g->m_ascent;
+    QTransform trans = QTransform (1, 0, 0, 1, xshift, yshift);
+    SvgState state;
+    renderGlyph (g, trans, state, g->gradients, p);
 
-        if (do_colors) {
-            if (!fv_glyph->clayers[i].std_color)
-                palette = &fv_glyph->clayers[i].palette;
-            xshift = ((clg->m_ascent-clg->m_descent) - (maxx-minx))/2 + (clg->bb.minx - minx) - clg->bb.minx;
-        } else
-            xshift = ((clg->m_ascent-clg->m_descent) - (clg->bb.maxx-clg->bb.minx))/2 - clg->bb.minx;
-        yshift = -clg->m_ascent;
-        QTransform trans = QTransform (1, 0, 0, 1, xshift, yshift);
-        renderGlyph (clg, trans, p, palette);
-    }
     p.end ();
     m_pixmap.convertFromImage (canvas);
 }
 
-void GlyphContext::render (uint8_t gtype) {
+void GlyphContext::render (OutlinesType gtype) {
     render (gtype, m_fv_size);
 }
 
 void GlyphContext::render () {
     render (m_fv_type, m_fv_size);
 }
-
-#if 0
-void GlyphContext::svgRender (uint16_t size) {
-    QSvgRenderer renderer;
-    QGraphicsSvgItem svg_glyph;
-    const char *svg_doc;
-    QStyleOptionGraphicsItem option = QStyleOptionGraphicsItem ();
-    uint16_t i;
-
-    if (m_glyph == nullptr) return;
-    bool has_colr = (m_glyph->clayers.size () > 0);
-    m_fv_size = size;
-
-    QImage canv (size, size, QImage::Format_ARGB32_Premultiplied);
-    QPainter p;
-    float scale = ((float) size)/(m_glyph->m_ascent-m_glyph->m_descent);
-    float minx = std::numeric_limits<float>::max ();
-    float maxx = std::numeric_limits<float>::min ();
-
-    canv.fill (qRgba (0, 0, 0, 0));
-    p.begin (&canv);
-    p.scale (scale, scale);
-
-    if (has_colr) {
-        // check common bounding box for all layers
-        for (i=0; i<m_glyph->clayers.size (); i++) {
-            ConicGlyph *g = m_glyph->clayers[i].glyph;
-            if (g->bb.minx < minx) minx = g->bb.minx;
-            if (g->bb.maxx > maxx) maxx = g->bb.maxx;
-        }
-    }
-
-    for (i=0; i<(has_colr ? m_glyph->clayers.size () : 1); i++) {
-        float xshift, yshift;
-        ConicGlyph *g = has_colr ? m_glyph->clayers[i].glyph : m_glyph;
-        struct rgba_color *palette = nullptr;
-
-        if (has_colr) {
-            if (!m_glyph->clayers[i].std_color)
-                palette = &m_glyph->clayers[i].palette;
-            xshift = ((g->m_ascent-g->m_descent) - (maxx-minx))/2 + (g->bb.minx - minx);
-        } else
-            xshift = ((g->m_ascent-g->m_descent) - (g->bb.maxx-g->bb.minx))/2;
-
-        std::string svg_str = g->toSVG (palette, false);
-        svg_doc = svg_str.c_str ();
-
-        yshift = (g->m_ascent - g->bb.maxy);
-
-        QByteArray ba = QByteArray (svg_doc);
-        renderer.load (ba);
-        svg_glyph.setSharedRenderer (&renderer);
-        svg_glyph.setElementId (QString ("glyph%1").arg (g->gid ()));
-
-        p.translate (xshift, yshift);
-        svg_glyph.paint (&p, &option);
-        p.translate (-xshift, -yshift);
-    }
-    p.end ();
-
-    m_pixmap.convertFromImage (canv);
-}
-#endif
 
 void GlyphContext::checkSelected () {
     for (auto *item : m_scene->items ()) {
@@ -692,7 +687,7 @@ void GlyphContext::selectPointContour (ConicPointItem *ptItem) {
 bool GlyphContext::clearSelected (bool merge) {
     QList<QGraphicsItem *> sellist = m_scene->selectedItems ();
     QList<QGraphicsItem *> removable;
-    uint8_t gtype = m_scene->outlinesType ();
+    OutlinesType gtype = m_scene->outlinesType ();
     ConicGlyph *scene_glyph = glyph (m_scene->outlinesType ());
     bool changed = false;
     if (!scene_glyph) return false;
@@ -773,9 +768,10 @@ bool GlyphContext::clearSelected (bool merge) {
 	    if (ref.selected) {
 		uint16_t gid = ref.GID;
 		GlyphContext &depctx = m_glyphSet[gid];
+		ConicGlyph *g = depctx.glyph (gtype);
 		depctx.removeDependent (scene_glyph->gid ());
 		depctx.render (gtype, m_fv_size);
-		depctx.drawGlyph (depctx.glyph (gtype));
+		depctx.drawGlyph (g, g->gradients);
 		depctx.update (gtype);
 		it = scene_glyph->refs.erase (it);
 	    } else
@@ -917,7 +913,7 @@ OnCurvePointItem* GlyphContext::addPoint (QPointF &pos, enum pointtype ptype) {
 	scene_glyph->figures.emplace_back ();
 	auto &fig = scene_glyph->figures.back ();
 	fig.type = "path";
-	fig.order2 = (m_scene->outlinesType () & (uint8_t) OutlinesType::TT);
+	fig.order2 = (m_scene->outlinesType () == OutlinesType::TT);
 
         pathItem = new FigurePathItem (fig);
 	pathItem->setParentItem (m_topItem);
@@ -1147,7 +1143,7 @@ bool GlyphContext::unlinkSelectedRefs () {
         GlyphContext &depctx = m_glyphSet[refgid];
         depctx.removeDependent (m_gid);
     }
-    drawGlyph (scene_glyph);
+    drawGlyph (scene_glyph, scene_glyph->gradients);
     return true;
 }
 
@@ -1160,6 +1156,8 @@ void GlyphContext::setAdvanceWidth (int pos) {
 	m_ps_glyph->setAdvanceWidth (pos);
     if (m_svg_glyph)
 	m_svg_glyph->setAdvanceWidth (pos);
+    if (m_colr_glyph)
+	m_colr_glyph->setAdvanceWidth (pos);
 }
 
 bool GlyphContext::removeFigure (int pos) {
@@ -1233,7 +1231,7 @@ void GlyphContext::addEllipse (const QRectF &rect) {
 	fig.type = "ellipse";
     fig.order2 = false;
 
-    if (m_scene->outlinesType () & (uint8_t) OutlinesType::SVG) {
+    if (m_scene->outlinesType () == OutlinesType::SVG) {
 	QAbstractGraphicsShapeItem *item = new FigureEllipseItem (fig);
     	item->setParentItem (m_topItem);
     	m_scene->setActivePanel (item);
@@ -1242,7 +1240,7 @@ void GlyphContext::addEllipse (const QRectF &rect) {
 	scene_glyph->svgParseEllipse (fig);
 	fig.type = "path";
 
-	if (m_scene->outlinesType () & (uint8_t) OutlinesType::TT) {
+	if (m_scene->outlinesType () == OutlinesType::TT) {
 	    fig.toQuadratic (scene_glyph->upm () / 1000);
 	    fig.order2 = true;
 	}
@@ -1284,7 +1282,7 @@ void GlyphContext::addRect (const QRectF &rect) {
     fig.type = "rect";
     fig.order2 = false;
 
-    if (m_scene->outlinesType () & (uint8_t) OutlinesType::SVG) {
+    if (m_scene->outlinesType () == OutlinesType::SVG) {
 	QAbstractGraphicsShapeItem *item = new FigureRectItem (fig);
     	item->setParentItem (m_topItem);
     	m_scene->setActivePanel (item);
@@ -1293,7 +1291,7 @@ void GlyphContext::addRect (const QRectF &rect) {
 	scene_glyph->svgParseRect (fig);
 	fig.type = "path";
 
-	if (m_scene->outlinesType () & (uint8_t) OutlinesType::TT) {
+	if (m_scene->outlinesType () == OutlinesType::TT) {
 	    fig.toQuadratic (scene_glyph->upm () / 1000);
 	    fig.order2 = true;
 	}
@@ -1964,7 +1962,7 @@ FigureEllipseItem::FigureEllipseItem (DrawableFigure &fig) : m_fig (fig) {
     double ry = std::abs (fig.props["ry"]);
     setPos (QPointF (fig.props["cx"], fig.props["cy"]));
     setRect (QRectF (-rx, -ry, 2*rx, 2*ry));
-    QPen pen = figurePenProps (fig.state, 0);
+    QPen pen = figurePenProps (fig.svgState, 0);
     setPen (pen);
 
     m_manTopLeft = new ManipulatorItem (QPointF (-rx, ry), Qt::Horizontal | Qt::Vertical, this);
@@ -2086,7 +2084,7 @@ FigureRectItem::FigureRectItem (DrawableFigure &fig) : m_fig (fig) {
     setPos (QPointF (x, y));
     setRect (QRectF (0, 0, fig.props["width"], fig.props["height"]));
     //setTransform (QTransform (mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]));
-    QPen pen = figurePenProps (fig.state, 0);
+    QPen pen = figurePenProps (fig.svgState, 0);
     setPen (pen);
 
     // Reversed top/bottom to compensate for scene coordinate system
@@ -2308,7 +2306,7 @@ void AdvanceWidthItem::hoverLeaveEvent (QGraphicsSceneHoverEvent *) {
     QApplication::restoreOverrideCursor ();
 }
 
-RefItem::RefItem (RefGlyph &ref, uint16_t idx, const std::string &name, QGraphicsItem *parent) :
+RefItem::RefItem (DrawableReference &ref, uint16_t idx, const std::string &name, QGraphicsItem *parent) :
     QGraphicsItemGroup (parent),
     m_ref (ref),
     m_glyph (ref.cc),
@@ -2370,6 +2368,10 @@ uint16_t RefItem::idx () const {
 
 uint16_t RefItem::gid () const {
     return m_glyph->gid ();
+}
+
+const DrawableReference& RefItem::ref () const {
+    return m_ref;
 }
 
 void RefItem::refMoved (QPointF shift) {

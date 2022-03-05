@@ -124,12 +124,16 @@ static bool xmlParseColor (std::string attr, uint8_t &red, uint8_t &green, uint8
 	{ "red", 0xff0000 },
 	{ "green", 0x008000 },
 	{ "blue", 0x0000ff },
+	{ "crimson", 0xdc143c },
 	{ "cyan", 0x00ffff },
 	{ "magenta", 0xff00ff },
 	{ "yellow", 0xffff00 },
 	{ "black", 0x000000 },
+	{ "darkblue", 0x00008b },
 	{ "darkgray", 0x404040 },
+	{ "darkgreen", 0x006400 },
 	{ "darkgrey", 0x404040 },
+	{ "gold", 0xffd700 },
 	{ "gray", 0x808080 },
 	{ "grey", 0x808080 },
 	{ "lightgray", 0xc0c0c0 },
@@ -216,24 +220,17 @@ static bool xmlParseColor (std::string attr, uint8_t &red, uint8_t &green, uint8
     return false;
 }
 
-static double parseGCoord (std::string prop, bool bb_units, double bb_low, double bb_high) {
+static double parseGCoord (std::string prop) {
     std::istringstream ss (prop);
     double val;
 
     ss >> val;
     if (ss.peek () == '%')
 	val /= 100.0;
-
-    // Always convert userSpaceOnUse to objectBoundingBox: this allows us to
-    // avoid messing up with transform matrices on further transformations
-    if (!bb_units)
-        val = (val - bb_low) / (bb_high-bb_low);
-    if (val < 0) val = 0;
-    else if (val > 1) val = 1.0;
     return (val);
 }
 
-static std::string parseSourceUrl (std::string attr) {
+static std::string parseSourceUrl (const std::string attr) {
     char buf[64];
     char *bufptr = buf;
 
@@ -252,11 +249,45 @@ static std::string parseSourceUrl (std::string attr) {
     return std::string (bufptr);
 }
 
+static uint8_t parseVariableColor (const std::string &str_attr, SvgState state, bool is_stroke) {
+    size_t first = str_attr.find_first_of ('(', 3);
+    size_t last = str_attr.find_last_of (')');
+    int ret = 0;
+    if (first == std::string::npos || last == std::string::npos)
+	return ret;
+    std::string &source_id = is_stroke ? state.stroke_source_id : state.fill_source_id;
+    uint16_t &idx = is_stroke ? state.stroke_idx : state.fill_idx;
+
+    std::string sub = str_attr.substr (first, last-first);
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream ts (sub);
+    while (std::getline (ts, token, ','))
+	tokens.push_back (token);
+    for (auto &token : tokens) {
+	token.erase (0, token.find_first_not_of (" \n\r\t")-1);
+	if (token.compare (0, 7, "--color")) {
+	    idx = std::stoul (token.substr (7));
+	    ret |= 1;
+	} else if (token.compare (0, 3, "url")==0) {
+	    source_id = parseSourceUrl (token);
+	    ret |= 2;
+	} else {
+	    if (is_stroke)
+		state.setStrokeColor (token);
+	    else
+		state.setFillColor (token);
+	    ret |= 4;
+	}
+    }
+    return ret;
+}
+
 static bool xmlParseColorSource (pugi::xml_document &doc, const std::string &id,
     const DBounds &bbox, struct rgba_color &default_color, std::array<double, 6> &transform,
     Gradient &grad, bool do_init) {
 
-    bool bbox_units;
+    bool bbox_units = true;
     std::stringstream ss;
     pugi::xpath_node_set match;
     pugi::xml_node n_grad;
@@ -273,9 +304,11 @@ static bool xmlParseColorSource (pugi::xml_document &doc, const std::string &id,
         return false;
     }
 
-    if ((grad.is_linear = strcmp (n_grad.name (), "linearGradient")==0) ||
-        strcmp (n_grad.name (), "radialGradient")==0) {
-
+    if (!strcmp (n_grad.name (), "linearGradient"))
+	grad.type = GradientType::LINEAR;
+    else if (!strcmp (n_grad.name (), "radialGradient"))
+	grad.type = GradientType::RADIAL;
+    if (grad.type == GradientType::LINEAR || grad.type == GradientType::RADIAL) {
         pugi::xml_attribute units_attr = n_grad.attribute ("gradientUnits");
         pugi::xml_attribute transform_attr = n_grad.attribute ("gradientTransform");
         pugi::xml_attribute sm_attr = n_grad.attribute ("spreadMethod");
@@ -283,62 +316,66 @@ static bool xmlParseColorSource (pugi::xml_document &doc, const std::string &id,
 
 	if (units_attr)
             bbox_units = strcmp (units_attr.value (), "userSpaceOnUse");
+	if (!bbox_units)
+	    grad.units = GradientUnits::userSpaceOnUse;
         // Don't know what to do with transforms in 'userSpaceOnUse' mode:
         // converting them to objectBoundingBox coordinate system seems not so trivial
-        if (transform_attr && bbox_units) {
+        if (transform_attr) {
             std::string tr = transform_attr.value ();
             svgFigureTransform (tr, grad.transform);
+	    //matMultiply (grad.transform.data (), transform.data (), grad.transform.data ());
         }
 
-	if (do_init) grad.sm = sm_pad;
+	if (do_init) grad.sm = GradientExtend::EXTEND_PAD;
 	if (sm_attr) {
 	    if (strcmp (sm_attr.value (), "reflect")==0 )
-		grad.sm = sm_reflect;
+		grad.sm = GradientExtend::EXTEND_REFLECT;
 	    else if (strcmp (sm_attr.value (), "repeat")==0 )
-		grad.sm = sm_repeat;
+		grad.sm = GradientExtend::EXTEND_REPEAT;
 	}
 
-	if (grad.is_linear) {
+	if (grad.type == GradientType::LINEAR) {
             pugi::xml_attribute x1_attr = n_grad.attribute ("x1");
             pugi::xml_attribute x2_attr = n_grad.attribute ("x2");
             pugi::xml_attribute y1_attr = n_grad.attribute ("y1");
             pugi::xml_attribute y2_attr = n_grad.attribute ("y2");
 
 	    if (x1_attr)
-		grad.props["x1"] = parseGCoord (x1_attr.value (), bbox_units, bbox.minx, bbox.maxx);
+		grad.props["x1"] = parseGCoord (x1_attr.value ());
 	    if (x2_attr)
-		grad.props["x2"] = parseGCoord (x2_attr.value (), bbox_units, bbox.minx, bbox.maxx);
+		grad.props["x2"] = parseGCoord (x2_attr.value ());
 	    if (y1_attr)
-		grad.props["y1"] = parseGCoord (y1_attr.value (), bbox_units, bbox.miny, bbox.maxy);
+		grad.props["y1"] = parseGCoord (y1_attr.value ());
 	    if (y2_attr)
-		grad.props["y2"] = parseGCoord (y2_attr.value (), bbox_units, bbox.miny, bbox.maxy);
+		grad.props["y2"] = parseGCoord (y2_attr.value ());
 
-	} else {
+	} else if (grad.type == GradientType::RADIAL) {
             pugi::xml_attribute cx_attr = n_grad.attribute ("cx");
             pugi::xml_attribute cy_attr = n_grad.attribute ("cy");
             pugi::xml_attribute fx_attr = n_grad.attribute ("fx");
             pugi::xml_attribute fy_attr = n_grad.attribute ("fy");
-            pugi::xml_attribute r_attr = n_grad.attribute ("radius");
-
-	    double offx = (bbox.maxx-bbox.minx)/2;
-	    double offy = (bbox.maxy-bbox.miny)/2;
+            pugi::xml_attribute r_attr = n_grad.attribute ("r");
 
 	    if (cx_attr)
-		grad.props["cx"] = parseGCoord (cx_attr.value (), bbox_units, bbox.minx, bbox.maxx);
+		grad.props["cx"] = parseGCoord (cx_attr.value ());
 	    if (cy_attr)
-		grad.props["cy"] = parseGCoord (cy_attr.value (), bbox_units, bbox.miny, bbox.maxy);
+		grad.props["cy"] = parseGCoord (cy_attr.value ());
 	    if (r_attr)
-		grad.props["r"] = parseGCoord (r_attr.value (), bbox_units, 0, sqrt (4*(offx*offx + offy*offy)));
+		grad.props["r"] = parseGCoord (r_attr.value ());
 	    if (fx_attr)
-		grad.props["fx"] = parseGCoord (fx_attr.value (), bbox_units, bbox.minx, bbox.maxx);
+		grad.props["fx"] = parseGCoord (fx_attr.value ());
 	    if (fy_attr)
-		grad.props["fy"] = parseGCoord (fy_attr.value (), bbox_units, bbox.miny, bbox.maxy);
+		grad.props["fy"] = parseGCoord (fy_attr.value ());
 	}
         // recursion to another gradient (where actual stops are possibly specified)
         if (href_attr && href_attr.value ()[0] == '#') {
+	    Gradient temp;
             std::string href_id = href_attr.value ()+1;
-            xmlParseColorSource (doc, href_id, bbox, default_color, transform, grad, false);
+            xmlParseColorSource (doc, href_id, bbox, default_color, transform, temp, false);
+	    grad.stops = temp.stops;
         }
+	if (!bbox_units)
+	    grad.transformProps (transform);
 
         match = n_grad.select_nodes ("child::stop");
 	if (match.size () > 0) {
@@ -352,7 +389,7 @@ static bool xmlParseColorSource (pugi::xml_document &doc, const std::string &id,
 		grad.stops[i].color = default_color;
 
 		if (off_attr)
-		    grad.stops[i].offset = parseGCoord (off_attr.value (), true, 0, 1.0);
+		    grad.stops[i].offset = parseGCoord (off_attr.value ());
 
 		if (sc_attr) {
                     struct rgba_color &col = grad.stops[i].color;
@@ -370,19 +407,23 @@ static bool xmlParseColorSource (pugi::xml_document &doc, const std::string &id,
 	    grad.stops[0].offset = 1;
 	    grad.stops[0].color = default_color;
 	}
+	grad.bbox = bbox;
+	if (!bbox_units)
+	    grad.transformProps (std::array<double, 6> { 1, 0, 0, -1, 0, 0 });
     } else if (strcmp (n_grad.name (), "pattern")==0) {
       	FontShepherd::postError (QCoreApplication::tr (
             "I don't currently parse pattern Color Sources (%1).").arg (id.c_str ()));
         return false;
     } else {
       	FontShepherd::postError (QCoreApplication::tr (
-            "Color Source with i1 %1 had an unexpected type %2."). arg (id.c_str ()).arg (n_grad.name ()));
+            "Color Source with id %1 had an unexpected type %2."). arg (id.c_str ()).arg (n_grad.name ()));
         return false;
     }
     return true;
 }
 
 SvgState::svg_state () :
+    fill_idx (0xFFFF), stroke_idx (0xFFFF),
     fill_set (false), stroke_set (false),
     stroke_width (1), linecap (lc_inherit), linejoin (lj_inherit), point_props_set (false) {
     new (&fill_source_id) std::string;
@@ -392,10 +433,10 @@ SvgState::svg_state () :
 SvgState::svg_state (const struct svg_state &oldstate) {
     fill = oldstate.fill;
     stroke = oldstate.stroke;
-    if (!oldstate.fill_source_id.empty () || !fill_source_id.empty ())
-	fill_source_id = oldstate.fill_source_id;
-    if (!oldstate.stroke_source_id.empty () || !stroke_source_id.empty ())
-	stroke_source_id = oldstate.stroke_source_id;
+    fill_idx = oldstate.fill_idx;
+    stroke_idx = oldstate.stroke_idx;
+    fill_source_id = oldstate.fill_source_id;
+    stroke_source_id = oldstate.stroke_source_id;
     fill_set = oldstate.fill_set;
     stroke_set = oldstate.stroke_set;
     stroke_width = oldstate.stroke_width;
@@ -420,7 +461,14 @@ std::string SvgState::fillColor () {
         ss << "currentColor";
     else if (!fill_source_id.empty ())
         ss << "url(#" << fill_source_id << ")";
-    else {
+    else if (fill_idx != 0xFFFF) {
+	ss << "var(--color" << fill_idx << ", #";
+        ss << std::uppercase << std::setfill ('0') << std::hex;
+        ss << std::setw (2) << (int) fill.red;
+        ss << std::setw (2) << (int) fill.green;
+        ss << std::setw (2) << (int) fill.blue;
+	ss << ")";
+    } else {
         ss << '#';
         ss << std::uppercase << std::setfill ('0') << std::hex;
         ss << std::setw (2) << (int) fill.red;
@@ -436,7 +484,14 @@ std::string SvgState::strokeColor () {
         ss << "currentColor";
     else if (!stroke_source_id.empty ())
         ss << "url(#" << stroke_source_id << ")";
-    else {
+    else if (stroke_idx != 0xFFFF) {
+	ss << "var(--color" << fill_idx << ", #";
+        ss << std::uppercase << std::setfill ('0') << std::hex;
+        ss << std::setw (2) << (int) fill.red;
+        ss << std::setw (2) << (int) fill.green;
+        ss << std::setw (2) << (int) fill.blue;
+	ss << ")";
+    } else {
         ss << '#';
         ss << std::uppercase << std::setfill ('0') << std::hex;
         ss << std::setw (2) << (int) stroke.red;
@@ -553,29 +608,49 @@ void SvgState::setLineJoin (const std::string &arg) {
     }
 }
 
-bool operator==(const svg_state &lhs, const svg_state &rhs) {
+bool operator==(const SvgState &lhs, const SvgState &rhs) {
     return (
         (!(lhs.fill_set & rhs.fill_set) || ((lhs.fill_set & rhs.fill_set) &&
-            lhs.fill.red == rhs.fill.red && lhs.fill.green == rhs.fill.green &&
-            lhs.fill.blue == rhs.fill.blue && lhs.fill.alpha == rhs.fill.alpha)) &&
+            lhs.fill == rhs.fill && lhs.fill_idx == rhs.fill_idx &&
+	    lhs.fill_source_id == rhs.fill_source_id)) &&
         (!(lhs.stroke_set & rhs.stroke_set) || ((lhs.stroke_set & rhs.stroke_set) &&
-            lhs.stroke.red == rhs.stroke.red && lhs.stroke.green == rhs.stroke.green &&
-            lhs.stroke.blue == rhs.stroke.blue && lhs.stroke.alpha == rhs.stroke.alpha)) &&
+            lhs.stroke == rhs.stroke && lhs.stroke_idx == rhs.stroke_idx &&
+	    lhs.stroke_source_id == rhs.stroke_source_id)) &&
         lhs.stroke_width == rhs.stroke_width &&
         lhs.linecap == rhs.linecap && lhs.linejoin == rhs.linejoin);
 }
 
-bool operator!=(const svg_state &lhs, const svg_state &rhs) {
+bool operator!=(const SvgState &lhs, const SvgState &rhs) {
     return !(lhs==rhs);
 }
 
-struct svg_state& SvgState::operator = (const struct svg_state &oldstate) {
+SvgState operator + (const SvgState &lhs, const SvgState &rhs) {
+    SvgState ret (lhs);
+    if (!lhs.fill_set && rhs.fill_set) {
+	ret.fill = rhs.fill;
+	ret.fill_source_id = rhs.fill_source_id;
+	ret.fill_set = true;
+	ret.fill_idx = rhs.fill_idx;
+    }
+    if (!lhs.stroke_set && rhs.stroke_set) {
+	ret.stroke = rhs.stroke;
+	ret.stroke_width = rhs.stroke_width;
+	ret.stroke_source_id = rhs.stroke_source_id;
+	ret.stroke_set = true;
+	ret.stroke_idx = rhs.stroke_idx;
+    }
+    if (lhs.linecap == lc_inherit)
+	ret.linecap = rhs.linecap;
+    if (lhs.linejoin == lj_inherit)
+	ret.linejoin = rhs.linejoin;
+    return ret;
+}
+
+SvgState& SvgState::operator = (const struct svg_state &oldstate) {
     fill = oldstate.fill;
     stroke = oldstate.stroke;
-    if (!oldstate.fill_source_id.empty () || !fill_source_id.empty ())
-	fill_source_id = oldstate.fill_source_id;
-    if (!oldstate.stroke_source_id.empty () || !stroke_source_id.empty ())
-	stroke_source_id = oldstate.stroke_source_id;
+    fill_source_id = oldstate.fill_source_id;
+    stroke_source_id = oldstate.stroke_source_id;
     fill_set = oldstate.fill_set;
     stroke_set = oldstate.stroke_set;
     stroke_width = oldstate.stroke_width;
@@ -613,8 +688,7 @@ static void svgDumpColorProps (std::stringstream &ss, SvgState &state) {
 
 static void svgDumpMatrix (std::stringstream &ss, std::array<double, 6> &matrix, std::string &attr_name) {
     uint8_t i;
-    if (matrix[0] == 1 && matrix[1] == 0 && matrix[2] == 0 &&
-        matrix[3] == 1 && matrix[4] == 0 && matrix[5] == 0)
+    if (matrix == std::array<double, 6> { 1, 0, 0, 1, 0, 0 })
         return;
 
     ss << " " << attr_name << "=\"matrix(";
@@ -625,9 +699,9 @@ static void svgDumpMatrix (std::stringstream &ss, std::array<double, 6> &matrix,
 
 static void svgTransformEllipse (DrawableFigure &el, std::array<double, 6> &trans) {
     std::map<std::string, double>::iterator it;
-    FigureType ftype = el.svgFigureType ();
+    ElementType ftype = el.elementType ();
 
-    if (ftype != FigureType::Circle && ftype != FigureType::Ellipse)
+    if (ftype != ElementType::Circle && ftype != ElementType::Ellipse)
         return;
 
     if (trans[1] != 0.0 || trans[2] != 0.0) {
@@ -662,9 +736,9 @@ static void svgTransformEllipse (DrawableFigure &el, std::array<double, 6> &tran
 
 static void svgTransformRect (DrawableFigure &el, std::array<double, 6> &trans) {
     std::map<std::string, double>::iterator it;
-    FigureType ftype = el.svgFigureType ();
+    ElementType ftype = el.elementType ();
 
-    if (ftype != FigureType::Rect)
+    if (ftype != ElementType::Rect)
         return;
 
     if (trans[1] != 0.0 || trans[2] != 0.0) {
@@ -729,16 +803,20 @@ static void svgTransformPoly (DrawableFigure &el, std::array<double, 6> &trans) 
 void ConicGlyph::svgDumpGradient (std::stringstream &ss, Gradient &grad, const std::string &grad_id) {
     uint16_t i;
     std::map<std::string, double>::iterator it;
+    std::map<std::string, double> saveprops = grad.props;
+    if (grad.units == GradientUnits::userSpaceOnUse)
+	grad.transformProps (std::array<double, 6> { 1, 0, 0, -1, 0, 0 });
 
-
-    ss << "   " << (grad.is_linear ? "<linearGradient" : "<radialGradient");
+    ss << "   " << ((grad.type == GradientType::LINEAR) ? "<linearGradient" : "<radialGradient");
     ss << " id=\"" << grad_id << "\"";
     for (it = grad.props.begin (); it != grad.props.end (); ++it)
         ss << " " << it->first << "=\"" << it->second << "\"";
-    if (grad.sm != sm_pad)
-        ss << " spreadMethod=\"" << (grad.sm == sm_reflect ? "reflect" : "repeat") << "\"";
+    if (grad.sm != GradientExtend::EXTEND_PAD)
+        ss << " spreadMethod=\"" << (grad.sm == GradientExtend::EXTEND_REFLECT ? "reflect" : "repeat") << "\"";
     std::string trans_attr = "gradientTransform";
     svgDumpMatrix (ss, grad.transform, trans_attr);
+    if (grad.units == GradientUnits::userSpaceOnUse)
+	ss << " gradientUnits=\"userSpaceOnUse\"";
     ss << ">\n";
     for (i=0; i<grad.stops.size (); i++) {
         struct gradient_stop &stop = grad.stops[i];
@@ -750,11 +828,12 @@ void ConicGlyph::svgDumpGradient (std::stringstream &ss, Gradient &grad, const s
         hexbuf << std::setw (2) << (int) stop.color.green;
         hexbuf << std::setw (2) << (int) stop.color.blue;
         ss << hexbuf.str () << "\"";
-        if (stop.color.alpha != 0xFF)
-            ss << " stop-opacity=\"" << (stop.color.alpha/255) << "\"";
+        if (stop.color.alpha < 255)
+            ss << " stop-opacity=\"" << (static_cast<double>(stop.color.alpha)/255) << "\"";
         ss << "/>\n";
     }
-    ss << "   " << (grad.is_linear ? "</linearGradient>\n" : "</radialGradient>\n");
+    ss << "   " << ((grad.type == GradientType::LINEAR) ? "</linearGradient>\n" : "</radialGradient>\n");
+    grad.props = saveprops;
 }
 
 static std::string svgDumpPointProps (ConicPoint *sp, int hintcnt) {
@@ -837,17 +916,18 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
     uint16_t i, j;
     ConicPointList *spls;
     Conic *spl, *first;
-    RefGlyph *ref;
+    DrawableReference *ref;
     std::string glyph_tag = (flags & SVGOptions::asReference) ? "symbol" : "g";
+    std::string id_base = (m_outType == OutlinesType::COLR) ? "colr-glyph" : "glyph";
     int hintcnt = hstem.size () + vstem.size ();
     std::string trans_attr = "transform";
     bool selected = flags & SVGOptions::onlySelected;
 
-    if (flags & SVGOptions::doExtras) {
+    bool need_defs = (flags & SVGOptions::doExtras) && (!gradients.empty () || !refs.empty ());
+    if (need_defs) {
 	if (gradients.size () > 0) {
-	    std::map<std::string, Gradient>::iterator it;
 	    ss << "  <defs>\n";
-	    for (it = gradients.begin (); it != gradients.end (); ++it) {
+	    for (auto it = gradients.begin (); it != gradients.end (); ++it) {
 		std::string grad_id = it->first;
 		Gradient &grad = it->second;
 		svgDumpGradient (ss, grad, grad_id);
@@ -871,7 +951,7 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
     last.x = last.y = 0;
 
     // ss << "  <" << glyph_tag << " id=\"glyph" << GID << "\" transform=\"translate(0 " << bb.maxy << ")\">\n";
-    ss << "  <" << glyph_tag << " id=\"glyph" << GID << "\" >\n";
+    ss << "  <" << glyph_tag << " id=\"" << id_base << GID << "\" >\n";
     if (flags & SVGOptions::doAppSpecific)
 	ss << "    <fsh:horizontal-metrics fsh:left-sidebearing=\"" << m_lsb << "\" fsh:advance-width=\"" << m_aw << "\" />\n";
     svgDumpHints (ss);
@@ -879,32 +959,32 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
         std::vector<ConicPointList> &conics = fig.contours;
 	std::vector<std::string> props_lst;
 	props_lst.reserve (fig.countPoints ());
-	FigureType ftype = fig.svgFigureType ();
+	ElementType ftype = fig.elementType ();
 	if (selected && !fig.hasSelected ())
 	    continue;
 
 	switch (ftype) {
-	  case FigureType::Circle:
-	  case FigureType::Ellipse: {
+	  case ElementType::Circle:
+	  case ElementType::Ellipse: {
 	    double rx = std::abs (fig.props["rx"]);
 	    double ry = std::abs (fig.props["ry"]);
 	    if (FontShepherd::math::realNear (rx, ry)) {
 		ss << "    <circle";
-		svgDumpColorProps (ss, fig.state);
+		svgDumpColorProps (ss, fig.svgState);
 		svgDumpMatrix (ss, fig.transform, trans_attr);
 		ss << " cx=\"" << fig.props["cx"] << "\" cy=\"" << -fig.props["cy"]
 		    << "\" r=\"" << rx << "\" />\n";
 	    } else {
 		ss << "    <ellipse";
-		svgDumpColorProps (ss, fig.state);
+		svgDumpColorProps (ss, fig.svgState);
 		svgDumpMatrix (ss, fig.transform, trans_attr);
 		ss << " cx=\"" << fig.props["cx"] << "\" cy=\"" << -fig.props["cy"]
 		    << "\" rx=\"" << rx << "\" ry=\"" << ry << "\" />\n";
 	    }
 	  } break;
-	  case FigureType::Rect: {
+	  case ElementType::Rect: {
 	    ss << "    <rect";
-	    svgDumpColorProps (ss, fig.state);
+	    svgDumpColorProps (ss, fig.svgState);
 	    svgDumpMatrix (ss, fig.transform, trans_attr);
 	    ss << " x=\"" << fig.props["x"] << "\" y=\"" << -fig.props["y"]-fig.props["height"] << "\"";
 	    ss << " width=\"" << fig.props["width"] << "\" height=\"" << fig.props["height"] << "\"";
@@ -914,24 +994,24 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
 		ss << " ry=\"" << fig.props["ry"] << "\"";
 	    ss << " />\n";
 	  } break;
-	  case FigureType::Line: {
+	  case ElementType::Line: {
 	    auto &spls = fig.contours.front ();
 	    ss << "    <line";
-	    svgDumpColorProps (ss, fig.state);
+	    svgDumpColorProps (ss, fig.svgState);
 	    svgDumpMatrix (ss, fig.transform, trans_attr);
 	    ss << " x1=\"" << spls.first->me.x << "\" y1=\"" << -spls.first->me.y << "\"";
 	    ss << " x2=\"" << spls.last->me.x << "\" y2=\"" << -spls.last->me.y << "\"";
 	    ss << " />\n";
 	  } break;
-	  case FigureType::Polygon:
-	  case FigureType::Polyline: {
+	  case ElementType::Polygon:
+	  case ElementType::Polyline: {
 	    auto &spls = fig.contours.front ();
 	    ConicPoint *sp = spls.first;
-	    if (ftype == FigureType::Polygon)
+	    if (ftype == ElementType::Polygon)
 		ss << "    <polygon";
 	    else
 		ss << "    <polyline";
-	    svgDumpColorProps (ss, fig.state);
+	    svgDumpColorProps (ss, fig.svgState);
 	    svgDumpMatrix (ss, fig.transform, trans_attr);
 	    ss << " points=\"";
 	    do {
@@ -940,10 +1020,10 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
 	    } while (sp && sp!=spls.first);
 	    ss << "\" />\n";
 	  } break;
-	  case FigureType::Path: if (conics.size () > 0) {
+	  case ElementType::Path: if (conics.size () > 0) {
 	    bool doall = !selected || fig.selected;
             ss << "    <path";
-            svgDumpColorProps (ss, fig.state);
+            svgDumpColorProps (ss, fig.svgState);
             ss << " d=\"";
             for (j=0; j<conics.size (); j++) {
                 bool open = false;
@@ -1029,23 +1109,28 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
 		ss << "\" ";
 	    }
 	    ss << "/>\n";
-	  }
+	  } break;
+	  case ElementType::Reference:
+	    ;
         }
     }
 
-    for (i=0; i<refs.size (); i++) {
+    for (auto &ref : refs) {
 	float ref_y_shift = 0;
+	std::string ref_id_base = (ref.outType == OutlinesType::COLR) ? "colr-glyph" : "glyph";
 	// compensate for the difference in the reference and base glyph translate transformations
-	ref = &refs[i];
 	//if (ref->cc)
 	//    ref_y_shift = -ref->cc->bb.maxy;
-        if (selected && !ref->selected)
+        if (selected && !ref.selected)
             continue;
 
-	ss << "    <use xlink:href=\"#glyph" << ref->GID << "\" transform=\"matrix(";
+	ss << "    <use xlink:href=\"#" << ref_id_base << ref.GID << "\"";
+	if (ref.svgState.fill_set || ref.svgState.stroke_set)
+	    svgDumpColorProps (ss, ref.svgState);
+	ss << " transform=\"matrix(";
 	for (j=0; j<4; j++)
-	    ss << ref->transform[j] << ' ';
-	ss << (ref->transform[4]) << ' ' << (ref_y_shift - ref->transform[5]) << ")\"/>\n";
+	    ss << ref.transform[j] << ' ';
+	ss << (ref.transform[4]) << ' ' << (ref_y_shift - ref.transform[5]) << ")\"/>\n";
     }
     ss << "  </" << glyph_tag << ">\n";
 }
@@ -1082,8 +1167,8 @@ std::string ConicGlyph::toSVG (struct rgba_color *palette, uint8_t flags) {
     checkBounds (bb, false);
     if (palette) {
 	for (auto &fig : figures) {
-            fig.state.fill = *palette;
-            fig.state.fill_set = true;
+            fig.svgState.fill = *palette;
+            fig.svgState.fill_set = true;
         }
     }
 
@@ -1704,23 +1789,22 @@ void ConicGlyph::svgParsePoly (DrawableFigure &fig, bool is_gon) {
 }
 
 void ConicGlyph::figureAddGradient (
-    pugi::xml_document &doc, DrawableFigure &fig, std::string &id, std::array<double, 6> &transform, bool is_stroke) {
+    pugi::xml_document &doc, Drawable &fig, std::array<double, 6> &transform, bool is_stroke) {
 
     DBounds fb;
     bool res;
-    Gradient grad = Gradient ();
+    Gradient grad;
+    bool &set = is_stroke ? fig.svgState.stroke_set : fig.svgState.fill_set;
+    std::string &grad_id = is_stroke ? fig.svgState.stroke_source_id : fig.svgState.fill_source_id;
+    struct rgba_color &default_color = is_stroke ? fig.svgState.stroke : fig.svgState.fill;
 
     fig.realBounds (fb, true);
-    res = xmlParseColorSource (doc, id, fb, fig.state.fill, transform, grad, true);
-    if (res && !id.empty ()) {
-        gradients[id] = grad;
-        if (is_stroke) {
-            fig.state.stroke_source_id = id;
-            fig.state.stroke_set = true;
-        } else {
-            fig.state.fill_source_id = id;
-            fig.state.fill_set = true;
-        }
+    res = xmlParseColorSource (doc, grad_id, fb, default_color, transform, grad, true);
+    if (!res)
+	grad_id.clear ();
+    else {
+	set = true;
+	gradients[grad_id] = grad;
     }
 }
 
@@ -1732,8 +1816,6 @@ void ConicGlyph::svgProcessNode (
     std::array<double, 6> newtrans = {1, 0, 0, 1, 0, 0};
     std::array<double, 6> combtrans = {1, 0, 0, 1, 0, 0};
     SvgState newstate (state);
-    bool needs_fill_grad = false, needs_stroke_grad = false;
-    std::string fill_grad_id, stroke_grad_id;
     std::string name = root.name ();
     pugi::xml_attribute trans_attr = root.attribute ("transform");
     pugi::xml_attribute fill_attr = root.attribute ("fill");
@@ -1752,17 +1834,17 @@ void ConicGlyph::svgProcessNode (
     } else
 	combtrans = transform;
 
-    if (m_outType == OutlinesType::SVG) {
+    if (m_outType == OutlinesType::SVG || m_outType == OutlinesType::COLR) {
 	if (fill_attr) {
 	    std::string str_attr = fill_attr.value ();
 	    // can process gradients only after parsing contours/shapes
 	    if (str_attr.compare (0, 3, "url")==0) {
-		fill_grad_id = parseSourceUrl (str_attr);
-		if (gradients.count (fill_grad_id)) {
-		    newstate.fill_source_id = fill_grad_id;
+		newstate.fill_source_id = parseSourceUrl (str_attr);
+		if (gradients.count (newstate.fill_source_id))
 		    newstate.fill_set = true;
-		} else if (!fill_grad_id.empty ())
-		    needs_fill_grad = true;
+	    } else if (str_attr.compare (0, 3, "var")==0) {
+		uint8_t res = parseVariableColor (str_attr, newstate, false);
+		newstate.fill_set = res;
 	    } else
 		newstate.setFillColor (fill_attr.value ());
 	}
@@ -1771,12 +1853,12 @@ void ConicGlyph::svgProcessNode (
 	if (stroke_attr) {
 	    std::string str_attr = stroke_attr.value ();
 	    if (str_attr.compare (0, 3, "url")==0) {
-		stroke_grad_id = parseSourceUrl (str_attr);
-		if (gradients.count (stroke_grad_id)) {
-		    newstate.stroke_source_id = stroke_grad_id;
+		newstate.stroke_source_id = parseSourceUrl (str_attr);
+		if (gradients.count (newstate.stroke_source_id))
 		    newstate.stroke_set = true;
-		} else if (!stroke_grad_id.empty ())
-		    needs_stroke_grad = true;
+	    } else if (str_attr.compare (0, 3, "var")==0) {
+		uint8_t res = parseVariableColor (str_attr, newstate, true);
+		newstate.stroke_set = res;
 	    } else
 		newstate.setStrokeColor (stroke_attr.value ());
 	}
@@ -1797,7 +1879,7 @@ void ConicGlyph::svgProcessNode (
         uint16_t i;
 
         fig.type = name;
-        fig.state = newstate;
+        fig.svgState = newstate;
 	fig.order2 = false;
         if (name.compare ("path") == 0) {
             pugi::xml_attribute d_attr = root.attribute ("d");
@@ -1899,15 +1981,12 @@ void ConicGlyph::svgProcessNode (
                 svgTransformPoly (fig, combtrans);
             }
         }
-        // currently cannot apply gradient to a group, as groups themselves are not preserved
-        // This operation needs the original figure bounding box, so do it before
-        // any transformations, but after parsing the figure
-        if (needs_fill_grad)
-            figureAddGradient (doc, fig, fill_grad_id, transform, false);
-        if (needs_stroke_grad)
-            figureAddGradient (doc, fig, stroke_grad_id, transform, true);
         for (i=0; i<conics.size (); i++)
             conics[i].doTransform (combtrans);
+        if (!fig.svgState.fill_source_id.empty () && !fig.svgState.fill_set)
+            figureAddGradient (doc, fig, combtrans, false);
+        if (!fig.svgState.stroke_source_id.empty () && !fig.svgState.stroke_set)
+            figureAddGradient (doc, fig, combtrans, true);
 
     } else if (name.compare ("use")==0) {
         pugi::xml_attribute href_attr = root.attribute ("xlink:href");
@@ -1921,16 +2000,29 @@ void ConicGlyph::svgProcessNode (
             if (match.size () > 0) {
                 pugi::xml_node source = match[0].node ();
                 uint16_t ref_gid = 0;
+		OutlinesType ref_type = (m_outType == OutlinesType::COLR) ?
+		    OutlinesType::NONE : m_outType;
                 if (href.compare (0, 5, "glyph")==0) {
                     std::istringstream iss (href.substr (5));
                     if ((iss >> ref_gid).fail ()) ref_gid = 0;
-                }
+                } else if (href.compare (0, 10, "colr-glyph")==0) {
+                    std::istringstream iss (href.substr (10));
+                    if ((iss >> ref_gid).fail ()) ref_gid = 0;
+		    ref_type = OutlinesType::COLR;
+		}
 
                 // link to another glyph described in the same document
                 if (ref_gid) {
-                    RefGlyph cur = RefGlyph ();
+                    DrawableReference cur;
                     cur.GID = ref_gid;
+		    cur.outType = ref_type;
+		    cur.svgState = newstate;
 		    cur.transform = combtrans;
+
+		    if (!cur.svgState.fill_source_id.empty () && !cur.svgState.fill_set)
+			figureAddGradient (doc, cur, combtrans, false);
+		    if (!cur.svgState.stroke_source_id.empty () && !cur.svgState.stroke_set)
+			figureAddGradient (doc, cur, combtrans, true);
                     refs.push_back (cur);
                 } else
                     svgProcessNode (doc, source, combtrans, newstate);
@@ -2031,21 +2123,15 @@ void ConicGlyph::svgCheckArea (pugi::xml_node svg, std::array<double, 6> &matrix
 };
 
 bool ConicGlyph::fromSVG (std::istream &buf, int g_idx, DrawableFigure *target) {
-    std::array<double, 6> trans = {1, 0, 0, 1, 0, 0};
-    SvgState state;
-    std::array<double, 6> inv = {1, 0, 0, -1, 0, 0};
-    uint16_t i, j;
-    uint16_t old_fig_cnt = figures.size (), old_ref_cnt = refs.size ();
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load (buf);
 
     // Here's how we can extract entire buffer contents into a string
     //std::string s (std::istreambuf_iterator<char> (buf), {});
 
-    pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load (buf);
     if (result.status != pugi::status_ok) {
 	buf.seekg (0);
 	std::string s (std::istreambuf_iterator<char> (buf), {});
-	std::cerr << s << std::endl;
         FontShepherd::postError (
             QCoreApplication::tr ("Bad glyf data"),
             QCoreApplication::tr (
@@ -2054,6 +2140,16 @@ bool ConicGlyph::fromSVG (std::istream &buf, int g_idx, DrawableFigure *target) 
             nullptr);
         return false;
     }
+    return fromSVG (doc, g_idx, target);
+}
+
+bool ConicGlyph::fromSVG (pugi::xml_document &doc, int g_idx, DrawableFigure *target) {
+    std::array<double, 6> trans = {1, 0, 0, 1, 0, 0};
+    SvgState state;
+    std::array<double, 6> inv = {1, 0, 0, -1, 0, 0};
+    uint16_t i, j;
+    uint16_t old_fig_cnt = figures.size (), old_ref_cnt = refs.size ();
+
     char element_spec[32] = {0};
     char *elptr = element_spec;
     pugi::xml_node svg, root;
@@ -2079,8 +2175,9 @@ bool ConicGlyph::fromSVG (std::istream &buf, int g_idx, DrawableFigure *target) 
         return false;
     }
 
+    std::string glyph_prefix = (m_outType == OutlinesType::COLR) ? "colr-glyph" : "glyph";
     if (g_idx < 0)
-        sprintf (elptr, "//*[@id='glyph%d']", GID);
+        sprintf (elptr, "//*[@id='%s%d']", glyph_prefix.c_str (), GID);
     else
         sprintf (elptr, "//g[starts-with (@id, 'glyph')]");
     match = doc.select_nodes (elptr);
@@ -2107,10 +2204,10 @@ bool ConicGlyph::fromSVG (std::istream &buf, int g_idx, DrawableFigure *target) 
     std::advance (it, old_fig_cnt);
     for (; it != figures.end (); it++) {
         DrawableFigure &fig = *it;
-	FigureType ftype = fig.svgFigureType ();
-        if (ftype == FigureType::Circle || ftype == FigureType::Ellipse) {
+	ElementType ftype = fig.elementType ();
+        if (ftype == ElementType::Circle || ftype == ElementType::Ellipse) {
             svgTransformEllipse (fig, inv);
-        } else if (ftype == FigureType::Rect) {
+        } else if (ftype == ElementType::Rect) {
             svgTransformRect (fig, inv);
         } else if (fig.contours.size () > 0) {
             std::vector<ConicPointList> &conics = fig.contours;
@@ -2119,7 +2216,7 @@ bool ConicGlyph::fromSVG (std::istream &buf, int g_idx, DrawableFigure *target) 
         }
     }
     for (i=old_ref_cnt; i<refs.size (); i++) {
-        RefGlyph &ref = refs[i];
+        DrawableReference &ref = refs[i];
         ref.transform[5] *= -1;
     }
     if (target && (int) figures.size () == old_fig_cnt + 1) {
@@ -2218,7 +2315,7 @@ void DrawableFigure::svgReadPointProps (const std::string &pp, int hintcnt) {
                 first=spls.first->next;
         }
     }
-    state.point_props_set = true;
+    svgState.point_props_set = true;
 }
 
 void DrawableFigure::svgClosePath (ConicPointList *cur, bool order2) {
@@ -2238,21 +2335,21 @@ void DrawableFigure::svgClosePath (ConicPointList *cur, bool order2) {
     }
 }
 
-FigureType DrawableFigure::svgFigureType () {
+ElementType DrawableFigure::elementType () const {
     bool linear = true;
     int spl_cnt = 0;
 
     if (type.compare ("circle") == 0 || type.compare ("ellipse") == 0) {
-	if (realNear (std::abs (props["rx"]), std::abs (props["ry"])))
-	    return FigureType::Circle;
+	if (realNear (std::abs (props.at ("rx")), std::abs (props.at ("ry"))))
+	    return ElementType::Circle;
 	else
-	    return FigureType::Ellipse;
+	    return ElementType::Ellipse;
     } else if (type.compare ("rect") == 0) {
-	return FigureType::Rect;
+	return ElementType::Rect;
     }
 
     if (contours.size () != 1)
-	return FigureType::Path;
+	return ElementType::Path;
 
     auto &spls = contours.front ();
     ConicPoint *sp = spls.first;
@@ -2267,12 +2364,11 @@ FigureType DrawableFigure::svgFigureType () {
 
     if (linear) {
 	if (spl_cnt == 1)
-	    return FigureType::Line;
+	    return ElementType::Line;
 	else if (spls.first == spls.last)
-	    return FigureType::Polygon;
+	    return ElementType::Polygon;
 	else
-	    return FigureType::Polyline;
+	    return ElementType::Polyline;
     }
-    return FigureType::Path;
+    return ElementType::Path;
 }
-

@@ -193,7 +193,6 @@ private slots:
 private:
     void loadTables (uint32_t tag);
     bool loadGlyphs ();
-    bool addColorData ();
     //bool ftRenderGlyphs ();
     bool switchGlyphOutlines ();
     void switchOutlines (OutlinesType val);
@@ -257,8 +256,7 @@ private:
     GlyphBox *m_current_cell;
     std::vector<uint32_t> m_selected;
     QLabel *m_sb_enc_lbl, *m_sb_gid_lbl, *m_sb_name_lbl, *m_sb_uniname_lbl, *m_sb_uni_lbl;
-    uint8_t m_content_type;
-    uint8_t m_outlines_init;
+    OutlinesType m_content_type;
     uint8_t m_outlines_avail;
     uint16_t m_paletteIdx;
 

@@ -43,8 +43,8 @@ class GlyphNameProvider;
 class GlyphScene;
 struct svg_state;
 typedef svg_state SvgState;
-struct gradient;
-typedef gradient Gradient;
+struct cpal_palette;
+struct Gradient;
 class DrawableFigure;
 class AdvanceWidthItem;
 class RefItem;
@@ -77,27 +77,27 @@ public:
     GlyphContext (GlyphContext && other) = default;
     ~GlyphContext ();
 
-    void setGlyph (uint8_t gtype, ConicGlyph *g);
+    void setGlyph (OutlinesType gtype, ConicGlyph *g);
     void clearSvgGlyph ();
-    bool hasOutlinesType (uint8_t gtype);
-    void switchOutlinesType (uint8_t gtype, bool gv=false);
+    bool hasOutlinesType (OutlinesType gtype);
+    void switchOutlinesType (OutlinesType gtype, bool gv=false);
     void setFontViewSize (uint16_t size);
-    ConicGlyph* glyph (uint8_t gtype);
+    ConicGlyph* glyph (OutlinesType gtype);
     int gid ();
     QString name ();
     void setName (const std::string &name);
+    void providePalette (cpal_palette *palette);
 
-    void render (uint8_t gtype, uint16_t size);
-    void render (uint8_t gtype);
+    void render (OutlinesType gtype, uint16_t size);
+    void render (OutlinesType gtype);
     void render ();
     void renderNoGlyph (uint16_t size);
-    //void svgRender (uint16_t size=m_size);
 
     QPixmap& pixmap ();
     NonExclusiveUndoGroup* undoGroup (bool gv=false);
     void addCell (GlyphBox *gb);
-    bool resolveRefs (uint8_t gtype);
-    void update (uint8_t gtype);
+    bool resolveRefs (OutlinesType gtype);
+    void update (OutlinesType gtype);
     DrawableFigure* activeFigure () const;
     QGraphicsItem* topItem () const;
 
@@ -119,7 +119,7 @@ public:
     void addEllipse (const QRectF &rect);
     void addRect (const QRectF &rect);
 
-    void drawGlyph (ConicGlyph *gref, RefItem *group=nullptr);
+    void drawGlyph (ConicGlyph *gref, std::map<std::string, Gradient> &gradients, RefItem *group=nullptr);
     void updatePoints ();
     void updateFill ();
 
@@ -135,19 +135,21 @@ public:
     void addDependent (uint16_t gid);
     void removeDependent (uint16_t gid);
 
-    static QBrush figureBrush (const SvgState &state, std::map<std::string, Gradient> &gradients, bool fill=true);
+    static QBrush figureBrush (const SvgState &state, cpal_palette *pal, std::map<std::string, Gradient> &gradients, bool fill=true);
 
 private:
-    void renderGlyph (ConicGlyph *gref, QTransform trans, QPainter &painter, struct rgba_color *palette);
+    void renderGlyph (ConicGlyph *gref, QTransform trans, SvgState &state, std::map<std::string, Gradient> &gradients, QPainter &painter);
     void updatePointNumbers ();
     void updateControlPoints ();
     void updateCleanupPoints ();
+    void colorizeFigure (QGraphicsItem *item, SvgState state);
 
-    ConicGlyph *m_tt_glyph, *m_ps_glyph, *m_svg_glyph;
+    ConicGlyph *m_tt_glyph, *m_ps_glyph, *m_svg_glyph, *m_colr_glyph;
     GlyphNameProvider &m_gnp;
-    uint8_t m_fv_type;
+    OutlinesType m_fv_type;
     uint16_t m_fv_size;
     int m_gid;
+    cpal_palette *m_palette;
     std::deque<GlyphContext> &m_glyphSet;
     QString m_name;
     QPixmap m_pixmap;
@@ -369,14 +371,13 @@ public:
     void hoverLeaveEvent (QGraphicsSceneHoverEvent *event);
 };
 
-struct refglyph;
-typedef refglyph RefGlyph;
+class DrawableReference;
 
 class RefItem : public QGraphicsItemGroup {
     friend class GlyphContext;
 
 public:
-    RefItem (RefGlyph &ref, uint16_t idx, const std::string &name, QGraphicsItem *parent=nullptr);
+    RefItem (DrawableReference &ref, uint16_t idx, const std::string &name, QGraphicsItem *parent=nullptr);
     ~RefItem ();
     void paint (QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     enum { Type = UserType + GlyphGraphicItems::Ref };
@@ -385,11 +386,12 @@ public:
     const QString &name () const;
     uint16_t idx () const;
     uint16_t gid () const;
+    const DrawableReference &ref () const;
 
     void refMoved (QPointF shift);
 
 private:
-    RefGlyph &m_ref;
+    DrawableReference &m_ref;
     ConicGlyph *m_glyph;
     QString m_name;
     uint16_t m_idx;

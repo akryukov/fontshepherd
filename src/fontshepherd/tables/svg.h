@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE. */
 
 #include <QtGlobal>
+#include <pugixml.hpp>
 
 class FontTable;
 class CffTable;
@@ -40,6 +41,8 @@ struct svg_document_index_entry {
     uint32_t svgDocOffset, svgDocLength;
     std::vector<uint16_t> glyphs;
     bool changed = false;
+    bool loaded = false;
+    pugi::xml_document doc;
 };
 
 class SvgTable : public GlyphContainer {
@@ -57,6 +60,7 @@ public:
     bool usable () const;
 
 private:
+    bool loadGlyphDocument (ConicGlyph *g, std::istream &buf, svg_document_index_entry &entry);
     void dumpGradients (std::stringstream &ss, svg_document_index_entry &ie);
     void cleanupDocEntries ();
     CffTable *m_cff = nullptr;

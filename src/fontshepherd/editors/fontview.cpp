@@ -214,9 +214,8 @@ FontView::FontView (FontTable* tbl, sFont *fnt, QWidget *parent) :
     m_v_mult = settings.value ("fontview/vertFactor", 16).toInt ();
     m_current_cell = nullptr;
 
-    m_outlines_init  = 0;
     m_outlines_avail = 0;
-    m_content_type = 0;
+    m_content_type = OutlinesType::NONE;
 
     loadTables (m_table ? m_table->iName () : 0);
     if (!m_gc_table) {
@@ -235,35 +234,30 @@ FontView::FontView (FontTable* tbl, sFont *fnt, QWidget *parent) :
 
     switch (m_gc_table->iName ()) {
       case CHR('g','l','y','f'):
-        m_content_type = (uint8_t) OutlinesType::TT;
+        m_content_type = OutlinesType::TT;
       break;
       case CHR('C','F','F',' '):
       case CHR('C','F','F','2'):
-        m_content_type = (uint8_t) OutlinesType::PS;
+        m_content_type = OutlinesType::PS;
       break;
       case CHR('S','V','G',' '):
-        m_content_type = (uint8_t) OutlinesType::SVG;
+        m_content_type = OutlinesType::SVG;
+      break;
+      case CHR('C','O','L','R'):
+        m_content_type = OutlinesType::COLR;
       break;
       default:
         ;
     }
-    if (m_table->iName () == CHR('C','O','L','R'))
-        m_content_type |= (uint8_t) OutlinesType::COLR;
 
     if (!loadGlyphs ())
         return;
-    addColorData ();
     m_layout = new FVLayout (0, 0, 0);
 
     m_scroll = new QScrollArea (this);
     m_scroll->installEventFilter (this);
     m_scroll->setWidgetResizable (true);
     m_scroll->setStyleSheet ("QScrollArea {margin: 0; padding: 2; border: 0}");
-
-    setMinimumSize (actualWidth (1), actualHeight (1));
-    setBaseSize (actualWidth (1), actualHeight (1));
-    resize (actualWidth (m_h_mult), actualHeight (m_v_mult));
-    setSizeIncrement (m_cell_size+4, m_cell_size+26);
 
     setCentralWidget (m_scroll);
 
@@ -272,6 +266,11 @@ FontView::FontView (FontTable* tbl, sFont *fnt, QWidget *parent) :
     setToolBar ();
 
     setWindowTitle (tr ("Glyph Set - ").append (m_font->fontname));
+
+    setMinimumSize (actualWidth (1), actualHeight (1));
+    setBaseSize (actualWidth (1), actualHeight (1));
+    resize (actualWidth (m_h_mult), actualHeight (m_v_mult));
+    setSizeIncrement (m_cell_size+4, m_cell_size+26);
 
     prepareGlyphCells ();
     displayEncodedGlyphs (m_font->enc, false);
@@ -332,7 +331,7 @@ void FontView::setMenuBar () {
     saveAction = new QAction (tr ("&Compile tables"), this);
     closeAction = new QAction (tr ("C&lose"), this);
 
-    cffAction->setEnabled (m_content_type & (uint8_t) OutlinesType::PS);
+    cffAction->setEnabled (m_content_type == OutlinesType::PS);
     connect (cffAction, &QAction::triggered, this, &FontView::editCFF);
     connect (saveAction, &QAction::triggered, this, &FontView::save);
     connect (closeAction, &QAction::triggered, this, &FontView::close);
@@ -361,7 +360,7 @@ void FontView::setMenuBar () {
     glyphPropsAction = new QAction (tr ("&Glyph properties..."), this);
     addGlyphAction = new QAction (tr ("&Add glyph..."), this);
     clearSvgGlyphAction = new QAction (tr ("Clear SVG &glyph"), this);
-    clearSvgGlyphAction->setVisible (m_content_type & (uint8_t) OutlinesType::SVG);
+    clearSvgGlyphAction->setVisible (m_content_type == OutlinesType::SVG);
 
     cutAction->setShortcut (QKeySequence::Cut);
     copyAction->setShortcut (QKeySequence::Copy);
@@ -417,8 +416,8 @@ void FontView::setMenuBar () {
     connect (autoHintAction, &QAction::triggered, this, &FontView::autoHint);
     connect (clearHintsAction, &QAction::triggered, this, &FontView::clearHints);
 
-    autoHintAction->setEnabled (m_content_type & (uint8_t) OutlinesType::PS);
-    clearHintsAction->setEnabled (m_content_type & (uint8_t) OutlinesType::PS);
+    autoHintAction->setEnabled (m_content_type == OutlinesType::PS);
+    clearHintsAction->setEnabled (m_content_type == OutlinesType::PS);
 
     checkSelection ();
     connect (QApplication::clipboard (), &QClipboard::dataChanged, this, &FontView::checkSelection);
@@ -448,13 +447,13 @@ void FontView::setMenuBar () {
     m_switchOutlineActions->addAction (colrSwitchAction);
 
     connect (m_switchOutlineActions, &QActionGroup::triggered, this, &FontView::switchOutlinesByAction);
-    if (m_content_type & (uint8_t) OutlinesType::COLR)
+    if (m_content_type == OutlinesType::COLR)
         colrSwitchAction->setChecked (true);
-    else if (m_content_type & (uint8_t) OutlinesType::TT)
+    else if (m_content_type == OutlinesType::TT)
         ttSwitchAction->setChecked (true);
-    else if (m_content_type & (uint8_t) OutlinesType::PS)
+    else if (m_content_type == OutlinesType::PS)
         psSwitchAction->setChecked (true);
-    else if (m_content_type & (uint8_t) OutlinesType::SVG)
+    else if (m_content_type == OutlinesType::SVG)
         svgSwitchAction->setChecked (true);
 
     view8x2Action =  new QAction (tr ("8x2 cell window"), this);
@@ -568,7 +567,7 @@ void FontView::setToolBar () {
     addToolBar (Qt::TopToolBarArea, tb);
 
     m_palLabelAction = tb->addWidget (new QLabel (tr ("Color palette:")));
-    m_palLabelAction->setVisible (m_content_type & (uint8_t) OutlinesType::COLR);
+    m_palLabelAction->setVisible (m_content_type == OutlinesType::COLR);
     m_paletteBox = new QComboBox ();
     if (m_cpal) {
 	NameTable *name = dynamic_cast<NameTable *> (m_font->table (CHR ('n','a','m','e')));
@@ -578,7 +577,7 @@ void FontView::setToolBar () {
     connect (m_paletteBox, static_cast<void (QComboBox::*)(int)> (&QComboBox::currentIndexChanged),
 	this, &FontView::switchPalette);
     m_palBoxAction = tb->addWidget (m_paletteBox);
-    m_palBoxAction->setVisible (m_content_type & (uint8_t) OutlinesType::COLR);
+    m_palBoxAction->setVisible (m_content_type == OutlinesType::COLR);
     addToolBar (Qt::TopToolBarArea, tb);
 }
 
@@ -616,7 +615,6 @@ void FontView::changeGlyphOrder (int idx) {
 
 void FontView::switchPalette (int idx) {
     m_paletteIdx = idx;
-    addColorData ();
     switchGlyphOutlines ();
     resetGlyphs (false);
 }
@@ -791,13 +789,13 @@ void FontView::addGlyph () {
         m_glyf_table->addGlyph (m_font);
 	ConicGlyph *g = m_glyf_table->glyph (m_font, gid);
 	g->setModified (true);
-        gctx.setGlyph ((uint8_t) OutlinesType::TT, g);
+        gctx.setGlyph (OutlinesType::TT, g);
     }
     if (m_cff_table) {
         m_cff_table->addGlyph (m_font, subf);
 	ConicGlyph *g = m_cff_table->glyph (m_font, gid);
 	g->setModified (true);
-        gctx.setGlyph ((uint8_t) OutlinesType::PS, g);
+        gctx.setGlyph (OutlinesType::PS, g);
     }
     // No glyph for SVG by default, even if the table is available
     // and displayed in fontview
@@ -813,7 +811,7 @@ void FontView::addGlyph () {
 }
 
 void FontView::clearSvgGlyph () {
-    if (!m_selected.size () || m_content_type != (uint8_t) OutlinesType::SVG)
+    if (!m_selected.size () || m_content_type != OutlinesType::SVG)
         return;
     bool plural = m_selected.size () > 1;
     SvgTable *svgt = dynamic_cast<SvgTable *> (m_svg_table);
@@ -866,7 +864,7 @@ void FontView::loadTables (uint32_t tag) {
             m_glyf_table->fillup ();
             m_glyf_table->unpackData (m_font);
             m_outlines_avail |= (uint8_t) OutlinesType::TT;
-            if (!m_gc_table || tag == CHR('g','l','y','f'))
+            if (tag == CHR('g','l','y','f'))
                 m_gc_table = m_glyf_table;
 	    break;
           case CHR('C','F','F',' '):
@@ -875,7 +873,7 @@ void FontView::loadTables (uint32_t tag) {
             m_cff_table->fillup ();
             m_cff_table->unpackData (m_font);
             m_outlines_avail |= (uint8_t) OutlinesType::PS;
-            if (!m_gc_table || tag == CHR('C','F','F',' ') || tag == CHR('C','F','F','2'))
+            if (tag == CHR('C','F','F',' ') || tag == CHR('C','F','F','2'))
                 m_gc_table = m_cff_table;
 	    break;
           case CHR('S','V','G',' '):
@@ -890,6 +888,9 @@ void FontView::loadTables (uint32_t tag) {
             m_colr = dynamic_cast<ColrTable *> (tbl.get ());
             m_colr->fillup ();
             m_colr->unpackData (m_font);
+            m_outlines_avail |= (uint8_t) OutlinesType::COLR;
+            if (tag == CHR('C','O','L','R'))
+                m_gc_table = m_colr;
 	    break;
           case CHR('C','P','A','L'):
             m_cpal = dynamic_cast<CpalTable *> (tbl.get ());
@@ -960,7 +961,7 @@ void FontView::save () {
     // missing in the SVG table
     if (m_gcount_changed && m_gc_table == m_svg_table) {
 	GlyphContainer *other_cnt = m_glyf_table ? m_glyf_table : m_cff_table;
-	uint8_t other_type = (uint8_t) other_cnt->outlinesType ();
+	OutlinesType other_type = other_cnt->outlinesType ();
 
 	QProgressDialog progress (tr ("Loading glyphs..."), tr ("Abort"), 0, gcnt, this);
 	progress.setCancelButton (nullptr);
@@ -1106,7 +1107,7 @@ void FontView::clear () {
         gctx.clearScene ();
         g->clear ();
         gctx.render (m_content_type, m_cell_size);
-        gctx.drawGlyph (g);
+        gctx.drawGlyph (g, g->gradients);
         gctx.undoGroup ()->activeStack ()->push (ucmd);
         gctx.update (m_content_type);
     }
@@ -1147,7 +1148,7 @@ void FontView::copyCell (bool cut, bool as_ref) {
             gctx.clearScene ();
             g->clear ();
             gctx.render (m_content_type, m_cell_size);
-            gctx.drawGlyph (g);
+            gctx.drawGlyph (g, g->gradients);
             gctx.undoGroup ()->activeStack ()->push (ucmd);
             gctx.update (m_content_type);
         }
@@ -1190,7 +1191,7 @@ void FontView::pasteCell (BoostIn &buf, uint32_t cell_idx, uint32_t clipb_idx, b
     bool refs_ok = gctx.resolveRefs (m_content_type);
     if (refs_ok) {
         gctx.render (m_content_type, m_cell_size);
-        gctx.drawGlyph (g);
+        gctx.drawGlyph (g, g->gradients);
         gctx.undoGroup ()->activeStack ()->push (ucmd);
         gctx.update (m_content_type);
     } else {
@@ -1267,7 +1268,7 @@ void FontView::checkSelection () {
     corrDirAction->setEnabled (has_sel);
     unlinkAction->setEnabled (has_sel);
 
-    if (m_content_type & (uint8_t) OutlinesType::PS) {
+    if (m_content_type == OutlinesType::PS) {
 	autoHintAction->setEnabled (has_sel);
 	clearHintsAction->setEnabled (has_sel);
     }
@@ -1320,7 +1321,7 @@ void FontView::unlinkRefs () {
 	    depctx.removeDependent (gid);
 	}
         gctx.render (m_content_type, m_cell_size);
-        gctx.drawGlyph (g);
+        gctx.drawGlyph (g, g->gradients);
         gctx.undoGroup ()->activeStack ()->push (ucmd);
         gctx.update (m_content_type);
     }
@@ -1329,8 +1330,12 @@ void FontView::unlinkRefs () {
 int FontView::actualHeight (int factor) {
     static const int cell_header_height = 26;
     static const int scroll_padding = 6;
-    return ((m_cell_size + cell_header_height)*factor +
-        scroll_padding + menuBar ()->height () + statusBar ()->height ());
+    QList<QToolBar *> toolbars = findChildren<QToolBar *> ();
+    int ret = (m_cell_size + cell_header_height)*factor +
+        scroll_padding + menuBar ()->height () + statusBar ()->height ();
+    for (QToolBar *tb : toolbars)
+	ret += tb->iconSize ().height ();
+    return ret;
 }
 
 int FontView::actualWidth (int factor) {
@@ -1480,7 +1485,7 @@ void FontView::showGlyphProps () {
 }
 
 void FontView::editCFF () {
-    if (m_content_type & (uint8_t) OutlinesType::PS) {
+    if (m_content_type == OutlinesType::PS) {
 	CffTable *cff = dynamic_cast<CffTable *> (m_cff_table);
 	CffDialog edit (m_font, cff, this);
 	connect (&edit, &CffDialog::glyphNamesChanged, this, &FontView::updateGlyphNames);
@@ -1493,26 +1498,26 @@ void FontView::ensureGlyphOutlinesLoaded (uint16_t gid) {
     ConicGlyph *g;
     std::string gname = gctx.name ().toStdString();
 
-    if (m_glyf_table && !gctx.hasOutlinesType ((uint8_t) OutlinesType::TT)) {
+    if (m_glyf_table && !gctx.hasOutlinesType (OutlinesType::TT)) {
         g = m_glyf_table->glyph (m_font, gid);
-        gctx.setGlyph ((uint8_t) OutlinesType::TT, g);
+        gctx.setGlyph (OutlinesType::TT, g);
     }
-    if (m_cff_table && !gctx.hasOutlinesType ((uint8_t) OutlinesType::PS)) {
+    if (m_cff_table && !gctx.hasOutlinesType (OutlinesType::PS)) {
         g = m_cff_table->glyph (m_font, gid);
-        gctx.setGlyph ((uint8_t) OutlinesType::PS, g);
+        gctx.setGlyph (OutlinesType::PS, g);
     }
-    if (m_svg_table && m_content_type == (uint8_t) OutlinesType::SVG &&
-	!gctx.hasOutlinesType ((uint8_t) OutlinesType::SVG)) {
+    if (m_svg_table && m_content_type == OutlinesType::SVG &&
+	!gctx.hasOutlinesType (OutlinesType::SVG)) {
 	SvgTable *svgt = dynamic_cast<SvgTable *> (m_svg_table);
 	if (!svgt->hasGlyph (gid)) {
 	    svgt->addGlyphAt (m_font, gid);
 	    g = m_svg_table->glyph (m_font, gid);
 	    g->setModified (true);
-	    gctx.setGlyph ((uint8_t) OutlinesType::SVG, g);
-	    gctx.switchOutlinesType ((uint8_t) OutlinesType::SVG);
+	    gctx.setGlyph (OutlinesType::SVG, g);
+	    gctx.switchOutlinesType (OutlinesType::SVG);
 	} else {
 	    g = m_svg_table->glyph (m_font, gid);
-	    gctx.setGlyph ((uint8_t) OutlinesType::SVG, g);
+	    gctx.setGlyph (OutlinesType::SVG, g);
 	}
     }
 }
@@ -1520,36 +1525,28 @@ void FontView::ensureGlyphOutlinesLoaded (uint16_t gid) {
 void FontView::switchOutlines (OutlinesType val) {
     switch (val) {
       case (OutlinesType::TT):
-        m_content_type = (uint8_t) val;
+        m_content_type = val;
         m_gc_table = m_glyf_table;
       break;
       case (OutlinesType::PS):
-        m_content_type = (uint8_t) val;
+        m_content_type = val;
         m_gc_table = m_cff_table;
       break;
       case (OutlinesType::SVG):
-        m_content_type = (uint8_t) val;
+        m_content_type = val;
         m_gc_table = m_svg_table;
       break;
       case (OutlinesType::COLR):
-        if (m_content_type & (uint8_t) OutlinesType::SVG) {
-            if (m_glyf_table) {
-                m_content_type = (uint8_t) OutlinesType::TT;
-                m_gc_table = m_glyf_table;
-            } else if (m_cff_table) {
-                m_content_type = (uint8_t) OutlinesType::PS;
-                m_gc_table = m_cff_table;
-            }
-        } else
-            m_content_type |= (uint8_t) val;
+        m_content_type = val;
+        m_gc_table = m_colr;
       break;
       default:
         ;
     }
-    m_palLabelAction->setVisible (m_content_type & (uint8_t) OutlinesType::COLR);
-    m_palBoxAction->setVisible (m_content_type & (uint8_t) OutlinesType::COLR);
-    cffAction->setEnabled (m_content_type & (uint8_t) OutlinesType::PS);
-    clearSvgGlyphAction->setVisible (m_content_type & (uint8_t) OutlinesType::SVG);
+    m_palLabelAction->setVisible (m_content_type == OutlinesType::COLR);
+    m_palBoxAction->setVisible (m_content_type == OutlinesType::COLR);
+    cffAction->setEnabled (m_content_type == OutlinesType::PS);
+    clearSvgGlyphAction->setVisible (m_content_type == OutlinesType::SVG);
     if (!loadGlyphs ())
         return;
     if (!switchGlyphOutlines ())
@@ -1894,6 +1891,16 @@ bool FontView::loadGlyphs () {
         if (needs_ctx_init || !gctx.hasOutlinesType (m_content_type)) {
             g = m_gc_table->glyph (m_font, i);
             gctx.setGlyph (m_content_type, g);
+	    if (m_content_type == OutlinesType::COLR) {
+		if (m_cff_table && !gctx.hasOutlinesType (OutlinesType::PS)) {
+		    ConicGlyph *psg = m_cff_table->glyph (m_font, i);
+		    gctx.setGlyph (OutlinesType::PS, psg);
+		} else if (m_glyf_table && !gctx.hasOutlinesType (OutlinesType::TT)) {
+		    ConicGlyph *ttg = m_glyf_table->glyph (m_font, i);
+		    gctx.setGlyph (OutlinesType::TT, ttg);
+		}
+		gctx.providePalette (m_cpal->palette (0));
+	    }
         }
 	gctx.setFontViewSize (m_cell_size);
         gctx.switchOutlinesType (m_content_type, false);
@@ -1907,8 +1914,6 @@ bool FontView::loadGlyphs () {
         progress.setValue (i);
     }
     progress.setValue (m_font->glyph_cnt);
-    if (m_outlines_init & m_content_type)
-        return true;
 
     progress.setLabelText (tr ("Resolving references..."));
     progress.show ();
@@ -1916,6 +1921,10 @@ bool FontView::loadGlyphs () {
     for (i=0; i<m_font->glyph_cnt; i++) {
         g = m_glyphs[i].glyph (m_content_type);
         if (g) {
+	    if (m_content_type == OutlinesType::COLR &&
+		m_outlines_avail & (uint8_t) OutlinesType::TT) {
+		m_glyphs[i].resolveRefs (OutlinesType::TT);
+	    }
             m_glyphs[i].resolveRefs (m_content_type);
             qApp->instance ()->processEvents ();
         }
@@ -1927,38 +1936,12 @@ bool FontView::loadGlyphs () {
     return true;
 }
 
-bool FontView::addColorData () {
-    if ((m_outlines_avail & (uint8_t) OutlinesType::COLR) &&
-        !(m_content_type & (uint8_t) OutlinesType::SVG)) {
-	QProgressDialog progress (tr ("Resolving color layers..."), tr ("Abort"), 0, m_font->glyph_cnt, this);
-	progress.setWindowModality (Qt::WindowModal);
-	progress.setCancelButton (nullptr);
-        progress.show ();
-
-        for (uint16_t i=0; i<m_font->glyph_cnt; i++) {
-            ConicGlyph *g = m_glyphs[i].glyph (m_content_type);
-            if (g) {
-                g->addColorData (m_colr, m_cpal, m_paletteIdx);
-                std::vector<uint16_t> refs = g->layerIds ();
-                for (uint16_t j=0; j<refs.size (); j++)
-                    g->provideLayer (m_glyphs[refs[j]].glyph (m_content_type), j);
-                qApp->instance ()->processEvents ();
-            }
-            progress.setValue (i);
-        }
-        progress.setValue (m_font->glyph_cnt);
-        m_outlines_init |= (uint8_t) OutlinesType::COLR;
-    }
-    m_outlines_init |= m_content_type;
-    return true;
-}
-
 bool FontView::switchGlyphOutlines () {
-    uint16_t i, gcnt = m_glyphs.size ();
-
-    for (i=0; i<gcnt; i++) {
-	m_glyphs[i].setFontViewSize (m_cell_size);
-        m_glyphs[i].switchOutlinesType (m_content_type, false);
+    for (auto &gctx : m_glyphs) {
+	if (m_cpal)
+	    gctx.providePalette (m_cpal->palette (m_paletteIdx));
+	gctx.setFontViewSize (m_cell_size);
+        gctx.switchOutlinesType (m_content_type, false);
     }
     return true;
 }
@@ -2082,7 +2065,7 @@ void FontView::undoableCommand (bool (ConicGlyph::*fn)(bool), const char *prog_l
 	    ucmd->setText (tr (undo_lbl));
 	    if ((g->*fn) (false)) {
 		gctx.render (m_content_type, m_cell_size);
-		gctx.drawGlyph (g);
+		gctx.drawGlyph (g, g->gradients);
 		gctx.undoGroup ()->activeStack ()->push (ucmd);
 	    } else
 		delete ucmd;
@@ -2130,7 +2113,7 @@ void FontView::autoHint () {
 	    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_glyphs[gid], m_content_type);
 	    ucmd->setText (tr ("Autohint"));
 	    if (g->autoHint (*m_font)) {
-		gctx.drawGlyph (g);
+		gctx.drawGlyph (g, g->gradients);
 		gctx.undoGroup ()->activeStack ()->push (ucmd);
 	    } else
 		delete ucmd;
@@ -2155,7 +2138,7 @@ void FontView::clearHints () {
 	    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_glyphs[gid], m_content_type);
 	    ucmd->setText (tr ("Clear hints"));
 	    if (g->clearHints ()) {
-		gctx.drawGlyph (g);
+		gctx.drawGlyph (g, g->gradients);
 		gctx.undoGroup ()->activeStack ()->push (ucmd);
 	    } else
 		delete ucmd;

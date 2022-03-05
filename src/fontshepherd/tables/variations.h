@@ -41,6 +41,11 @@ struct blend {
     const std::string toString () const;
 };
 
+struct delta_set_index_map {
+    uint8_t format, entryFormat;
+    std::string data;
+};
+
 struct variation_data {
     uint16_t shortDeltaCount;
     std::vector<uint16_t> regionIndexes;
@@ -54,8 +59,12 @@ struct variation_store {
 };
 
 namespace FontVariations {
+    const uint8_t INNER_INDEX_BIT_COUNT_MASK = 0x0F;
+    const uint8_t MAP_ENTRY_SIZE_MASK = 0x30;
+
     void readVariationStore (char *data, uint32_t pos, variation_store &vstore);
     void writeVariationStore (QDataStream &os, QBuffer &buf, variation_store &vstore);
+    void readIndexMap (char *data, uint32_t pos, delta_set_index_map &map);
 };
 
 #endif

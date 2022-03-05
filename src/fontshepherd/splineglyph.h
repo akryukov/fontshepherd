@@ -38,6 +38,7 @@
 #include <QUndoStack>
 #include "charbuffer.h"
 
+#include "colors.h"
 #include "cffstuff.h"
 
 #define HntMax	96		/* PS says at most 96 hints */
@@ -52,14 +53,16 @@
 typedef long double extended_t;
 typedef struct ttffont sFont;
 
-enum class OutlinesType {NONE = 0, TT = 1, PS = 2, SVG = 4, COLR = 8};
+enum class OutlinesType {
+    NONE = 0, TT = 1, PS = 2, SVG = 4, COLR = 8
+};
 
 enum class OverlapType {
     Remove, RemoveSelected, Intersect, Intersel, Exclude, FindInter, Fisel
 };
 
-enum class FigureType {
-    Circle, Ellipse, Rect, Polygon, Polyline, Line, Path
+enum class ElementType {
+    Reference, Circle, Ellipse, Rect, Polygon, Polyline, Line, Path
 };
 
 typedef struct hint_mask {
@@ -134,10 +137,19 @@ typedef struct tpoint {
     double t;
 } TPoint;
 
+
+#ifndef _FS_STRUCT_DBOUNDS_DEFINED
+#define _FS_STRUCT_DBOUNDS_DEFINED
 typedef struct dbounds {
     double minx, maxx;
     double miny, maxy;
 } DBounds;
+#endif
+
+typedef struct ibounds {
+    short int minx, maxx;
+    short int miny, maxy;
+} iBounds;
 
 #ifndef _FS_ENUM_POINTTYPE_COLOR_DEFINED
 #define _FS_ENUM_POINTTYPE_COLOR_DEFINED
@@ -294,36 +306,12 @@ private:
     static bool _approximateFromPoints (ConicPoint *from, ConicPoint *to, std::vector<TPoint> &mid, BasePoint *nextcp, BasePoint *prevcp, bool order2);
 };
 
-#ifndef _FS_STRUCT_RGBA_COLOR_DEFINED
-#define _FS_STRUCT_RGBA_COLOR_DEFINED
-struct rgba_color {
-    unsigned char red=0, green=0, blue=0, alpha=255;
-};
-#endif
-
-struct gradient_stop {
-    rgba_color color;
-    double offset;
-};
-
-enum gradient_spread_method {
-    sm_pad, sm_reflect, sm_repeat
-};
-
-typedef struct gradient {
-    bool is_linear;
-    gradient_spread_method sm;
-    std::array<double, 6> transform;
-    std::map<std::string, double> props;
-    std::vector<struct gradient_stop> stops;
-    gradient () : transform {1, 0, 0, 1, 0, 0} {};
-} Gradient;
-
 enum em_linecap { lc_inherit = 0, lc_butt, lc_round, lc_square };
 enum em_linejoin { lj_inherit = 0, lj_miter, lj_round, lj_bevel };
 
 typedef struct svg_state {
     struct rgba_color fill, stroke;
+    uint16_t fill_idx, stroke_idx;
     bool fill_set, stroke_set;
     int stroke_width;
     em_linecap linecap;
@@ -351,9 +339,11 @@ typedef struct svg_state {
     std::string lineJoin ();
     void setLineJoin (const std::string &arg);
 
+    struct svg_state& operator = (const svg_state &oldstate);
+
     friend bool operator==(const svg_state &lhs, const svg_state &rhs);
     friend bool operator!=(const svg_state &lhs, const svg_state &rhs);
-    struct svg_state& operator = (const struct svg_state &oldstate);
+    friend svg_state operator + (const svg_state &lhs, const svg_state &rhs);
 } SvgState;
 Q_DECLARE_METATYPE (SvgState);
 
@@ -380,7 +370,19 @@ typedef struct conicpointlist {
 
 class FigureItem;
 
-class DrawableFigure {
+class Drawable {
+public:
+    bool selected = false;
+    std::string type;
+    SvgState svgState;
+    std::array<double, 6> transform = {1, 0, 0, 1, 0, 0};
+
+    virtual ElementType elementType () const = 0;
+    virtual void quickBounds (DBounds &b) = 0;
+    virtual void realBounds (DBounds &b, bool do_init=false) = 0;
+};
+
+class DrawableFigure : public Drawable {
     friend class ConicGlyph;
     friend class GlyphContext;
 
@@ -396,10 +398,10 @@ public:
 
     void svgClosePath (ConicPointList *cur, bool order2);
     void svgReadPointProps (const std::string &pp, int hintcnt);
-    FigureType svgFigureType ();
+    ElementType elementType () const override;
 
     void realBounds (DBounds &b, bool do_init=false);
-    void quickBounds (DBounds &b);
+    void quickBounds (DBounds &b) override;
     bool hasSelected () const;
 
     bool mergeWith (const DrawableFigure &fig);
@@ -421,15 +423,11 @@ public:
 
     //DrawableFigure& operator=(const DrawableFigure &fig);
 
-    std::string type;
     std::map<std::string, double> props;
+    std::vector<BasePoint> points;
     std::vector<ConicPointList> contours;
     bool order2 = false;
-    std::vector<BasePoint> points;
-    SvgState state;
-    std::array<double, 6> transform = {1, 0, 0, 1, 0, 0};
     FigureItem *item = nullptr;
-    bool selected = false;
 
 private:
     void appendSplines (const DrawableFigure &fig);
@@ -451,41 +449,36 @@ private:
 class ConicGlyph;
 class RefItem;
 
-typedef struct refglyph {
-    bool checked: 1;
-    bool selected: 1;
-    bool use_my_metrics: 1;
-    bool round: 1;
-    bool point_match: 1;
-    unsigned int reserved: 3;
-    uint8_t adobe_enc;
-    uint16_t GID;
+class DrawableReference : public Drawable {
+public:
+    bool use_my_metrics = false;
+    bool round = false;
+    bool point_match = false;
+    uint8_t adobe_enc = 0;
+    uint16_t GID = 0;
     uint16_t match_pt_base;
     uint16_t match_pt_ref;
-    /* transformation matrix (first 2 rows of a 3x3 matrix, missing row is 0,0,1) */
-    std::array<double, 6> transform;
-    /* for GUI: that's where the source glyph name is going to be displayed */
+    // for fonts with COLR table: may refer either to the glyphs defined in the
+    // table itself, or to the main glyph container (glyf or CFF(2))
+    OutlinesType outType = OutlinesType::NONE;
+    // for GUI: that's where the source glyph name is going to be displayed
     BasePoint top;
     ConicGlyph *cc;
     RefItem *item;
 
+    ElementType elementType () const override;
+    void quickBounds (DBounds &b);
+    void realBounds (DBounds &b, bool do_init=false);
     uint16_t numContours () const;
     uint16_t numPoints () const;
     uint16_t depth (uint16_t val) const;
-} RefGlyph;
+};
 
 struct instrdata {
     uint8_t *instrs;
     uint16_t instr_cnt;
     uint8_t *bts;
     bool in_composit;
-};
-
-struct color_layer {
-    uint16_t GID;
-    ConicGlyph *glyph;  // may contain a reference to the glyph itself
-    bool std_color;     // if true, then palette is not specified
-    struct rgba_color palette;
 };
 
 // Need this to reduce number of constructor arguments for ConicGlyph,
@@ -520,6 +513,7 @@ class ConicGlyph {
     friend class GlyphContext;
     friend class CffTable;
     friend class SvgTable;
+    friend class ColrTable;
 
 public:
     ConicGlyph (uint16_t gid, BaseMetrics gm);
@@ -542,6 +536,7 @@ public:
     // this figure instead of creating a new one. This is the normal situation
     // for TTF/CFF fonts, where there is just one figure for each glyph and there
     // is no need to produce more.
+    bool fromSVG (pugi::xml_document &doc, int g_idx=-1, DrawableFigure *target=nullptr);
     bool fromSVG (std::istream &buf, int g_idx=-1, DrawableFigure *target=nullptr);
     std::string toSVG (struct rgba_color *palette=nullptr,
 	uint8_t flags = SVGOptions::dumpHeader | SVGOptions::doExtras | SVGOptions::doAppSpecific);
@@ -554,12 +549,8 @@ public:
     void renumberPoints ();
     // for reference processing
     uint16_t getTTFPoint (uint16_t pnum, uint16_t add, BasePoint *&pt);
-    void unlinkRef (RefGlyph &ref);
+    void unlinkRef (DrawableReference &ref);
     void unlinkRefs (bool selected);
-
-    void addColorData (ColrTable *colr, CpalTable *cpal, uint16_t pal_idx=0);
-    std::vector<uint16_t> layerIds ();
-    void provideLayer (ConicGlyph *g, uint16_t layidx);
 
     uint16_t gid ();
     uint16_t upm ();
@@ -596,6 +587,7 @@ public:
     void mergeContours ();
 
     DBounds bb;
+    iBounds clipBox;
     std::vector<StemInfo> hstem;
     std::vector<StemInfo> vstem;
     std::list<DrawableFigure> figures;
@@ -626,8 +618,7 @@ private:
     void svgParseRect (DrawableFigure &fig, bool inv=false);
     void svgParseLine (DrawableFigure &fig);
     void svgParsePoly (DrawableFigure &fig, bool is_gon);
-    void figureAddGradient (pugi::xml_document &doc, DrawableFigure &fig,
-        std::string &id, std::array<double, 6> &transform, bool is_stroke);
+    void figureAddGradient (pugi::xml_document &doc, Drawable &fig, std::array<double, 6> &transform, bool is_stroke);
     void svgDumpHints (std::stringstream &ss);
 
     // NB: each glyph object knows neither its name nor its unicode, but only GID,
@@ -645,9 +636,8 @@ private:
     const PrivateDict *m_private = nullptr;
     OutlinesType m_outType = OutlinesType::NONE;
 
-    std::vector<RefGlyph> refs;
+    std::vector<DrawableReference> refs;
     std::vector<ConicGlyph*> dependents;
     std::vector <HintMask> countermasks;
-    std::vector <struct color_layer> clayers;
     std::unique_ptr<QUndoStack> m_undoStack;
 };

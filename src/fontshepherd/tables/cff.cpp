@@ -1949,6 +1949,7 @@ ConicGlyph* CffTable::glyph (sFont* fnt, uint16_t gid) {
 	for (auto &ref: g->refs) {
 	    uint16_t uni = cff::AdobeStandardEncoding[ref.adobe_enc];
 	    ref.GID = fnt->enc->gidByUnicode (uni);
+	    ref.outType = OutlinesType::PS;
 	}
     }
     g->setModified (false);

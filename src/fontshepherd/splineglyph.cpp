@@ -89,6 +89,7 @@ ConicGlyph::ConicGlyph (uint16_t gid, BaseMetrics gm) :
     GID (gid), units_per_em (gm.upm), m_ascent (gm.ascent), m_descent (gm.descent) {
     instrdata = {};
     bb = DBounds ();
+    clipBox = { 0, 0, 0, 0 };
     m_undoStack = std::unique_ptr<QUndoStack> (new QUndoStack ());
 };
 
@@ -218,7 +219,7 @@ void ConicGlyph::categorizePoints () {
     for (auto it=figures.begin (); it != figures.end (); it++) {
 	auto &fig = *it;
         std::vector<ConicPointList> &conics = fig.contours;
-	if (fig.state.point_props_set)
+	if (fig.svgState.point_props_set)
 	    continue;
 
         for (size_t j=0; j<conics.size (); j++) {
@@ -326,7 +327,8 @@ void ConicGlyph::readttfcompositeglyph (BoostIn &buf) {
 	    break;
 	}
 
-	RefGlyph cur = RefGlyph ();
+	DrawableReference cur;
+	cur.outType = OutlinesType::TT;
 	int16_t arg1, arg2;
 
 	buf >> flags;
@@ -427,7 +429,7 @@ std::vector<uint16_t> ConicGlyph::refersTo () const {
 
 int ConicGlyph::checkRefs (uint16_t gid, uint16_t gcnt) {
     for (auto &ref : refs) {
-        if (ref.GID == gid) {
+        if (ref.GID == gid && ref.outType == m_outType) {
             FontShepherd::postError (
                 tr ("Self-referencial glyph"),
                 tr ("Attempt to make a glyph that refers to itself: %1").arg (ref.GID),
@@ -445,6 +447,14 @@ int ConicGlyph::checkRefs (uint16_t gid, uint16_t gcnt) {
             if (ret > 0)
                 return ret;
         }
+
+	// Couldn't do this before reference glyphs are available
+	if (m_outType == OutlinesType::COLR && ref.cc && !ref.svgState.fill_source_id.empty ()) {
+	    auto &grad = gradients[ref.svgState.fill_source_id];
+	    DBounds bb;
+	    ref.quickBounds (bb);
+	    grad.convertBoundingBox (bb);
+	}
     }
     return 0;
 }
@@ -514,7 +524,7 @@ void ConicGlyph::renumberPoints () {
 	lastpt = fig.renumberPoints (lastpt);
 }
 
-void ConicGlyph::unlinkRef (RefGlyph &ref) {
+void ConicGlyph::unlinkRef (DrawableReference &ref) {
     for (auto &fig: ref.cc->figures) {
 	DrawableFigure newf (fig);
 	for (auto &spls: newf.contours)
@@ -552,40 +562,6 @@ void ConicGlyph::unlinkRefs (bool selected) {
     for (auto &figure : this->figures)
 	lastpt = figure.renumberPoints (lastpt);
     checkBounds (bb, false);
-}
-
-void ConicGlyph::addColorData (ColrTable *colr, CpalTable *cpal, uint16_t pal_idx) {
-    uint16_t i;
-
-    if (colr->numGlyphLayers (GID)) {
-	std::vector<struct layer_record> &glyphLayers = colr->glyphLayers (GID);
-	uint16_t num_layers = glyphLayers.size ();
-	clayers.resize (num_layers);
-	for (i=0; i<num_layers; i++) {
-	    uint16_t palidx = glyphLayers[i].paletteIndex;
-	    clayers[i].GID = glyphLayers[i].GID;
-	    clayers[i].std_color = false;
-
-	    if (palidx != 0xFFFF) {
-		struct cpal_palette *pal = cpal->palette (pal_idx);
-		clayers[i].palette = pal->color_records[palidx];
-	    } else
-		clayers[i].std_color = true;
-	}
-    }
-}
-
-std::vector<uint16_t> ConicGlyph::layerIds () {
-    std::vector<uint16_t> ret;
-    ret.reserve (clayers.size ());
-    for (uint16_t i=0; i<clayers.size (); i++)
-	ret.push_back (clayers[i].GID);
-    return ret;
-}
-
-void ConicGlyph::provideLayer (ConicGlyph *g, uint16_t layidx) {
-    assert (layidx < clayers.size ());
-    clayers[layidx].glyph = g;
 }
 
 void ConicGlyph::fromTTF (BoostIn &buf, uint32_t off) {
@@ -681,7 +657,7 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
 	if (refs.size () > maxp->maxComponentElements ())
 	    maxp_contents.maxComponentElements = refs.size ();
 	for (size_t i=0; i<refs.size (); i++) {
-	    RefGlyph &ref = refs[i];
+	    DrawableReference &ref = refs[i];
 	    uint16_t flags = 0;
 	    int16_t arg1, arg2;
 	    if (ref.round)
@@ -1004,8 +980,8 @@ void ConicGlyph::fromPS (BoostIn &buf, const struct cffcontext &ctx) {
 			FontShepherd::postWarning (tr ("SEAC-like endchar in %1 is deprecated for Type2").arg (GID));
 		}
 		/* stack[0] must be the lsidebearing of the accent. I'm not sure why */
-		RefGlyph r1 = RefGlyph ();
-		RefGlyph r2 = RefGlyph ();
+		DrawableReference r1;
+		DrawableReference r2;
 		r2.transform[0] = 1;
                 r2.transform[3] = 1;
 		r2.transform[4] = stack[1] - (stack[0]-bb.minx);
@@ -2320,15 +2296,30 @@ QUndoStack *ConicGlyph::undoStack () {
     return m_undoStack.get ();
 }
 
-uint16_t refglyph::numContours () const {
+ElementType DrawableReference::elementType () const {
+    return ElementType::Reference;
+}
+
+void DrawableReference::quickBounds (DBounds &b) {
+    if (cc)
+	b = cc->bb;
+    else
+	b = { 0, 0, 0, 0 };
+}
+
+void DrawableReference::realBounds (DBounds &b, bool) {
+    return quickBounds (b);
+}
+
+uint16_t DrawableReference::numContours () const {
     return cc->numCompositeContours ();
 }
 
-uint16_t refglyph::numPoints () const {
+uint16_t DrawableReference::numPoints () const {
     return cc->numCompositePoints ();
 }
 
-uint16_t refglyph::depth (uint16_t val) const {
+uint16_t DrawableReference::depth (uint16_t val) const {
     return (val + cc->componentDepth (val));
 }
 

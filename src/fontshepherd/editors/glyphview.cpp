@@ -221,7 +221,7 @@ void GlyphViewContainer::setMenuBar () {
     ttSwitchAction = new QAction (tr ("Show TrueType Outlines"), this);
     psSwitchAction = new QAction (tr ("Show PostScript Outlines"), this);
     svgSwitchAction = new QAction (tr ("Show SVG Outlines"), this);
-    //colrSwitchAction = new QAction (tr ("Show Colored Outlines"), this);
+    colrSwitchAction = new QAction (tr ("Show Colored Outlines"), this);
 
     ttSwitchAction->setData (QVariant (static_cast<uint> (OutlinesType::TT)));
     ttSwitchAction->setCheckable (true);
@@ -232,15 +232,15 @@ void GlyphViewContainer::setMenuBar () {
     svgSwitchAction->setData (QVariant (static_cast<uint> (OutlinesType::SVG)));
     svgSwitchAction->setCheckable (true);
     svgSwitchAction->setEnabled (false);
-    //colrSwitchAction->setData (QVariant (static_cast<uint> (OutlinesType::COLR)));
-    //colrSwitchAction->setCheckable (true);
-    //colrSwitchAction->setEnabled (m_outlines_avail & (uint8_t) OutlinesType::COLR);
+    colrSwitchAction->setData (QVariant (static_cast<uint> (OutlinesType::COLR)));
+    colrSwitchAction->setCheckable (true);
+    colrSwitchAction->setEnabled (false);
 
     m_switchOutlineActions = new QActionGroup (this);
     m_switchOutlineActions->addAction (ttSwitchAction);
     m_switchOutlineActions->addAction (psSwitchAction);
     m_switchOutlineActions->addAction (svgSwitchAction);
-    //m_switchOutlineActions->addAction (colrSwitchAction);
+    m_switchOutlineActions->addAction (colrSwitchAction);
 
     //NB: don't check any of the actions from this group, as there is no glyph yet
 
@@ -353,7 +353,7 @@ void GlyphViewContainer::setMenuBar () {
     viewMenu->addAction (ttSwitchAction);
     viewMenu->addAction (psSwitchAction);
     viewMenu->addAction (svgSwitchAction);
-    //viewMenu->addAction (colrSwitchAction);
+    viewMenu->addAction (colrSwitchAction);
     viewMenu->addSeparator ();
     viewMenu->addAction (figPalAction);
     viewMenu->addSeparator ();
@@ -456,7 +456,7 @@ void GlyphViewContainer::setFigPalette (QSettings &settings) {
     m_figDock->resize (w, h);
 }
 
-void GlyphViewContainer::addGlyph (GlyphContext &gctx, uint8_t content_type) {
+void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type) {
     setWindowTitle (QString ("%1 - %2").arg (m_font.fontname).arg (gctx.name ()));
 
     gctx.switchOutlinesType (content_type, true);
@@ -509,19 +509,20 @@ void GlyphViewContainer::addGlyph (GlyphContext &gctx, uint8_t content_type) {
 
     m_defaultPaletteToolAction->setChecked (true);
 
-    ttSwitchAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::TT));
-    psSwitchAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
-    svgSwitchAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::SVG));
+    ttSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::TT));
+    psSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+    svgSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::SVG));
+    colrSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::COLR));
 
-    autoHintAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
-    hmUpdateAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
-    clearHintsAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
+    autoHintAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+    hmUpdateAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+    clearHintsAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
 
-    if (content_type & (uint8_t) OutlinesType::TT)
+    if (content_type == OutlinesType::TT)
         ttSwitchAction->setChecked (true);
-    else if (content_type & (uint8_t) OutlinesType::PS)
+    else if (content_type == OutlinesType::PS)
         psSwitchAction->setChecked (true);
-    else if (content_type & (uint8_t) OutlinesType::SVG)
+    else if (content_type == OutlinesType::SVG)
         svgSwitchAction->setChecked (true);
 
     gctx.updatePoints ();
@@ -548,7 +549,7 @@ void GlyphViewContainer::switchToTab (int index) {
     GlyphView *active = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
     GlyphScene *act_scene = qobject_cast<GlyphScene *> (active->scene ());
     GlyphContext &gctx = active->glyphContext ();
-    uint8_t ctype = active->outlinesType ();
+    OutlinesType ctype = active->outlinesType ();
 
     m_ug_container->setActiveGroup (active->undoGroup ());
     setWindowTitle (QString ("%1 - %2").arg (m_font.fontname).arg (active->glyphName ()));
@@ -571,19 +572,22 @@ void GlyphViewContainer::switchToTab (int index) {
         vAction = m_defaultPaletteToolAction;
     vAction->setChecked (true);
 
-    ttSwitchAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::TT));
-    psSwitchAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
-    svgSwitchAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::SVG));
-    if (ctype & (uint8_t) OutlinesType::TT)
+    ttSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::TT));
+    psSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+    svgSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::SVG));
+    colrSwitchAction->setEnabled (gctx.hasOutlinesType (OutlinesType::COLR));
+    if (ctype == OutlinesType::TT)
         ttSwitchAction->setChecked (true);
-    else if (ctype & (uint8_t) OutlinesType::PS)
+    else if (ctype == OutlinesType::PS)
         psSwitchAction->setChecked (true);
-    else if (ctype & (uint8_t) OutlinesType::SVG)
+    else if (ctype == OutlinesType::SVG)
         svgSwitchAction->setChecked (true);
+    else if (ctype == OutlinesType::COLR)
+        colrSwitchAction->setChecked (true);
 
-    autoHintAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
-    hmUpdateAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
-    clearHintsAction->setEnabled (gctx.hasOutlinesType ((uint8_t) OutlinesType::PS));
+    autoHintAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+    hmUpdateAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+    clearHintsAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
 
     m_figPalContainer->setCurrentIndex (index);
 
@@ -619,15 +623,15 @@ bool GlyphViewContainer::eventFilter (QObject *watched, QEvent *event) {
 
 // This one is called when a click in fontview activates a previously
 // opened, but currently inactive glyph view tab
-void GlyphViewContainer::switchToGlyph (const uint16_t gid, uint8_t ctype) {
+void GlyphViewContainer::switchToGlyph (const uint16_t gid, OutlinesType ctype) {
     if (m_tabmap.count (gid))
         m_glyphAreaContainer->setCurrentIndex (m_tabmap[gid]);
 
-    if (ctype & (uint8_t) OutlinesType::TT)
+    if (ctype == OutlinesType::TT)
         ttSwitchAction->trigger ();
-    else if (ctype & (uint8_t) OutlinesType::PS)
+    else if (ctype == OutlinesType::PS)
         psSwitchAction->trigger ();
-    else if (ctype & (uint8_t) OutlinesType::SVG)
+    else if (ctype == OutlinesType::SVG)
         svgSwitchAction->trigger ();
 }
 
@@ -960,7 +964,8 @@ GlyphView::GlyphView (
     // See André Vautour's comment at https://bugreports.qt.io/browse/QTBUG-85728
     QEvent event (QEvent::WindowActivate);
     QCoreApplication::sendEvent (scene, &event);
-    m_context.drawGlyph (m_context.glyph (outlinesType ()));
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+    m_context.drawGlyph (g, g->gradients);
 
     m_figMod = std::unique_ptr<FigureModel>
 	(new FigureModel (m_context.topItem (), m_context.glyph (outlinesType ())));
@@ -970,7 +975,7 @@ GlyphView::GlyphView (
     figPalContainer->addWidget (m_figPal);
     figPalContainer->setCurrentWidget (m_figPal);
 
-    m_figPal->setEnabled (outlinesType () & (uint8_t) OutlinesType::SVG);
+    m_figPal->setEnabled (outlinesType () == OutlinesType::SVG);
     m_figPal->selectRow (m_figMod->rowCount () - (scene->activePanelIndex () + 1));
 
     connect (m_figPal->selectionModel (), &QItemSelectionModel::selectionChanged, this, &GlyphView::setActiveFigure);
@@ -1217,7 +1222,7 @@ void GlyphView::doPaste () {
     bool refs_ok = m_context.resolveRefs (outlinesType ());
     if (refs_ok) {
         m_context.render (outlinesType ());
-        m_context.drawGlyph (g);
+        m_context.drawGlyph (g, g->gradients);
         m_context.undoGroup (true)->activeStack ()->push (ucmd);
         m_context.update (outlinesType ());
     } else {
@@ -1247,7 +1252,7 @@ void GlyphView::undoableCommand (bool (ConicGlyph::*fn)(bool), const char *undo_
     ConicGlyph *g = m_context.glyph (outlinesType ());
     if ((g->*fn) (selected)) {
 	m_context.clearScene ();
-	m_context.drawGlyph (g);
+	m_context.drawGlyph (g, g->gradients);
         m_context.render (outlinesType ());
         m_context.update (outlinesType ());
         m_context.undoGroup (true)->activeStack ()->push (ucmd);
@@ -1405,12 +1410,13 @@ void GlyphView::updateFill () {
 
 void GlyphView::switchOutlines (OutlinesType val) {
     GlyphScene *gsc = qobject_cast<GlyphScene *> (scene ());
-    gsc->switchOutlines ((uint8_t) val);
-    m_figPal->setOutlinesType ((uint8_t) val);
+    gsc->switchOutlines (val);
+    m_figPal->setOutlinesType (val);
     m_context.switchOutlinesType (gsc->outlinesType (), true);
     m_context.clearScene ();
-    m_context.drawGlyph (m_context.glyph (gsc->outlinesType ()));
-    m_figPal->setEnabled (outlinesType () & (uint8_t) OutlinesType::SVG);
+    ConicGlyph *g = m_context.glyph (gsc->outlinesType ());
+    m_context.drawGlyph (g, g->gradients);
+    m_figPal->setEnabled (outlinesType () == OutlinesType::SVG);
 }
 
 void GlyphView::on_switchOutlines (QAction *action) {
@@ -1418,7 +1424,7 @@ void GlyphView::on_switchOutlines (QAction *action) {
     switchOutlines (val);
 }
 
-uint8_t GlyphView::outlinesType () {
+OutlinesType GlyphView::outlinesType () {
     GlyphScene *gsc = qobject_cast<GlyphScene *> (scene ());
     return gsc->outlinesType ();
 }
@@ -1476,7 +1482,7 @@ void GlyphView::onSwapPanels (const int pos1, const int pos2) {
     m_figMod->swapFigures (inv_pos2, inv_pos1);
 }
 
-void GlyphView::glyphRedrawn (uint8_t otype, const int pidx) {
+void GlyphView::glyphRedrawn (OutlinesType otype, const int pidx) {
     m_figMod->reset (m_context.topItem (), m_context.glyph (otype));
     int inv_pidx = m_figMod->rowCount () - (pidx + 1);
     m_figPal->selectRow (inv_pidx);
@@ -1489,7 +1495,7 @@ void GlyphView::figurePropsChanged (QGraphicsItem *panel, const int pidx) {
     FigureItem *ctrItem = dynamic_cast<FigureItem *> (panel);
     if (ctrItem) {
 	DrawableFigure &fig = ctrItem->svgFigure ();
-	m_figMod->setRowState (inv_pidx, fig.state);
+	m_figMod->setRowState (inv_pidx, fig.svgState);
 	connect (m_figMod.get (), &QAbstractItemModel::dataChanged, this, &GlyphView::onFigurePaletteUpdate);
     }
 }
@@ -1510,7 +1516,7 @@ void GlyphView::onFigurePaletteUpdate (const QModelIndex &topLeft, const QModelI
     auto it = g->figures.begin ();
     std::advance (it, row);
     auto &fig = *it;
-    fig.state = state;
+    fig.svgState = state;
 
     m_context.updateFill ();
     m_context.render (outlinesType ());
@@ -1527,7 +1533,7 @@ QAction* GlyphView::activeAction () {
     return m_activeAction;
 }
 
-GlyphScene::GlyphScene (sFont &fnt, GlyphContext &gctx, uint8_t gtype, QObject *parent) :
+GlyphScene::GlyphScene (sFont &fnt, GlyphContext &gctx, OutlinesType gtype, QObject *parent) :
     QGraphicsScene (parent),
     m_font (fnt),
     m_context (gctx),
@@ -1629,7 +1635,7 @@ void GlyphScene::drawBackground (QPainter *painter, const QRectF &exposed) {
     painter->drawLine (QLineF (exposed.left (), m_font.ascent, exposed.right (), m_font.ascent));
     painter->drawLine (QLineF (exposed.left (), m_font.descent, exposed.right (), m_font.descent));
 
-    if (m_outlines_type == (uint8_t) OutlinesType::PS) {
+    if (m_outlines_type == OutlinesType::PS) {
 	const PrivateDict *pd = m_context.glyph (m_outlines_type)->privateDict ();
 	double l = exposed.right () - exposed.left ();
 
@@ -2294,10 +2300,10 @@ void GlyphScene::moveSelected (QPointF move) {
         delete moveCmd;
 }
 
-void GlyphScene::switchOutlines (uint8_t gtype) {
+void GlyphScene::switchOutlines (OutlinesType gtype) {
     m_outlines_type = gtype;
 }
 
-uint8_t GlyphScene::outlinesType () {
+OutlinesType GlyphScene::outlinesType () {
     return (m_outlines_type);
 }
