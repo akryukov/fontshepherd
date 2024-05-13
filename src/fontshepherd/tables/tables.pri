@@ -27,6 +27,7 @@
 SOURCES += tables/cff.cpp
 SOURCES += tables/cmap.cpp
 SOURCES += tables/colr.cpp
+SOURCES += tables/gasp.cpp
 SOURCES += tables/gdef.cpp
 SOURCES += tables/glyf.cpp
 SOURCES += tables/glyphnames.cpp
@@ -42,6 +43,7 @@ SOURCES += tables/variations.cpp
 HEADERS += tables/cff.h
 HEADERS += tables/cmap.h
 HEADERS += tables/colr.h
+HEADERS += tables/gasp.h
 HEADERS += tables/gdef.h
 HEADERS += tables/glyf.h
 HEADERS += tables/glyphcontainer.h

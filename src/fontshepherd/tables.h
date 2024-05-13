@@ -28,6 +28,8 @@
 #ifndef _FONSHEPHERD_TABLES_H
 #define _FONSHEPHERD_TABLES_H
 #include <stdint.h>
+// otherwise getting "incomplete type error" on array declarations
+#include <array>
 #include <QtWidgets>
 #include "qhexedit.h"
 

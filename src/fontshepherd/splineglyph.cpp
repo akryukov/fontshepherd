@@ -407,6 +407,7 @@ void ConicGlyph::readttfcompositeglyph (BoostIn &buf) {
 	}
 	cur.use_my_metrics = (flags&_USE_MY_METRICS)?1:0;
 	cur.round = (flags&_ROUND) ? 1 : 0;
+	cur.cc = nullptr;
 	refs.push_back (cur);
     } while (flags&_MORE);
 

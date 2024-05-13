@@ -71,3 +71,24 @@ public:
 private:
     int m_min, m_max;
 };
+
+class SortedSpinBoxDelegate : public SpinBoxDelegate {
+    Q_OBJECT;
+
+public:
+    explicit SortedSpinBoxDelegate (QObject *parent = nullptr);
+
+    void setEditorData (QWidget *editor, const QModelIndex &index) const override;
+};
+
+class TrueFalseDelegate : public QStyledItemDelegate {
+    Q_OBJECT;
+
+public:
+    explicit TrueFalseDelegate (QObject *parent = nullptr);
+
+    QWidget* createEditor (QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void setEditorData (QWidget *editor, const QModelIndex &index) const override;
+    void setModelData (QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    void updateEditorGeometry (QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+};
