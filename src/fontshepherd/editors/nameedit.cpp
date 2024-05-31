@@ -502,7 +502,7 @@ int NameRecordModel::columnCount (const QModelIndex &parent) const {
 
 static QString first_line (const QString &instr) {
     if (instr.contains (QChar::LineFeed) || instr.contains (QChar::CarriageReturn)) {
-	QStringList list = instr.split (QRegExp ("[\r\n]"), Qt::SkipEmptyParts);
+	QStringList list = instr.split (QRegularExpression ("[\r\n]"), Qt::SkipEmptyParts);
 	return list[0].append ("...");
     }
     return instr;

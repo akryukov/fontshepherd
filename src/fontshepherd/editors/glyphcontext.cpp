@@ -619,8 +619,7 @@ void GlyphContext::render (OutlinesType gtype, uint16_t size) {
     canvas.fill (Qt::transparent);
     p.begin (&canvas);
     p.scale (scale, -scale);
-    p.setRenderHints (
-        QPainter::SmoothPixmapTransform | QPainter::Antialiasing | QPainter::HighQualityAntialiasing);
+    p.setRenderHints (QPainter::SmoothPixmapTransform | QPainter::Antialiasing);
 
     float xshift, yshift;
     ConicGlyph *g = fv_glyph;

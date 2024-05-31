@@ -133,10 +133,12 @@ QSize FVLayout::sizeHint () const {
 
 QSize FVLayout::minimumSize () const {
      QSize size;
+     int marg;
+     getContentsMargins (&marg, nullptr, nullptr, nullptr);
      for (auto item: itemList)
          size = size.expandedTo (item->minimumSize ());
 
-     size += QSize (2*margin (), 2*margin ());
+     size += QSize (2*marg, 2*marg);
      return size;
 }
 
@@ -364,12 +366,12 @@ void FontView::setMenuBar () {
 
     cutAction->setShortcut (QKeySequence::Cut);
     copyAction->setShortcut (QKeySequence::Copy);
-    copyRefAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_G));
+    copyRefAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_G));
     pasteAction->setShortcut (QKeySequence::Paste);
-    pasteIntoAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_V));
+    pasteIntoAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_V));
     clearAction->setShortcut (QKeySequence (Qt::Key_Delete));
     unselectAction->setShortcut (QKeySequence (Qt::Key_Escape));
-    selectAllAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_A));
+    selectAllAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_A));
 
     connect (undoAction, &QAction::triggered, this, &FontView::undo);
     connect (redoAction, &QAction::triggered, this, &FontView::redo);
@@ -395,12 +397,12 @@ void FontView::setMenuBar () {
     corrDirAction = new QAction (tr ("Correct &direction"), this);
     unlinkAction = new QAction (tr ("&Unlink references"), this);
 
-    addExtremaAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_X));
-    simplifyAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_M));
-    roundAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_Underscore));
-    overlapAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_O));
-    corrDirAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_D));
-    unlinkAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_U));
+    addExtremaAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_X));
+    simplifyAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_M));
+    roundAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_Underscore));
+    overlapAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_O));
+    corrDirAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_D));
+    unlinkAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_U));
 
     connect (addExtremaAction, &QAction::triggered, this, &FontView::addExtrema);
     connect (simplifyAction, &QAction::triggered, this, &FontView::simplify);
@@ -411,7 +413,7 @@ void FontView::setMenuBar () {
 
     autoHintAction = new QAction (tr ("Autohint"), this);
     clearHintsAction = new QAction (tr ("Clear hints"), this);
-    autoHintAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_H));
+    autoHintAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_H));
 
     connect (autoHintAction, &QAction::triggered, this, &FontView::autoHint);
     connect (clearHintsAction, &QAction::triggered, this, &FontView::clearHints);
@@ -1860,7 +1862,11 @@ void FontView::keyPressEvent (QKeyEvent * event) {
 void FontView::mouseMoveEvent (QMouseEvent* ev) {
     bool add = (ev->modifiers () & Qt::ShiftModifier);
     if (add) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+	const QPoint relative = m_scroll->mapFromGlobal (ev->globalPosition ().toPoint ());
+#else
 	const QPoint relative = m_scroll->mapFromGlobal (ev->globalPos ());
+#endif
 	auto item = m_scroll->childAt (relative);
 	QString itype = item->metaObject ()->className ();
 	if (itype == "GlyphBox") {
@@ -2249,7 +2255,7 @@ void GlyphBox::displayTitle (int) {
 
     /* ASCII control characters */
     } else if (m_uni < 0x20) {
-        uint32_t uni[] = {(uint32_t) m_uni + 0x2400, 0};
+        char32_t uni[] = {static_cast<char32_t> (m_uni) + 0x2400, 0};
         setTitle (QString::fromUcs4 (uni));
 
     /* Control characters, non-characters, PUA */
@@ -2263,11 +2269,11 @@ void GlyphBox::displayTitle (int) {
 
     /* Combining marks */
     } else if (m_uni <= 0xFFFF && QChar ((uint16_t) m_uni).isMark ()) {
-        uint32_t uni[] = {(uint32_t) m_uni, 0};
+        char32_t uni[] = {static_cast<char32_t> (m_uni), 0};
         setTitle (QString ("\u25CC%1").arg (QString::fromUcs4 (uni)));
 
     } else {
-        uint32_t uni[] = {(uint32_t) m_uni, 0};
+        char32_t uni[] = {static_cast<char32_t> (m_uni), 0};
         setTitle (QString::fromUcs4 (uni));
     }
 }

@@ -41,6 +41,7 @@
 #include "tables/head.h"
 #include "tables/glyphcontainer.h" // also includes splineglyph.h
 #include "tables/glyf.h"
+#include "tables/instr.h"
 #include "tables/cff.h"
 #include "tables/svg.h"
 #include "tables/colr.h"
@@ -275,6 +276,10 @@ std::shared_ptr<FontTable> sfntFile::readTableHead (QFile *f, QDataStream *s, in
             break;
         case CHR('C','P','A','L'):
             table = new CpalTable (this, props);
+            break;
+        case CHR('f','p','g','m'):
+        case CHR('p','r','e','p'):
+            table = new InstrTable (this, props);
             break;
         case CHR('g','a','s','p'):
             table = new GaspTable (this, props);

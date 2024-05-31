@@ -2118,6 +2118,7 @@ int CmapEnc::isLocked () {
 
 const QString CmapEnc::codeRepr (uint32_t pos) {
     QString ret_str;
+    char32_t *pos_ptr = reinterpret_cast<char32_t *> (&pos);
 
     if (pos == 0xFFFF)
 	ret_str = QString ("<unencoded>");
@@ -2126,7 +2127,7 @@ const QString CmapEnc::codeRepr (uint32_t pos) {
     else if (this->isUnicode ()) {
 	ret_str = QString ("U+%1: %2")
 	    .arg (pos, pos <= 0xFFFF ? 4 : 6, 16, QLatin1Char ('0'))
-	    .arg (pos <= 0xFFFF ? QChar (pos) : QString::fromUcs4 (&pos, 1));
+	    .arg (pos <= 0xFFFF ? QChar (pos) : QString::fromUcs4 (pos_ptr, 1));
     } else
 	ret_str = QString ("0x%1").arg (pos, pos <= 0xFFFF ? 4 : 6, 16, QLatin1Char ('0'));
     return ret_str;

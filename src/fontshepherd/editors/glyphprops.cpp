@@ -50,14 +50,14 @@ static QString pack_ucodes (const std::vector<uint32_t> &ucodes) {
 static std::vector<uint32_t> unpack_ucodes (const QString &packed) {
     std::vector<uint32_t> ret;
     QStringList ulist = packed.split (QChar (' '));
-    QRegExp rx ("U\\+([0-9a-fA-F]+)");
+    QRegularExpression rx ("U\\+([0-9a-fA-F]+)");
     ret.reserve (ulist.size ());
 
     for (auto &suni : ulist) {
-	int pos = rx.indexIn (suni);
-	if (pos >= 0) {
+	QRegularExpressionMatch match = rx.match (suni);
+	if (match.hasMatch ()) {
 	    bool ok;
-	    uint16_t val = rx.cap (1).toInt (&ok, 16);
+	    uint16_t val = match.captured (1).toInt (&ok, 16);
 	    // avoid mapping to zero Unicode
 	    if (val) ret.push_back (val);
 	}
@@ -86,8 +86,8 @@ GlyphPropsDialog::GlyphPropsDialog (sFont* fnt, int gid, GlyphNameProvider &gnp,
 
     glay->addWidget (new QLabel ("Unicode"), row, 0);
     m_uniBox = new QLineEdit ();
-    m_uniBox->setValidator (new QRegExpValidator
-	(QRegExp ("(U\\+[A-Fa-f0-9]{1,6})( U\\+[A-Fa-f0-9]{1,6})*"), this));
+    m_uniBox->setValidator (new QRegularExpressionValidator
+	(QRegularExpression ("(U\\+[A-Fa-f0-9]{1,6})( U\\+[A-Fa-f0-9]{1,6})*"), this));
     m_uniBox->setText (pack_ucodes (m_enc->unicode (gid)));
     glay->addWidget (m_uniBox, row, 1);
     QPushButton* autoUniBtn = new QPushButton (tr ("Auto"));
@@ -99,7 +99,7 @@ GlyphPropsDialog::GlyphPropsDialog (sFont* fnt, int gid, GlyphNameProvider &gnp,
     glay->addWidget (nameLabel, row, 0);
     m_glyphNameField = new QLineEdit ();
     glay->addWidget (m_glyphNameField, row, 1);
-    m_glyphNameField->setValidator (new QRegExpValidator (QRegExp ("[A-Za-z0-9_.]*"), this));
+    m_glyphNameField->setValidator (new QRegularExpressionValidator (QRegularExpression ("[A-Za-z0-9_.]*"), this));
     m_glyphNameField->setText (QString::fromStdString (m_gnp.nameByGid (static_cast<uint16_t> (gid))));
     QPushButton* autoNameBtn = new QPushButton (tr ("Auto"));
     glay->addWidget (autoNameBtn, row++, 2);

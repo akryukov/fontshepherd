@@ -24,58 +24,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
-#include <QtWidgets>
-#include "tables.h" // Have to load it here due to inheritance from TableEdit
+#include <QtGlobal>
 
-class sfntFile;
-typedef struct ttffont sFont;
 class FontTable;
-class PostTable;
-class TableEdit;
-class GlyphNameProvider;
-class GlyphNameListModel;
 
-class PostEdit : public TableEdit {
-    Q_OBJECT;
-
+class InstrTable : public FontTable {
 public:
-    PostEdit (FontTable* tab, sFont* font, QWidget *parent);
-    ~PostEdit ();
-
-    void resetData () override;
-    bool checkUpdate (bool can_cancel) override;
-    bool isModified () override;
-    bool isValid () override;
-    FontTable* table () override;
-
-    void closeEvent (QCloseEvent *event);
-
-public slots:
-    void save ();
-    void setTableVersion (int idx);
-
-signals:
-    void glyphNamesChanged ();
-
-private:
-    void fillControls ();
-    void fillGlyphTab (QTableWidget *tab);
-
-    static QList<QPair<QString, double>> postVersions;
-
-    PostTable *m_post;
-    sFont *m_font;
-    bool m_valid;
-
-    std::unique_ptr<QRegularExpressionValidator> m_regVal;
-    std::unique_ptr<GlyphNameProvider> m_gnp;
-
-    QTabWidget *m_tab;
-    QTableWidget *m_gnTab;
-    QComboBox  *m_versionBox;
-    QDoubleSpinBox *m_italicAngleBox;
-    QSpinBox *m_underPosField, *m_underThickField;
-    QCheckBox *m_fixedPitchBox;
-    QLineEdit *m_minMem42Box, *m_maxMem42Box, *m_minMem1Box, *m_maxMem1Box;
-    QPushButton *saveButton, *closeButton, *helpButton;
+    InstrTable (sfntFile* fontfile, TableHeader &props);
+    void edit (sFont* fnt, QWidget* caller);
+    char* getData ();
+    uint32_t length ();
+    void setData (const std::vector<uint8_t> &instr);
 };

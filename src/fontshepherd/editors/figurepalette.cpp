@@ -194,6 +194,8 @@ QPixmap FigurePalette::defaultPixmap (const QSize &size) {
     QPixmap pm = QPixmap (size);
     int w = size.width ();
     int h = size.height ();
+    //std::cerr << "h=" << h << " w=" << w << std::endl;
+    //pm.setDevicePixelRatio (QApplication::primaryScreen()->devicePixelRatio());
     pm.fill ();
     QPainter p (&pm);
     QPen pen (Qt::black);
@@ -310,7 +312,7 @@ bool FigureModel::setData (const QModelIndex &index, const QVariant &value, int 
 	  case 3: {
 	    rgba_color &color = index.column () == 1 ? state.fill : state.stroke;
 	    bool &set = index.column () == 1 ? state.fill_set : state.stroke_set;
-	    if (value.type () == QVariant::Color) {
+	    if (value.userType () == QMetaType::QColor) {
 		QColor new_color = qvariant_cast<QColor> (value);
 		color.red = new_color.red ();
 		color.green = new_color.green ();

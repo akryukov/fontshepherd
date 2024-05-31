@@ -24,58 +24,43 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
-#include <QtWidgets>
-#include "tables.h" // Have to load it here due to inheritance from TableEdit
+#include <cstring>
+#include <sstream>
+#include <ios>
 
-class sfntFile;
-typedef struct ttffont sFont;
-class FontTable;
-class PostTable;
-class TableEdit;
-class GlyphNameProvider;
-class GlyphNameListModel;
+#include "sfnt.h"
+#include "editors/instredit.h"
+#include "tables/instr.h"
 
-class PostEdit : public TableEdit {
-    Q_OBJECT;
+InstrTable::InstrTable (sfntFile *fontfile, TableHeader &props) :
+    FontTable (fontfile, props) {}
 
-public:
-    PostEdit (FontTable* tab, sFont* font, QWidget *parent);
-    ~PostEdit ();
+void InstrTable::edit (sFont* fnt, QWidget* caller) {
+    if (data == nullptr)
+        fillup ();
 
-    void resetData () override;
-    bool checkUpdate (bool can_cancel) override;
-    bool isModified () override;
-    bool isValid () override;
-    FontTable* table () override;
+    if (tv == nullptr) {
+        InstrTableEdit *instredit = new InstrTableEdit (this, fnt, caller);
+        tv = instredit;
+        instredit->show ();
+    } else {
+        tv->raise ();
+    }
+}
 
-    void closeEvent (QCloseEvent *event);
+char* InstrTable::getData () {
+    return data;
+}
 
-public slots:
-    void save ();
-    void setTableVersion (int idx);
+uint32_t InstrTable::length () {
+    return newlen;
+}
 
-signals:
-    void glyphNamesChanged ();
-
-private:
-    void fillControls ();
-    void fillGlyphTab (QTableWidget *tab);
-
-    static QList<QPair<QString, double>> postVersions;
-
-    PostTable *m_post;
-    sFont *m_font;
-    bool m_valid;
-
-    std::unique_ptr<QRegularExpressionValidator> m_regVal;
-    std::unique_ptr<GlyphNameProvider> m_gnp;
-
-    QTabWidget *m_tab;
-    QTableWidget *m_gnTab;
-    QComboBox  *m_versionBox;
-    QDoubleSpinBox *m_italicAngleBox;
-    QSpinBox *m_underPosField, *m_underThickField;
-    QCheckBox *m_fixedPitchBox;
-    QLineEdit *m_minMem42Box, *m_maxMem42Box, *m_minMem1Box, *m_maxMem1Box;
-    QPushButton *saveButton, *closeButton, *helpButton;
-};
+void InstrTable::setData (const std::vector<uint8_t> &instr) {
+    changed = false;
+    td_changed = true;
+    clearData ();
+    newlen = instr.size ();
+    data = new char[(newlen+3)&~3]; // padding to uint32
+    std::copy (instr.begin (), instr.end (), data);
+}

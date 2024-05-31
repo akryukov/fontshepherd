@@ -4,6 +4,7 @@ CONFIG += object_parallel_to_source
 TEMPLATE = app
 QMAKE_CXXFLAGS += -DBOOST_SYSTEM_NO_DEPRECATED
 QMAKE_CXXFLAGS += -std=c++11
+QMAKE_CXXFLAGS += -Wno-template-id-cdtor
 
 RESOURCES = ../../fontshepherd.qrc
 include (tables/tables.pri)

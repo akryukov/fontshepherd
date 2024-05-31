@@ -68,7 +68,7 @@ FontShepherdMain::FontShepherdMain (QApplication *app, QString &path) {
     openAction->setShortcut (QKeySequence::Open);
     saveAction->setShortcut (QKeySequence::Save);
     closeAction->setShortcut (QKeySequence::Close);
-    exitAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_Q));
+    exitAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_Q));
 
     cutAction = new QAction (tr ("C&ut"), this);
     copyAction = new QAction (tr ("&Copy"), this);
@@ -352,7 +352,7 @@ void FontShepherdMain::tile (const QMainWindow *previous) {
     if (!topFrameWidth)
         topFrameWidth = 40;
     const QPoint pos = previous->pos () + 2 * QPoint (topFrameWidth, topFrameWidth);
-    if (QApplication::desktop ()->availableGeometry (this).contains (rect ().bottomRight () + pos))
+    if (QApplication::primaryScreen ()->geometry ().contains (rect ().bottomRight () + pos))
         move (pos);
 }
 

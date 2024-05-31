@@ -31,6 +31,7 @@
 #include "editors/glyphcontext.h"
 #include "editors/gvundo.h"
 #include "editors/figurepalette.h"
+#include "editors/instredit.h"
 #include "fs_math.h"
 #include "fs_undo.h"
 #include "cffstuff.h"
@@ -115,6 +116,7 @@ GlyphViewContainer::GlyphViewContainer (FontView *fv, sFont &fnt, GlyphContainer
     setStatusBar ();
     setToolsPalette ();
     setFigPalette (settings);
+    setInstrPalette (settings);
     setMenuBar ();
 }
 
@@ -163,9 +165,9 @@ void GlyphViewContainer::setMenuBar () {
     copyAction->setShortcut (QKeySequence::Copy);
     pasteAction->setShortcut (QKeySequence::Paste);
     clearAction->setShortcut (QKeySequence (Qt::Key_Delete));
-    mergeAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_M));
-    joinAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_J));
-    selectAllAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_A));
+    mergeAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_M));
+    joinAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_J));
+    selectAllAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_A));
     unselectAction->setShortcut (QKeySequence (Qt::Key_Escape));
 
     connect (QApplication::clipboard (), &QClipboard::dataChanged, this, &GlyphViewContainer::checkSelection);
@@ -193,17 +195,17 @@ void GlyphViewContainer::setMenuBar () {
     makePtTangentAction = new QAction (tr ("Make Point &Tangent"), this);
     makePtFirstAction = new QAction (tr ("Make Point &First"), this);
 
-    addExtremaAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_X));
-    simplifyAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_M));
-    roundAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_Underscore));
-    overlapAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_O));
-    corrDirAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_D));
-    unlinkAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_U));
+    addExtremaAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_X));
+    simplifyAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_M));
+    roundAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_Underscore));
+    overlapAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_O));
+    corrDirAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_D));
+    unlinkAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_U));
 
-    makePtCornerAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_2));
-    makePtCurvedAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_3));
-    makePtTangentAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_4));
-    makePtFirstAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_1));
+    makePtCornerAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_2));
+    makePtCurvedAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_3));
+    makePtTangentAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_4));
+    makePtFirstAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_1));
 
     connect (addExtremaAction, &QAction::triggered, this, &GlyphViewContainer::addExtremaRequest);
     connect (simplifyAction, &QAction::triggered, this, &GlyphViewContainer::simplifyRequest);
@@ -245,6 +247,7 @@ void GlyphViewContainer::setMenuBar () {
     //NB: don't check any of the actions from this group, as there is no glyph yet
 
     QAction *figPalAction = m_figDock->toggleViewAction ();
+    QAction *instrEditAction = m_instrDock->toggleViewAction ();
 
     zoomInAction = new QAction (tr ("&Zoom in"), this);
     zoomOutAction = new QAction (tr ("Z&oom out"), this);
@@ -257,8 +260,8 @@ void GlyphViewContainer::setMenuBar () {
     showBluesAction = new QAction (tr ("Show &Blues"), this);
     showFamilyBluesAction = new QAction (tr ("Show Fa&mily Blues"), this);
 
-    zoomInAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_Plus));
-    zoomOutAction->setShortcut (QKeySequence (Qt::CTRL + Qt::Key_Minus));
+    zoomInAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_Plus));
+    zoomOutAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_Minus));
 
     showPtsAction->setCheckable (true);
     showPtsAction->setChecked (m_showPoints);
@@ -293,7 +296,7 @@ void GlyphViewContainer::setMenuBar () {
     autoHintAction = new QAction (tr ("Auto&hint"), this);
     hmUpdateAction = new QAction (tr ("Update hint &masks"), this);
     clearHintsAction = new QAction (tr ("&Clear hints"), this);
-    autoHintAction->setShortcut (QKeySequence (Qt::CTRL + Qt::SHIFT + Qt::Key_H));
+    autoHintAction->setShortcut (QKeySequence (Qt::CTRL | Qt::SHIFT | Qt::Key_H));
 
     connect (autoHintAction, &QAction::triggered, this, &GlyphViewContainer::autoHintRequest);
     connect (hmUpdateAction, &QAction::triggered, this, &GlyphViewContainer::hmUpdateRequest);
@@ -356,6 +359,7 @@ void GlyphViewContainer::setMenuBar () {
     viewMenu->addAction (colrSwitchAction);
     viewMenu->addSeparator ();
     viewMenu->addAction (figPalAction);
+    viewMenu->addAction (instrEditAction);
     viewMenu->addSeparator ();
     viewMenu->addAction (zoomInAction);
     viewMenu->addAction (zoomOutAction);
@@ -456,6 +460,29 @@ void GlyphViewContainer::setFigPalette (QSettings &settings) {
     m_figDock->resize (w, h);
 }
 
+void GlyphViewContainer::setInstrPalette (QSettings &settings) {
+    m_instrEditContainer = new QStackedWidget (this);
+    m_instrDock = new QDockWidget (this);
+    m_instrDock->setAllowedAreas (Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_instrDock->setWidget (m_instrEditContainer);
+    m_instrDock->setWindowTitle (tr ("TTF Instructions"));
+
+    addDockWidget (Qt::RightDockWidgetArea, m_instrDock);
+
+    int xpos = settings.value ("glyphview/TTFInstrPalette/xPos", 0).toInt ();
+    int ypos = settings.value ("glyphview/TTFInstrPalette/yPos", 0).toInt ();
+    int w = settings.value ("glyphview/TTFInstrPalette/width", m_instrDock->width ()).toInt ();
+    int h = settings.value ("glyphview/TTFInstrPalette/height", m_instrDock->height ()).toInt ();
+    bool visible = settings.value ("glyphview/TTFInstrPalette/isVisible", true).toBool ();
+    bool docked = settings.value ("glyphview/TTFInstrPalette/isDocked", true).toBool ();
+
+    QRect r = geometry ();
+    m_instrDock->setFloating (!docked);
+    m_instrDock->setVisible (visible);
+    m_instrDock->move (r.x () + xpos, r.y () + ypos);
+    m_instrDock->resize (w, h);
+}
+
 void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type) {
     setWindowTitle (QString ("%1 - %2").arg (m_font.fontname).arg (gctx.name ()));
 
@@ -470,7 +497,7 @@ void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type
     GlyphScene *scene = new GlyphScene (m_font, gctx, content_type);
     gctx.appendScene (scene);
 
-    GlyphView *view = new GlyphView (scene, m_figPalContainer, gctx, this);
+    GlyphView *view = new GlyphView (scene, m_figPalContainer, m_instrEditContainer, gctx, this);
     int idx = m_glyphAreaContainer->addTab (view, gctx.name ());
     m_glyphAreaContainer->setCurrentIndex (idx);
 
@@ -590,6 +617,7 @@ void GlyphViewContainer::switchToTab (int index) {
     clearHintsAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
 
     m_figPalContainer->setCurrentIndex (index);
+    m_instrEditContainer->setCurrentIndex (index);
 
     m_pos_lbl->setText ("");
     checkSelection ();
@@ -649,6 +677,10 @@ void GlyphViewContainer::reallyCloseGlyphTab (int idx) {
     m_figPalContainer->removeWidget (pal_tab);
     pal_tab->deleteLater ();
 
+    QWidget *instr_tab = m_instrEditContainer->widget (idx);
+    m_instrEditContainer->removeWidget (instr_tab);
+    instr_tab->deleteLater ();
+
     ctx.deleteScene ();
     m_tabmap.erase (gv->gid ());
     m_glyphAreaContainer->removeTab (idx);
@@ -670,6 +702,13 @@ void GlyphViewContainer::closeEvent (QCloseEvent *) {
     settings.setValue ("glyphview/FigurePalette/yPos", pr.y () - r.y ());
     settings.setValue ("glyphview/FigurePalette/width", m_figDock->width ());
     settings.setValue ("glyphview/FigurePalette/height", m_figDock->height ());
+
+    settings.setValue ("glyphview/TTFInstrPalette/isDocked", !m_instrDock->isFloating ());
+    settings.setValue ("glyphview/TTFInstrPalette/isVisible", m_instrDock->isVisible ());
+    settings.setValue ("glyphview/TTFInstrPalette/xPos", pr.x () - r.x ());
+    settings.setValue ("glyphview/TTFInstrPalette/yPos", pr.y () - r.y ());
+    settings.setValue ("glyphview/TTFInstrPalette/width", m_instrDock->width ());
+    settings.setValue ("glyphview/TTFInstrPalette/height", m_instrDock->height ());
 
     m_fv->clearGV ();
     // Disconnect signals and delete glyph scenes on close event to prevent
@@ -926,14 +965,14 @@ void GlyphViewContainer::slot_showFamilyBlues (const bool val) {
 }
 
 GlyphView::GlyphView (
-    GlyphScene *scene, QStackedWidget *figPalContainer, GlyphContext &gctx, QWidget *parent) :
+    GlyphScene *scene, QStackedWidget *figPalContainer, QStackedWidget *instrEditContainer, GlyphContext &gctx, QWidget *parent) :
     QGraphicsView (scene, parent), m_context (gctx)
 {
     setViewportMargins (RULER_BREADTH, RULER_BREADTH, 0, 0);
 
     QGridLayout* gridLayout = new QGridLayout ();
     gridLayout->setSpacing (0);
-    gridLayout->setMargin (0);
+    gridLayout->setContentsMargins (0, 0, 0, 0);
 
     m_HorzRuler = new QDRuler (QDRuler::Horizontal, this);
     m_VertRuler = new QDRuler (QDRuler::Vertical, this);
@@ -969,9 +1008,7 @@ GlyphView::GlyphView (
 
     m_figMod = std::unique_ptr<FigureModel>
 	(new FigureModel (m_context.topItem (), m_context.glyph (outlinesType ())));
-
     m_figPal = new FigurePalette (m_context, m_figMod.get (), outlinesType (), parent, figPalContainer);
-
     figPalContainer->addWidget (m_figPal);
     figPalContainer->setCurrentWidget (m_figPal);
 
@@ -987,6 +1024,13 @@ GlyphView::GlyphView (
     connect (scene, &GlyphScene::glyphRedrawn, this, &GlyphView::glyphRedrawn);
     connect (scene, &GlyphScene::panelsSwapped, this, &GlyphView::onSwapPanels);
     connect (scene, &GlyphScene::figurePropsChanged, this, &GlyphView::figurePropsChanged);
+
+    m_instrEdit = new InstrEdit (g->instructions.data (), g->instructions.size (), instrEditContainer);
+    instrEditContainer->addWidget (m_instrEdit);
+    instrEditContainer->setCurrentWidget (m_instrEdit);
+
+    m_instrEdit->setEnabled (outlinesType () == OutlinesType::TT);
+    connect (m_instrEdit, &InstrEdit::instrChanged, this, &GlyphView::on_instrChanged);
 }
 
 GlyphView::~GlyphView () {
@@ -1422,6 +1466,14 @@ void GlyphView::switchOutlines (OutlinesType val) {
 void GlyphView::on_switchOutlines (QAction *action) {
     OutlinesType val = static_cast<OutlinesType> (action->data ().toUInt ());
     switchOutlines (val);
+}
+
+void GlyphView::on_instrChanged () {
+    if (outlinesType () == OutlinesType::TT) {
+	ConicGlyph *g = m_context.glyph (OutlinesType::TT);
+	g->instructions = m_instrEdit->data ();
+	g->setModified (true);
+    }
 }
 
 OutlinesType GlyphView::outlinesType () {

@@ -87,16 +87,12 @@ static void put2dot14 (QDataStream &os, double dval) {
 
 ConicGlyph::ConicGlyph (uint16_t gid, BaseMetrics gm) :
     GID (gid), units_per_em (gm.upm), m_ascent (gm.ascent), m_descent (gm.descent) {
-    instrdata = {};
     bb = DBounds ();
     clipBox = { 0, 0, 0, 0 };
     m_undoStack = std::unique_ptr<QUndoStack> (new QUndoStack ());
 };
 
-ConicGlyph::~ConicGlyph () {
-    if (instrdata.instrs)
-	delete[] instrdata.instrs;
-};
+ConicGlyph::~ConicGlyph () {};
 
 void ConicGlyph::clear () {
     figures.clear ();
@@ -250,11 +246,14 @@ void ConicGlyph::readttfsimpleglyph (BoostIn &buf, int path_cnt, uint32_t start_
 	pts.resize (tot);
     }
 
-    instrdata.in_composit = false;
-    buf >> instrdata.instr_cnt;
-    instrdata.instrs = new unsigned char[instrdata.instr_cnt];
-    for (i=0; i<instrdata.instr_cnt; ++i )
-	buf >> instrdata.instrs[i];
+    uint16_t instr_cnt;
+    buf >> instr_cnt;
+    instructions.resize (instr_cnt);
+    for (size_t i=0; i<instr_cnt; i++) {
+	uint8_t code;
+	buf >> code;
+	instructions[i] = code;
+    }
 
     uint8_t flags[tot] = { 0 };
     for (i=0; i<tot; ++i) {
@@ -316,7 +315,7 @@ void ConicGlyph::readttfsimpleglyph (BoostIn &buf, int path_cnt, uint32_t start_
 
 void ConicGlyph::readttfcompositeglyph (BoostIn &buf) {
     static bool default_to_Apple = false;
-    uint16_t flags, i;
+    uint16_t flags;
 
     do {
 	if ((int) buf.peek () == EOF) {
@@ -412,11 +411,14 @@ void ConicGlyph::readttfcompositeglyph (BoostIn &buf) {
     } while (flags&_MORE);
 
     if (flags&_INSTR) {
-	instrdata.in_composit = true;
-	buf >> instrdata.instr_cnt;
-	instrdata.instrs = new uint8_t[instrdata.instr_cnt];
-	for (i=0; i<instrdata.instr_cnt; ++i)
-	    buf >> instrdata.instrs[i];
+	uint16_t instr_cnt;
+	buf >> instr_cnt;
+	instructions.resize (instr_cnt);
+	for (size_t i=0; i<instr_cnt; i++) {
+	    uint8_t code;
+	    buf >> code;
+	    instructions[i] = code;
+	}
     }
 }
 
@@ -635,11 +637,12 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
 	    auto &spls = figures.front ().contours[i];
 	    os << spls.lastPointIndex ();
 	}
-        os << instrdata.instr_cnt;
-        if (instrdata.instr_cnt > maxp->maxSizeOfInstructions ())
-    	maxp_contents.maxSizeOfInstructions = instrdata.instr_cnt;
-        for (int j=0; j<instrdata.instr_cnt; j++)
-	    os << instrdata.instrs[j];
+	uint16_t instr_cnt = instructions.size ();
+        os << instr_cnt;
+        if (instr_cnt > maxp->maxSizeOfInstructions ())
+    	maxp_contents.maxSizeOfInstructions = instr_cnt;
+        for (size_t j=0; j<instr_cnt; j++)
+	    os << instructions[j];
         for (size_t j=0; j<flags.size (); j++)
 	    os << flags[j];
         for (size_t j=0; j<x_coords.size (); j++) {
@@ -667,7 +670,7 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
 		flags |= _USE_MY_METRICS;
 	    if (i<refs.size ()-1)
 		flags |= _MORE;			/* More components */
-	    else if (instrdata.instr_cnt)	/* Composits also inherit instructions */
+	    else if (instructions.size ())	/* Composits also inherit instructions */
 		flags |= _INSTR;		/* Instructions appear after last ref */
 	    if (ref.transform[1]!=0 || ref.transform[2]!=0)
 		flags |= _MATRIX;		/* Need a full matrix */
@@ -724,12 +727,13 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
 	    if (maxp->maxComponentDepth () < comp_dp)
 		maxp_contents.maxComponentDepth = comp_dp;
 	}
-        if (instrdata.instr_cnt) {
-	    os << instrdata.instr_cnt;
-	    if (instrdata.instr_cnt > maxp->maxSizeOfInstructions ())
-		maxp_contents.maxSizeOfInstructions = instrdata.instr_cnt;
-	    for (int j=0; j<instrdata.instr_cnt; j++)
-		os << instrdata.instrs[j];
+        if (instructions.size ()) {
+	    uint16_t instr_cnt = instructions.size ();
+	    os << instr_cnt;
+	    if (instr_cnt > maxp->maxSizeOfInstructions ())
+		maxp_contents.maxSizeOfInstructions = instr_cnt;
+	    for (size_t j=0; j<instr_cnt; j++)
+		os << instructions[j];
         }
     }
     uint32_t len = buf.pos () - startpos;

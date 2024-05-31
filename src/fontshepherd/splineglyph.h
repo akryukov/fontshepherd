@@ -474,13 +474,6 @@ public:
     uint16_t depth (uint16_t val) const;
 };
 
-struct instrdata {
-    uint8_t *instrs;
-    uint16_t instr_cnt;
-    uint8_t *bts;
-    bool in_composit;
-};
-
 // Need this to reduce number of constructor arguments for ConicGlyph,
 // so that it could be used with boost object_pool::construct ()
 typedef struct base_glyph_metrics {
@@ -592,6 +585,7 @@ public:
     std::vector<StemInfo> vstem;
     std::list<DrawableFigure> figures;
     std::map<std::string, Gradient> gradients;
+    std::vector<uint8_t> instructions;
 
 private:
     static void svgDumpGradient (std::stringstream &ss, Gradient &grad, const std::string &grad_id);
@@ -630,7 +624,6 @@ private:
     int32_t glyph_offset, glyph_len;
     int m_lsb, m_aw;
     int point_cnt;
-    struct instrdata instrdata;
     bool loaded: 1;
     bool widthset: 1;
     const PrivateDict *m_private = nullptr;

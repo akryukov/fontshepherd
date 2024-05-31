@@ -1,0 +1,1088 @@
+g++ -c -pipe -DBOOST_SYSTEM_NO_DEPRECATED -std=c++11 -g -D_REENTRANT -Wall -Wextra -fPIC -DSHAREDIR=\"/usr/local/share/fontshepherd/\" -DQT_SVG_LIB -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_XML_LIB -DQT_CORE_LIB -I. -I../qhexedit2 -I/usr/include/freetype2 -I/usr/include/qt -I/usr/include/qt/QtSvg -I/usr/include/qt/QtWidgets -I/usr/include/qt/QtGui -I/usr/include/qt/QtXml -I/usr/include/qt/QtCore -I. -I/usr/lib/qt/mkspecs/linux-g++ -o editors/instredit.o editors/instredit.cpp
+editors/instredit.cpp: In member function «int InstrEdit::parse(std::string&, std::vector<instr_data>&, int&, int&)»:
+editors/instredit.cpp:451:15: ошибка: expected «(» before «std»
+  451 |         while std::isspace (code) {
+      |               ^~~
+      |               (
+editors/instredit.cpp:451:34: ошибка: expected «)» before «{» token
+  451 |         while std::isspace (code) {
+      |               ~~~                ^~
+      |                                  )
+editors/instredit.cpp:460:38: ошибка: no match for «operator+» (operand types are «std::string» {aka «std::__cxx11::basic_string<char>»} and «size_t» {aka «long unsigned int»})
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                ~~~~~~^~~~
+      |                                |      |
+      |                                |      size_t {aka long unsigned int}
+      |                                std::string {aka std::__cxx11::basic_string<char>}
+In file included from /usr/include/qt/QtGui/QtGui:27,
+                 from /usr/include/qt/QtWidgets/QtWidgetsDepends:4,
+                 from /usr/include/qt/QtWidgets/QtWidgets:3,
+                 from ./sfnt.h:31,
+                 from editors/instredit.cpp:35:
+/usr/include/qt/QtGui/qgenericmatrix.h:256:46: замечание: candidate: «template<int N, int M, class T> QGenericMatrix<N, M, T> operator+(const QGenericMatrix<N, M, T>&, const QGenericMatrix<N, M, T>&)»
+  256 | Q_OUTOFLINE_TEMPLATE QGenericMatrix<N, M, T> operator+(const QGenericMatrix<N, M, T>& m1, const QGenericMatrix<N, M, T>& m2)
+      |                                              ^~~~~~~~
+/usr/include/qt/QtGui/qgenericmatrix.h:256:46: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   «std::string» {aka «std::__cxx11::basic_string<char>»} не является производным от «const QGenericMatrix<N, M, T>»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+In file included from /usr/include/c++/13.2.1/string:48,
+                 from /usr/include/c++/13.2.1/bits/locale_classes.h:40,
+                 from /usr/include/c++/13.2.1/bits/ios_base.h:41,
+                 from /usr/include/c++/13.2.1/ios:44,
+                 from /usr/include/c++/13.2.1/istream:40,
+                 from /usr/include/c++/13.2.1/sstream:40,
+                 from editors/instredit.cpp:28:
+/usr/include/c++/13.2.1/bits/stl_iterator.h:634:5: замечание: candidate: «template<class _Iterator> std::reverse_iterator<_Iterator> std::operator+(typename reverse_iterator<_Iterator>::difference_type, const reverse_iterator<_Iterator>&)»
+  634 |     operator+(typename reverse_iterator<_Iterator>::difference_type __n,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:634:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const std::reverse_iterator<_Iterator>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:1808:5: замечание: candidate: «template<class _Iterator> std::move_iterator<_IteratorL> std::operator+(typename move_iterator<_IteratorL>::difference_type, const move_iterator<_IteratorL>&)»
+ 1808 |     operator+(typename move_iterator<_Iterator>::difference_type __n,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:1808:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const std::move_iterator<_IteratorL>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+In file included from /usr/include/c++/13.2.1/string:54:
+/usr/include/c++/13.2.1/bits/basic_string.h:3553:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3553 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3553:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3571:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const _CharT*, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3571 |     operator+(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3571:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const _CharT*» и «std::__cxx11::basic_string<char>»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3590:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(_CharT, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3590 |     operator+(_CharT __lhs, const basic_string<_CharT,_Traits,_Alloc>& __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3590:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3607:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, const _CharT*)»
+ 3607 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3607:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const _CharT*» и «long unsigned int»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3625:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, _CharT)»
+ 3625 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs, _CharT __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3625:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   выведены конфликтующие типы для параметра «_CharT» («char» и «long unsigned int»)
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3637:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3637 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3637:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3644:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3644 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3644:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3651:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3651 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3651:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3674:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const _CharT*, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3674 |     operator+(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3674:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const _CharT*» и «std::__cxx11::basic_string<char>»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3681:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(_CharT, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3681 |     operator+(_CharT __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3681:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3688:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, const _CharT*)»
+ 3688 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3688:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   несоответствие типов «const _CharT*» и «long unsigned int»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3695:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, _CharT)»
+ 3695 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3695:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:39: замечание:   выведены конфликтующие типы для параметра «_CharT» («char» и «long unsigned int»)
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                       ^~~
+In file included from /usr/include/qt/QtCore/qstring.h:50,
+                 from /usr/include/qt/QtCore/qobject.h:47,
+                 from /usr/include/qt/QtCore/qabstractanimation.h:43,
+                 from /usr/include/qt/QtCore/QtCore:6,
+                 from /usr/include/qt/QtWidgets/QtWidgetsDepends:3:
+/usr/include/qt/QtCore/qbytearray.h:721:25: замечание: candidate: «const QByteArray operator+(const QByteArray&, const QByteArray&)»
+  721 | inline const QByteArray operator+(const QByteArray &a1, const QByteArray &a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:721:53: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+  721 | inline const QByteArray operator+(const QByteArray &a1, const QByteArray &a2)
+      |                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:723:25: замечание: candidate: «const QByteArray operator+(const QByteArray&, const char*)»
+  723 | inline const QByteArray operator+(const QByteArray &a1, const char *a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:723:53: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+  723 | inline const QByteArray operator+(const QByteArray &a1, const char *a2)
+      |                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:725:25: замечание: candidate: «const QByteArray operator+(const QByteArray&, char)»
+  725 | inline const QByteArray operator+(const QByteArray &a1, char a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:725:53: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+  725 | inline const QByteArray operator+(const QByteArray &a1, char a2)
+      |                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:727:25: замечание: candidate: «const QByteArray operator+(const char*, const QByteArray&)»
+  727 | inline const QByteArray operator+(const char *a1, const QByteArray &a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:727:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const char*»
+  727 | inline const QByteArray operator+(const char *a1, const QByteArray &a2)
+      |                                   ~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:729:25: замечание: candidate: «const QByteArray operator+(char, const QByteArray&)»
+  729 | inline const QByteArray operator+(char a1, const QByteArray &a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:729:40: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «char»
+  729 | inline const QByteArray operator+(char a1, const QByteArray &a2)
+      |                                   ~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1527:22: замечание: candidate: «const QString operator+(const QString&, const QString&)»
+ 1527 | inline const QString operator+(const QString &s1, const QString &s2)
+      |                      ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1527:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1527 | inline const QString operator+(const QString &s1, const QString &s2)
+      |                                ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1529:22: замечание: candidate: «const QString operator+(const QString&, QChar)»
+ 1529 | inline const QString operator+(const QString &s1, QChar s2)
+      |                      ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1529:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1529 | inline const QString operator+(const QString &s1, QChar s2)
+      |                                ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1531:22: замечание: candidate: «const QString operator+(QChar, const QString&)»
+ 1531 | inline const QString operator+(QChar s1, const QString &s2)
+      |                      ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1531:38: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «QChar»
+ 1531 | inline const QString operator+(QChar s1, const QString &s2)
+      |                                ~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1534:41: замечание: candidate: «const QString operator+(const QString&, const char*)»
+ 1534 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s1, const char *s2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1534:66: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1534 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s1, const char *s2)
+      |                                                   ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1536:41: замечание: candidate: «const QString operator+(const char*, const QString&)»
+ 1536 | inline QT_ASCII_CAST_WARN const QString operator+(const char *s1, const QString &s2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1536:63: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const char*»
+ 1536 | inline QT_ASCII_CAST_WARN const QString operator+(const char *s1, const QString &s2)
+      |                                                   ~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1538:41: замечание: candidate: «const QString operator+(char, const QString&)»
+ 1538 | inline QT_ASCII_CAST_WARN const QString operator+(char c, const QString &s)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1538:56: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «char»
+ 1538 | inline QT_ASCII_CAST_WARN const QString operator+(char c, const QString &s)
+      |                                                   ~~~~~^
+/usr/include/qt/QtCore/qstring.h:1540:41: замечание: candidate: «const QString operator+(const QString&, char)»
+ 1540 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, char c)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1540:66: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1540 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, char c)
+      |                                                   ~~~~~~~~~~~~~~~^
+/usr/include/qt/QtCore/qstring.h:1542:41: замечание: candidate: «const QString operator+(const QByteArray&, const QString&)»
+ 1542 | inline QT_ASCII_CAST_WARN const QString operator+(const QByteArray &ba, const QString &s)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1542:69: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+ 1542 | inline QT_ASCII_CAST_WARN const QString operator+(const QByteArray &ba, const QString &s)
+      |                                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1544:41: замечание: candidate: «const QString operator+(const QString&, const QByteArray&)»
+ 1544 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, const QByteArray &ba)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1544:66: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1544 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, const QByteArray &ba)
+      |                                                   ~~~~~~~~~~~~~~~^
+/usr/include/qt/QtCore/qstring.h:2053:16: замечание: candidate: «QString operator+(const QString&, const QStringRef&)»
+ 2053 | inline QString operator+(const QString &s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2053:41: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 2053 | inline QString operator+(const QString &s1, const QStringRef &s2)
+      |                          ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2055:16: замечание: candidate: «QString operator+(const QStringRef&, const QString&)»
+ 2055 | inline QString operator+(const QStringRef &s1, const QString &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2055:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2055 | inline QString operator+(const QStringRef &s1, const QString &s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2057:16: замечание: candidate: «QString operator+(const QStringRef&, QLatin1String)»
+ 2057 | inline QString operator+(const QStringRef &s1, QLatin1String s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2057:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2057 | inline QString operator+(const QStringRef &s1, QLatin1String s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2059:16: замечание: candidate: «QString operator+(QLatin1String, const QStringRef&)»
+ 2059 | inline QString operator+(QLatin1String s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2059:40: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «QLatin1String»
+ 2059 | inline QString operator+(QLatin1String s1, const QStringRef &s2)
+      |                          ~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2061:16: замечание: candidate: «QString operator+(const QStringRef&, const QStringRef&)»
+ 2061 | inline QString operator+(const QStringRef &s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2061:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2061 | inline QString operator+(const QStringRef &s1, const QStringRef &s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2063:16: замечание: candidate: «QString operator+(const QStringRef&, QChar)»
+ 2063 | inline QString operator+(const QStringRef &s1, QChar s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2063:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2063 | inline QString operator+(const QStringRef &s1, QChar s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2065:16: замечание: candidate: «QString operator+(QChar, const QStringRef&)»
+ 2065 | inline QString operator+(QChar s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2065:32: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «QChar»
+ 2065 | inline QString operator+(QChar s1, const QStringRef &s2)
+      |                          ~~~~~~^~
+In file included from /usr/include/qt/QtCore/qlist.h:1196,
+                 from /usr/include/qt/QtCore/qobject.h:49:
+/usr/include/qt/QtCore/qstringlist.h:303:20: замечание: candidate: «QStringList operator+(const QList<QString>&, const QStringList&)»
+  303 | inline QStringList operator+(const QList<QString> &one, const QStringList &other)
+      |                    ^~~~~~~~
+/usr/include/qt/QtCore/qstringlist.h:303:52: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QList<QString>&»
+  303 | inline QStringList operator+(const QList<QString> &one, const QStringList &other)
+      |                              ~~~~~~~~~~~~~~~~~~~~~~^~~
+In file included from /usr/include/qt/QtCore/qcborstreamreader.h:45,
+                 from /usr/include/qt/QtCore/qcborstream.h:47,
+                 from /usr/include/qt/QtCore/QtCore:41:
+/usr/include/qt/QtCore/qfloat16.h:210:17: замечание: candidate: «qfloat16 operator+(qfloat16, qfloat16)»
+  210 | inline qfloat16 operator+(qfloat16 a, qfloat16 b) noexcept { return qfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+      |                 ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:210:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  210 | inline qfloat16 operator+(qfloat16 a, qfloat16 b) noexcept { return qfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+      |                           ~~~~~~~~~^
+/usr/include/qt/QtCore/qfloat16.h:216:15: замечание: candidate: «long double operator+(qfloat16, long double)»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |                           ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:15: замечание: candidate: «long double operator+(long double, qfloat16)»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:30: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «long double»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |                              ^
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:15: замечание: candidate: «double operator+(qfloat16, double)»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |                           ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:15: замечание: candidate: «double operator+(double, qfloat16)»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:30: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «double»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |                              ^
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:15: замечание: candidate: «float operator+(qfloat16, float)»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |                           ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:15: замечание: candidate: «float operator+(float, qfloat16)»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:30: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «float»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |                              ^
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:237:19: замечание: candidate: «double operator+(qfloat16, int)»
+  237 |     inline double operator OP(qfloat16 lhs, int rhs) noexcept { return static_cast<double>(lhs) OP rhs; } \
+      |                   ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:237:40: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  237 |     inline double operator OP(qfloat16 lhs, int rhs) noexcept { return static_cast<double>(lhs) OP rhs; } \
+      |                               ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:238:19: замечание: candidate: «double operator+(int, qfloat16)»
+  238 |     inline double operator OP(int lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<double>(rhs); }
+      |                   ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:238:35: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «int»
+  238 |     inline double operator OP(int lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<double>(rhs); }
+      |                               ~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/qt/QtCore/qline.h:43,
+                 from /usr/include/qt/QtCore/QtCore:132:
+/usr/include/qt/QtCore/qpoint.h:171:38: замечание: candidate: «constexpr const QPoint operator+(const QPoint&, const QPoint&)»
+  171 | Q_DECL_CONSTEXPR inline const QPoint operator+(const QPoint &p1, const QPoint &p2)
+      |                                      ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:171:62: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QPoint&»
+  171 | Q_DECL_CONSTEXPR inline const QPoint operator+(const QPoint &p1, const QPoint &p2)
+      |                                                ~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qpoint.h:195:38: замечание: candidate: «constexpr const QPoint operator+(const QPoint&)»
+  195 | Q_DECL_CONSTEXPR inline const QPoint operator+(const QPoint &p)
+      |                                      ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:195:38: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+/usr/include/qt/QtCore/qpoint.h:370:39: замечание: candidate: «constexpr const QPointF operator+(const QPointF&, const QPointF&)»
+  370 | Q_DECL_CONSTEXPR inline const QPointF operator+(const QPointF &p1, const QPointF &p2)
+      |                                       ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:370:64: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QPointF&»
+  370 | Q_DECL_CONSTEXPR inline const QPointF operator+(const QPointF &p1, const QPointF &p2)
+      |                                                 ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qpoint.h:390:39: замечание: candidate: «constexpr const QPointF operator+(const QPointF&)»
+  390 | Q_DECL_CONSTEXPR inline const QPointF operator+(const QPointF &p)
+      |                                       ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:390:39: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+In file included from /usr/include/qt/QtCore/QtCore:139:
+/usr/include/qt/QtCore/qmargins.h:153:34: замечание: candidate: «constexpr QMargins operator+(const QMargins&, const QMargins&)»
+  153 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &m1, const QMargins &m2) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:153:60: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMargins&»
+  153 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &m1, const QMargins &m2) noexcept
+      |                                            ~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qmargins.h:165:34: замечание: candidate: «constexpr QMargins operator+(const QMargins&, int)»
+  165 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &lhs, int rhs) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:165:60: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMargins&»
+  165 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &lhs, int rhs) noexcept
+      |                                            ~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:171:34: замечание: candidate: «constexpr QMargins operator+(int, const QMargins&)»
+  171 | Q_DECL_CONSTEXPR inline QMargins operator+(int lhs, const QMargins &rhs) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:171:48: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «int»
+  171 | Q_DECL_CONSTEXPR inline QMargins operator+(int lhs, const QMargins &rhs) noexcept
+      |                                            ~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:267:34: замечание: candidate: «constexpr QMargins operator+(const QMargins&)»
+  267 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &margins) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:267:34: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+/usr/include/qt/QtCore/qmargins.h:385:35: замечание: candidate: «constexpr QMarginsF operator+(const QMarginsF&, const QMarginsF&)»
+  385 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, const QMarginsF &rhs) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:385:62: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMarginsF&»
+  385 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, const QMarginsF &rhs) noexcept
+      |                                             ~~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:397:35: замечание: candidate: «constexpr QMarginsF operator+(const QMarginsF&, qreal)»
+  397 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, qreal rhs) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:397:62: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMarginsF&»
+  397 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, qreal rhs) noexcept
+      |                                             ~~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:403:35: замечание: candidate: «constexpr QMarginsF operator+(qreal, const QMarginsF&)»
+  403 | Q_DECL_CONSTEXPR inline QMarginsF operator+(qreal lhs, const QMarginsF &rhs) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:403:51: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qreal» {aka «double»}
+  403 | Q_DECL_CONSTEXPR inline QMarginsF operator+(qreal lhs, const QMarginsF &rhs) noexcept
+      |                                             ~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:471:35: замечание: candidate: «constexpr QMarginsF operator+(const QMarginsF&)»
+  471 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &margins) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:471:35: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+In file included from /usr/include/qt/QtCore/qrect.h:44,
+                 from /usr/include/qt/QtCore/QtCore:179:
+/usr/include/qt/QtCore/qsize.h:181:37: замечание: candidate: «constexpr const QSize operator+(const QSize&, const QSize&)»
+  181 | Q_DECL_CONSTEXPR inline const QSize operator+(const QSize & s1, const QSize & s2) noexcept
+      |                                     ^~~~~~~~
+/usr/include/qt/QtCore/qsize.h:181:61: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QSize&»
+  181 | Q_DECL_CONSTEXPR inline const QSize operator+(const QSize & s1, const QSize & s2) noexcept
+      |                                               ~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qsize.h:356:38: замечание: candidate: «constexpr const QSizeF operator+(const QSizeF&, const QSizeF&)»
+  356 | Q_DECL_CONSTEXPR inline const QSizeF operator+(const QSizeF & s1, const QSizeF & s2) noexcept
+      |                                      ^~~~~~~~
+/usr/include/qt/QtCore/qsize.h:356:63: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QSizeF&»
+  356 | Q_DECL_CONSTEXPR inline const QSizeF operator+(const QSizeF & s1, const QSizeF & s2) noexcept
+      |                                                ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qrect.h:464:31: замечание: candidate: «constexpr QRect operator+(const QRect&, const QMargins&)»
+  464 | Q_DECL_CONSTEXPR inline QRect operator+(const QRect &rectangle, const QMargins &margins) noexcept
+      |                               ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:464:54: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QRect&»
+  464 | Q_DECL_CONSTEXPR inline QRect operator+(const QRect &rectangle, const QMargins &margins) noexcept
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+/usr/include/qt/QtCore/qrect.h:470:31: замечание: candidate: «constexpr QRect operator+(const QMargins&, const QRect&)»
+  470 | Q_DECL_CONSTEXPR inline QRect operator+(const QMargins &margins, const QRect &rectangle) noexcept
+      |                               ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:470:57: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMargins&»
+  470 | Q_DECL_CONSTEXPR inline QRect operator+(const QMargins &margins, const QRect &rectangle) noexcept
+      |                                         ~~~~~~~~~~~~~~~~^~~~~~~
+/usr/include/qt/QtCore/qrect.h:877:32: замечание: candidate: «constexpr QRectF operator+(const QRectF&, const QMarginsF&)»
+  877 | Q_DECL_CONSTEXPR inline QRectF operator+(const QRectF &lhs, const QMarginsF &rhs) noexcept
+      |                                ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:877:56: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QRectF&»
+  877 | Q_DECL_CONSTEXPR inline QRectF operator+(const QRectF &lhs, const QMarginsF &rhs) noexcept
+      |                                          ~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qrect.h:883:32: замечание: candidate: «constexpr QRectF operator+(const QMarginsF&, const QRectF&)»
+  883 | Q_DECL_CONSTEXPR inline QRectF operator+(const QMarginsF &lhs, const QRectF &rhs) noexcept
+      |                                ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:883:59: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMarginsF&»
+  883 | Q_DECL_CONSTEXPR inline QRectF operator+(const QMarginsF &lhs, const QRectF &rhs) noexcept
+      |                                          ~~~~~~~~~~~~~~~~~^~~
+In file included from /usr/include/qt/QtGui/qevent.h:56,
+                 from /usr/include/qt/QtGui/qtextlayout.h:49,
+                 from /usr/include/qt/QtGui/qabstracttextdocumentlayout.h:45,
+                 from /usr/include/qt/QtGui/QtGui:5:
+/usr/include/qt/QtGui/qvector2d.h:222:41: замечание: candidate: «constexpr const QVector2D operator+(const QVector2D&, const QVector2D&)»
+  222 | Q_DECL_CONSTEXPR inline const QVector2D operator+(const QVector2D &v1, const QVector2D &v2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtGui/qvector2d.h:222:68: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QVector2D&»
+  222 | Q_DECL_CONSTEXPR inline const QVector2D operator+(const QVector2D &v1, const QVector2D &v2)
+      |                                                   ~~~~~~~~~~~~~~~~~^~
+In file included from /usr/include/qt/QtGui/qbrush.h:50,
+                 from /usr/include/qt/QtGui/qpen.h:45,
+                 from /usr/include/qt/QtGui/qtextformat.h:49,
+                 from /usr/include/qt/QtGui/qtextlayout.h:50:
+/usr/include/qt/QtGui/qtransform.h:415:19: замечание: candidate: «QTransform operator+(const QTransform&, qreal)»
+  415 | inline QTransform operator +(const QTransform &a, qreal n)
+      |                   ^~~~~~~~
+/usr/include/qt/QtGui/qtransform.h:415:48: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QTransform&»
+  415 | inline QTransform operator +(const QTransform &a, qreal n)
+      |                              ~~~~~~~~~~~~~~~~~~^
+In file included from /usr/include/qt/QtGui/qmatrix4x4.h:44,
+                 from /usr/include/qt/QtGui/QtGui:42:
+/usr/include/qt/QtGui/qvector3d.h:247:41: замечание: candidate: «constexpr const QVector3D operator+(const QVector3D&, const QVector3D&)»
+  247 | Q_DECL_CONSTEXPR inline const QVector3D operator+(const QVector3D &v1, const QVector3D &v2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtGui/qvector3d.h:247:68: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QVector3D&»
+  247 | Q_DECL_CONSTEXPR inline const QVector3D operator+(const QVector3D &v1, const QVector3D &v2)
+      |                                                   ~~~~~~~~~~~~~~~~~^~
+In file included from /usr/include/qt/QtGui/qmatrix4x4.h:45:
+/usr/include/qt/QtGui/qvector4d.h:247:41: замечание: candidate: «constexpr const QVector4D operator+(const QVector4D&, const QVector4D&)»
+  247 | Q_DECL_CONSTEXPR inline const QVector4D operator+(const QVector4D &v1, const QVector4D &v2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtGui/qvector4d.h:247:68: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QVector4D&»
+  247 | Q_DECL_CONSTEXPR inline const QVector4D operator+(const QVector4D &v1, const QVector4D &v2)
+      |                                                   ~~~~~~~~~~~~~~~~~^~
+In file included from /usr/include/qt/QtGui/qmatrix4x4.h:46:
+/usr/include/qt/QtGui/qquaternion.h:294:26: замечание: candidate: «const QQuaternion operator+(const QQuaternion&, const QQuaternion&)»
+  294 | inline const QQuaternion operator+(const QQuaternion &q1, const QQuaternion &q2)
+      |                          ^~~~~~~~
+/usr/include/qt/QtGui/qquaternion.h:294:55: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QQuaternion&»
+  294 | inline const QQuaternion operator+(const QQuaternion &q1, const QQuaternion &q2)
+      |                                    ~~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtGui/qmatrix4x4.h:592:19: замечание: candidate: «QMatrix4x4 operator+(const QMatrix4x4&, const QMatrix4x4&)»
+  592 | inline QMatrix4x4 operator+(const QMatrix4x4& m1, const QMatrix4x4& m2)
+      |                   ^~~~~~~~
+/usr/include/qt/QtGui/qmatrix4x4.h:592:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMatrix4x4&»
+  592 | inline QMatrix4x4 operator+(const QMatrix4x4& m1, const QMatrix4x4& m2)
+      |                             ~~~~~~~~~~~~~~~~~~^~
+editors/instredit.cpp:460:50: ошибка: no match for «operator+» (operand types are «std::string» {aka «std::__cxx11::basic_string<char>»} and «size_t» {aka «long unsigned int»})
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                            ~~~~~~^~~~
+      |                                            |      |
+      |                                            |      size_t {aka long unsigned int}
+      |                                            std::string {aka std::__cxx11::basic_string<char>}
+/usr/include/qt/QtGui/qgenericmatrix.h:256:46: замечание: candidate: «template<int N, int M, class T> QGenericMatrix<N, M, T> operator+(const QGenericMatrix<N, M, T>&, const QGenericMatrix<N, M, T>&)»
+  256 | Q_OUTOFLINE_TEMPLATE QGenericMatrix<N, M, T> operator+(const QGenericMatrix<N, M, T>& m1, const QGenericMatrix<N, M, T>& m2)
+      |                                              ^~~~~~~~
+/usr/include/qt/QtGui/qgenericmatrix.h:256:46: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   «std::string» {aka «std::__cxx11::basic_string<char>»} не является производным от «const QGenericMatrix<N, M, T>»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:634:5: замечание: candidate: «template<class _Iterator> std::reverse_iterator<_Iterator> std::operator+(typename reverse_iterator<_Iterator>::difference_type, const reverse_iterator<_Iterator>&)»
+  634 |     operator+(typename reverse_iterator<_Iterator>::difference_type __n,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:634:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const std::reverse_iterator<_Iterator>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:1808:5: замечание: candidate: «template<class _Iterator> std::move_iterator<_IteratorL> std::operator+(typename move_iterator<_IteratorL>::difference_type, const move_iterator<_IteratorL>&)»
+ 1808 |     operator+(typename move_iterator<_Iterator>::difference_type __n,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/stl_iterator.h:1808:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const std::move_iterator<_IteratorL>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3553:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3553 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3553:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3571:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const _CharT*, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3571 |     operator+(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3571:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const _CharT*» и «std::__cxx11::basic_string<char>»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3590:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(_CharT, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3590 |     operator+(_CharT __lhs, const basic_string<_CharT,_Traits,_Alloc>& __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3590:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3607:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, const _CharT*)»
+ 3607 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3607:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const _CharT*» и «long unsigned int»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3625:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, _CharT)»
+ 3625 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs, _CharT __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3625:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   выведены конфликтующие типы для параметра «_CharT» («char» и «long unsigned int»)
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3637:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, const __cxx11::basic_string<_CharT, _Traits, _Alloc>&)»
+ 3637 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3637:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3644:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const __cxx11::basic_string<_CharT, _Traits, _Alloc>&, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3644 |     operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3644:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3651:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3651 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3651:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3674:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(const _CharT*, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3674 |     operator+(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3674:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const _CharT*» и «std::__cxx11::basic_string<char>»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3681:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(_CharT, __cxx11::basic_string<_CharT, _Traits, _Alloc>&&)»
+ 3681 |     operator+(_CharT __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3681:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «std::__cxx11::basic_string<_CharT, _Traits, _Alloc>» и «size_t» {aka «long unsigned int»}
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3688:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, const _CharT*)»
+ 3688 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3688:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   несоответствие типов «const _CharT*» и «long unsigned int»
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3695:5: замечание: candidate: «template<class _CharT, class _Traits, class _Alloc> std::__cxx11::basic_string<_CharT, _Traits, _Alloc> std::operator+(__cxx11::basic_string<_CharT, _Traits, _Alloc>&&, _CharT)»
+ 3695 |     operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13.2.1/bits/basic_string.h:3695:5: замечание:   вывод/подстановка аргумента шаблона неудачна:
+editors/instredit.cpp:460:51: замечание:   выведены конфликтующие типы для параметра «_CharT» («char» и «long unsigned int»)
+  460 |             std::string instr (edited+pos, edited+pos+end);
+      |                                                   ^~~
+/usr/include/qt/QtCore/qbytearray.h:721:25: замечание: candidate: «const QByteArray operator+(const QByteArray&, const QByteArray&)»
+  721 | inline const QByteArray operator+(const QByteArray &a1, const QByteArray &a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:721:53: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+  721 | inline const QByteArray operator+(const QByteArray &a1, const QByteArray &a2)
+      |                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:723:25: замечание: candidate: «const QByteArray operator+(const QByteArray&, const char*)»
+  723 | inline const QByteArray operator+(const QByteArray &a1, const char *a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:723:53: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+  723 | inline const QByteArray operator+(const QByteArray &a1, const char *a2)
+      |                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:725:25: замечание: candidate: «const QByteArray operator+(const QByteArray&, char)»
+  725 | inline const QByteArray operator+(const QByteArray &a1, char a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:725:53: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+  725 | inline const QByteArray operator+(const QByteArray &a1, char a2)
+      |                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:727:25: замечание: candidate: «const QByteArray operator+(const char*, const QByteArray&)»
+  727 | inline const QByteArray operator+(const char *a1, const QByteArray &a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:727:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const char*»
+  727 | inline const QByteArray operator+(const char *a1, const QByteArray &a2)
+      |                                   ~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qbytearray.h:729:25: замечание: candidate: «const QByteArray operator+(char, const QByteArray&)»
+  729 | inline const QByteArray operator+(char a1, const QByteArray &a2)
+      |                         ^~~~~~~~
+/usr/include/qt/QtCore/qbytearray.h:729:40: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «char»
+  729 | inline const QByteArray operator+(char a1, const QByteArray &a2)
+      |                                   ~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1527:22: замечание: candidate: «const QString operator+(const QString&, const QString&)»
+ 1527 | inline const QString operator+(const QString &s1, const QString &s2)
+      |                      ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1527:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1527 | inline const QString operator+(const QString &s1, const QString &s2)
+      |                                ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1529:22: замечание: candidate: «const QString operator+(const QString&, QChar)»
+ 1529 | inline const QString operator+(const QString &s1, QChar s2)
+      |                      ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1529:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1529 | inline const QString operator+(const QString &s1, QChar s2)
+      |                                ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1531:22: замечание: candidate: «const QString operator+(QChar, const QString&)»
+ 1531 | inline const QString operator+(QChar s1, const QString &s2)
+      |                      ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1531:38: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «QChar»
+ 1531 | inline const QString operator+(QChar s1, const QString &s2)
+      |                                ~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1534:41: замечание: candidate: «const QString operator+(const QString&, const char*)»
+ 1534 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s1, const char *s2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1534:66: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1534 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s1, const char *s2)
+      |                                                   ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1536:41: замечание: candidate: «const QString operator+(const char*, const QString&)»
+ 1536 | inline QT_ASCII_CAST_WARN const QString operator+(const char *s1, const QString &s2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1536:63: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const char*»
+ 1536 | inline QT_ASCII_CAST_WARN const QString operator+(const char *s1, const QString &s2)
+      |                                                   ~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1538:41: замечание: candidate: «const QString operator+(char, const QString&)»
+ 1538 | inline QT_ASCII_CAST_WARN const QString operator+(char c, const QString &s)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1538:56: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «char»
+ 1538 | inline QT_ASCII_CAST_WARN const QString operator+(char c, const QString &s)
+      |                                                   ~~~~~^
+/usr/include/qt/QtCore/qstring.h:1540:41: замечание: candidate: «const QString operator+(const QString&, char)»
+ 1540 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, char c)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1540:66: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1540 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, char c)
+      |                                                   ~~~~~~~~~~~~~~~^
+/usr/include/qt/QtCore/qstring.h:1542:41: замечание: candidate: «const QString operator+(const QByteArray&, const QString&)»
+ 1542 | inline QT_ASCII_CAST_WARN const QString operator+(const QByteArray &ba, const QString &s)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1542:69: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QByteArray&»
+ 1542 | inline QT_ASCII_CAST_WARN const QString operator+(const QByteArray &ba, const QString &s)
+      |                                                   ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:1544:41: замечание: candidate: «const QString operator+(const QString&, const QByteArray&)»
+ 1544 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, const QByteArray &ba)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:1544:66: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 1544 | inline QT_ASCII_CAST_WARN const QString operator+(const QString &s, const QByteArray &ba)
+      |                                                   ~~~~~~~~~~~~~~~^
+/usr/include/qt/QtCore/qstring.h:2053:16: замечание: candidate: «QString operator+(const QString&, const QStringRef&)»
+ 2053 | inline QString operator+(const QString &s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2053:41: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QString&»
+ 2053 | inline QString operator+(const QString &s1, const QStringRef &s2)
+      |                          ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2055:16: замечание: candidate: «QString operator+(const QStringRef&, const QString&)»
+ 2055 | inline QString operator+(const QStringRef &s1, const QString &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2055:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2055 | inline QString operator+(const QStringRef &s1, const QString &s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2057:16: замечание: candidate: «QString operator+(const QStringRef&, QLatin1String)»
+ 2057 | inline QString operator+(const QStringRef &s1, QLatin1String s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2057:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2057 | inline QString operator+(const QStringRef &s1, QLatin1String s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2059:16: замечание: candidate: «QString operator+(QLatin1String, const QStringRef&)»
+ 2059 | inline QString operator+(QLatin1String s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2059:40: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «QLatin1String»
+ 2059 | inline QString operator+(QLatin1String s1, const QStringRef &s2)
+      |                          ~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2061:16: замечание: candidate: «QString operator+(const QStringRef&, const QStringRef&)»
+ 2061 | inline QString operator+(const QStringRef &s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2061:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2061 | inline QString operator+(const QStringRef &s1, const QStringRef &s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2063:16: замечание: candidate: «QString operator+(const QStringRef&, QChar)»
+ 2063 | inline QString operator+(const QStringRef &s1, QChar s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2063:44: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QStringRef&»
+ 2063 | inline QString operator+(const QStringRef &s1, QChar s2)
+      |                          ~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qstring.h:2065:16: замечание: candidate: «QString operator+(QChar, const QStringRef&)»
+ 2065 | inline QString operator+(QChar s1, const QStringRef &s2)
+      |                ^~~~~~~~
+/usr/include/qt/QtCore/qstring.h:2065:32: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «QChar»
+ 2065 | inline QString operator+(QChar s1, const QStringRef &s2)
+      |                          ~~~~~~^~
+/usr/include/qt/QtCore/qstringlist.h:303:20: замечание: candidate: «QStringList operator+(const QList<QString>&, const QStringList&)»
+  303 | inline QStringList operator+(const QList<QString> &one, const QStringList &other)
+      |                    ^~~~~~~~
+/usr/include/qt/QtCore/qstringlist.h:303:52: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QList<QString>&»
+  303 | inline QStringList operator+(const QList<QString> &one, const QStringList &other)
+      |                              ~~~~~~~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:210:17: замечание: candidate: «qfloat16 operator+(qfloat16, qfloat16)»
+  210 | inline qfloat16 operator+(qfloat16 a, qfloat16 b) noexcept { return qfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+      |                 ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:210:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  210 | inline qfloat16 operator+(qfloat16 a, qfloat16 b) noexcept { return qfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+      |                           ~~~~~~~~~^
+/usr/include/qt/QtCore/qfloat16.h:216:15: замечание: candidate: «long double operator+(qfloat16, long double)»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |                           ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:15: замечание: candidate: «long double operator+(long double, qfloat16)»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:30: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «long double»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |                              ^
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:230:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  230 | QF16_MAKE_ARITH_OP(long double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:15: замечание: candidate: «double operator+(qfloat16, double)»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |                           ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:15: замечание: candidate: «double operator+(double, qfloat16)»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:30: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «double»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |                              ^
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:231:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  231 | QF16_MAKE_ARITH_OP(double)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:15: замечание: candidate: «float operator+(qfloat16, float)»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:216:36: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  216 |     inline FP operator OP(qfloat16 lhs, FP rhs) noexcept { return static_cast<FP>(lhs) OP rhs; } \
+      |                           ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:15: замечание: candidate: «float operator+(float, qfloat16)»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |               ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:217:30: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «float»
+  217 |     inline FP operator OP(FP lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<FP>(rhs); }
+      |                              ^
+/usr/include/qt/QtCore/qfloat16.h:222:5: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_FP»
+  222 |     QF16_MAKE_ARITH_OP_FP(FP, +) \
+      |     ^~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:232:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP»
+  232 | QF16_MAKE_ARITH_OP(float)
+      | ^~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:237:19: замечание: candidate: «double operator+(qfloat16, int)»
+  237 |     inline double operator OP(qfloat16 lhs, int rhs) noexcept { return static_cast<double>(lhs) OP rhs; } \
+      |                   ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:237:40: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qfloat16»
+  237 |     inline double operator OP(qfloat16 lhs, int rhs) noexcept { return static_cast<double>(lhs) OP rhs; } \
+      |                               ~~~~~~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:238:19: замечание: candidate: «double operator+(int, qfloat16)»
+  238 |     inline double operator OP(int lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<double>(rhs); }
+      |                   ^~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qfloat16.h:238:35: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «int»
+  238 |     inline double operator OP(int lhs, qfloat16 rhs) noexcept { return lhs OP static_cast<double>(rhs); }
+      |                               ~~~~^~~
+/usr/include/qt/QtCore/qfloat16.h:239:1: замечание: в расширении макроса «QF16_MAKE_ARITH_OP_INT»
+  239 | QF16_MAKE_ARITH_OP_INT(+)
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:171:38: замечание: candidate: «constexpr const QPoint operator+(const QPoint&, const QPoint&)»
+  171 | Q_DECL_CONSTEXPR inline const QPoint operator+(const QPoint &p1, const QPoint &p2)
+      |                                      ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:171:62: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QPoint&»
+  171 | Q_DECL_CONSTEXPR inline const QPoint operator+(const QPoint &p1, const QPoint &p2)
+      |                                                ~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qpoint.h:195:38: замечание: candidate: «constexpr const QPoint operator+(const QPoint&)»
+  195 | Q_DECL_CONSTEXPR inline const QPoint operator+(const QPoint &p)
+      |                                      ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:195:38: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+/usr/include/qt/QtCore/qpoint.h:370:39: замечание: candidate: «constexpr const QPointF operator+(const QPointF&, const QPointF&)»
+  370 | Q_DECL_CONSTEXPR inline const QPointF operator+(const QPointF &p1, const QPointF &p2)
+      |                                       ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:370:64: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QPointF&»
+  370 | Q_DECL_CONSTEXPR inline const QPointF operator+(const QPointF &p1, const QPointF &p2)
+      |                                                 ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qpoint.h:390:39: замечание: candidate: «constexpr const QPointF operator+(const QPointF&)»
+  390 | Q_DECL_CONSTEXPR inline const QPointF operator+(const QPointF &p)
+      |                                       ^~~~~~~~
+/usr/include/qt/QtCore/qpoint.h:390:39: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+/usr/include/qt/QtCore/qmargins.h:153:34: замечание: candidate: «constexpr QMargins operator+(const QMargins&, const QMargins&)»
+  153 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &m1, const QMargins &m2) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:153:60: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMargins&»
+  153 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &m1, const QMargins &m2) noexcept
+      |                                            ~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qmargins.h:165:34: замечание: candidate: «constexpr QMargins operator+(const QMargins&, int)»
+  165 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &lhs, int rhs) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:165:60: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMargins&»
+  165 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &lhs, int rhs) noexcept
+      |                                            ~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:171:34: замечание: candidate: «constexpr QMargins operator+(int, const QMargins&)»
+  171 | Q_DECL_CONSTEXPR inline QMargins operator+(int lhs, const QMargins &rhs) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:171:48: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «int»
+  171 | Q_DECL_CONSTEXPR inline QMargins operator+(int lhs, const QMargins &rhs) noexcept
+      |                                            ~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:267:34: замечание: candidate: «constexpr QMargins operator+(const QMargins&)»
+  267 | Q_DECL_CONSTEXPR inline QMargins operator+(const QMargins &margins) noexcept
+      |                                  ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:267:34: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+/usr/include/qt/QtCore/qmargins.h:385:35: замечание: candidate: «constexpr QMarginsF operator+(const QMarginsF&, const QMarginsF&)»
+  385 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, const QMarginsF &rhs) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:385:62: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMarginsF&»
+  385 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, const QMarginsF &rhs) noexcept
+      |                                             ~~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:397:35: замечание: candidate: «constexpr QMarginsF operator+(const QMarginsF&, qreal)»
+  397 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, qreal rhs) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:397:62: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMarginsF&»
+  397 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &lhs, qreal rhs) noexcept
+      |                                             ~~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:403:35: замечание: candidate: «constexpr QMarginsF operator+(qreal, const QMarginsF&)»
+  403 | Q_DECL_CONSTEXPR inline QMarginsF operator+(qreal lhs, const QMarginsF &rhs) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:403:51: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «qreal» {aka «double»}
+  403 | Q_DECL_CONSTEXPR inline QMarginsF operator+(qreal lhs, const QMarginsF &rhs) noexcept
+      |                                             ~~~~~~^~~
+/usr/include/qt/QtCore/qmargins.h:471:35: замечание: candidate: «constexpr QMarginsF operator+(const QMarginsF&)»
+  471 | Q_DECL_CONSTEXPR inline QMarginsF operator+(const QMarginsF &margins) noexcept
+      |                                   ^~~~~~~~
+/usr/include/qt/QtCore/qmargins.h:471:35: замечание:   кандидат ожидает 1 аргумент, 2 предоставлено
+/usr/include/qt/QtCore/qsize.h:181:37: замечание: candidate: «constexpr const QSize operator+(const QSize&, const QSize&)»
+  181 | Q_DECL_CONSTEXPR inline const QSize operator+(const QSize & s1, const QSize & s2) noexcept
+      |                                     ^~~~~~~~
+/usr/include/qt/QtCore/qsize.h:181:61: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QSize&»
+  181 | Q_DECL_CONSTEXPR inline const QSize operator+(const QSize & s1, const QSize & s2) noexcept
+      |                                               ~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qsize.h:356:38: замечание: candidate: «constexpr const QSizeF operator+(const QSizeF&, const QSizeF&)»
+  356 | Q_DECL_CONSTEXPR inline const QSizeF operator+(const QSizeF & s1, const QSizeF & s2) noexcept
+      |                                      ^~~~~~~~
+/usr/include/qt/QtCore/qsize.h:356:63: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QSizeF&»
+  356 | Q_DECL_CONSTEXPR inline const QSizeF operator+(const QSizeF & s1, const QSizeF & s2) noexcept
+      |                                                ~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtCore/qrect.h:464:31: замечание: candidate: «constexpr QRect operator+(const QRect&, const QMargins&)»
+  464 | Q_DECL_CONSTEXPR inline QRect operator+(const QRect &rectangle, const QMargins &margins) noexcept
+      |                               ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:464:54: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QRect&»
+  464 | Q_DECL_CONSTEXPR inline QRect operator+(const QRect &rectangle, const QMargins &margins) noexcept
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~
+/usr/include/qt/QtCore/qrect.h:470:31: замечание: candidate: «constexpr QRect operator+(const QMargins&, const QRect&)»
+  470 | Q_DECL_CONSTEXPR inline QRect operator+(const QMargins &margins, const QRect &rectangle) noexcept
+      |                               ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:470:57: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMargins&»
+  470 | Q_DECL_CONSTEXPR inline QRect operator+(const QMargins &margins, const QRect &rectangle) noexcept
+      |                                         ~~~~~~~~~~~~~~~~^~~~~~~
+/usr/include/qt/QtCore/qrect.h:877:32: замечание: candidate: «constexpr QRectF operator+(const QRectF&, const QMarginsF&)»
+  877 | Q_DECL_CONSTEXPR inline QRectF operator+(const QRectF &lhs, const QMarginsF &rhs) noexcept
+      |                                ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:877:56: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QRectF&»
+  877 | Q_DECL_CONSTEXPR inline QRectF operator+(const QRectF &lhs, const QMarginsF &rhs) noexcept
+      |                                          ~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtCore/qrect.h:883:32: замечание: candidate: «constexpr QRectF operator+(const QMarginsF&, const QRectF&)»
+  883 | Q_DECL_CONSTEXPR inline QRectF operator+(const QMarginsF &lhs, const QRectF &rhs) noexcept
+      |                                ^~~~~~~~
+/usr/include/qt/QtCore/qrect.h:883:59: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMarginsF&»
+  883 | Q_DECL_CONSTEXPR inline QRectF operator+(const QMarginsF &lhs, const QRectF &rhs) noexcept
+      |                                          ~~~~~~~~~~~~~~~~~^~~
+/usr/include/qt/QtGui/qvector2d.h:222:41: замечание: candidate: «constexpr const QVector2D operator+(const QVector2D&, const QVector2D&)»
+  222 | Q_DECL_CONSTEXPR inline const QVector2D operator+(const QVector2D &v1, const QVector2D &v2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtGui/qvector2d.h:222:68: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QVector2D&»
+  222 | Q_DECL_CONSTEXPR inline const QVector2D operator+(const QVector2D &v1, const QVector2D &v2)
+      |                                                   ~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtGui/qtransform.h:415:19: замечание: candidate: «QTransform operator+(const QTransform&, qreal)»
+  415 | inline QTransform operator +(const QTransform &a, qreal n)
+      |                   ^~~~~~~~
+/usr/include/qt/QtGui/qtransform.h:415:48: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QTransform&»
+  415 | inline QTransform operator +(const QTransform &a, qreal n)
+      |                              ~~~~~~~~~~~~~~~~~~^
+/usr/include/qt/QtGui/qvector3d.h:247:41: замечание: candidate: «constexpr const QVector3D operator+(const QVector3D&, const QVector3D&)»
+  247 | Q_DECL_CONSTEXPR inline const QVector3D operator+(const QVector3D &v1, const QVector3D &v2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtGui/qvector3d.h:247:68: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QVector3D&»
+  247 | Q_DECL_CONSTEXPR inline const QVector3D operator+(const QVector3D &v1, const QVector3D &v2)
+      |                                                   ~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtGui/qvector4d.h:247:41: замечание: candidate: «constexpr const QVector4D operator+(const QVector4D&, const QVector4D&)»
+  247 | Q_DECL_CONSTEXPR inline const QVector4D operator+(const QVector4D &v1, const QVector4D &v2)
+      |                                         ^~~~~~~~
+/usr/include/qt/QtGui/qvector4d.h:247:68: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QVector4D&»
+  247 | Q_DECL_CONSTEXPR inline const QVector4D operator+(const QVector4D &v1, const QVector4D &v2)
+      |                                                   ~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtGui/qquaternion.h:294:26: замечание: candidate: «const QQuaternion operator+(const QQuaternion&, const QQuaternion&)»
+  294 | inline const QQuaternion operator+(const QQuaternion &q1, const QQuaternion &q2)
+      |                          ^~~~~~~~
+/usr/include/qt/QtGui/qquaternion.h:294:55: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QQuaternion&»
+  294 | inline const QQuaternion operator+(const QQuaternion &q1, const QQuaternion &q2)
+      |                                    ~~~~~~~~~~~~~~~~~~~^~
+/usr/include/qt/QtGui/qmatrix4x4.h:592:19: замечание: candidate: «QMatrix4x4 operator+(const QMatrix4x4&, const QMatrix4x4&)»
+  592 | inline QMatrix4x4 operator+(const QMatrix4x4& m1, const QMatrix4x4& m2)
+      |                   ^~~~~~~~
+/usr/include/qt/QtGui/qmatrix4x4.h:592:47: замечание:   no known conversion for argument 1 from «std::string» {aka «std::__cxx11::basic_string<char>»} to «const QMatrix4x4&»
+  592 | inline QMatrix4x4 operator+(const QMatrix4x4& m1, const QMatrix4x4& m2)
+      |                             ~~~~~~~~~~~~~~~~~~^~
+editors/instredit.cpp:444:69: предупреждение: неиспользуемый параметр «instr» [-Wunused-parameter]
+  444 | int InstrEdit::parse (std::string &edited, std::vector<instr_data> &instr, int &sel_start, int &sel_end) {
+      |                                            ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+make: *** [Makefile:1668: editors/instredit.o] Ошибка 1

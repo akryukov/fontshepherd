@@ -170,11 +170,13 @@ private:
     QGraphicsItem *m_rootItem;
 };
 
+class InstrEdit;
+
 class GlyphView : public QGraphicsView {
     Q_OBJECT;
 
 public:
-    GlyphView (GlyphScene *scene, QStackedWidget *figPalContainer, GlyphContext &gctx, QWidget *parent);
+    GlyphView (GlyphScene *scene, QStackedWidget *figPalContainer, QStackedWidget *instrEditContainer, GlyphContext &gctx, QWidget *parent);
     ~GlyphView ();
 
     void setViewportMargins (int left, int top, int right, int bottom);
@@ -225,6 +227,7 @@ public:
 public slots:
     void toolSelected (QAction *action);
     void on_switchOutlines (QAction *action);
+    void on_instrChanged ();
 
 private slots:
     void scrolledHorizontally (int val);
@@ -244,6 +247,7 @@ private:
 
     QDRuler *m_HorzRuler, *m_VertRuler;
     FigurePalette *m_figPal;
+    InstrEdit *m_instrEdit;
     std::unique_ptr<FigureModel> m_figMod;
     GlyphContext &m_context;
     QAction *m_activeAction;
@@ -329,6 +333,7 @@ private:
     void setMenuBar ();
     void setToolsPalette ();
     void setFigPalette (QSettings &settings);
+    void setInstrPalette (QSettings &settings);
     void updateViewSetting (const QString key, const bool val);
     void reallyCloseGlyphTab (int idx);
 
@@ -358,8 +363,8 @@ private:
     int m_width, m_height;
     QTabWidget *m_glyphAreaContainer;
     std::map<uint16_t, int> m_tabmap;
-    QDockWidget *m_figDock;
-    QStackedWidget *m_figPalContainer;
+    QDockWidget *m_figDock, *m_instrDock;
+    QStackedWidget *m_figPalContainer, *m_instrEditContainer;
 
     static bool m_showPoints, m_showControlPoints, m_showPointNumbering, m_showExtrema, m_showFill;
     static bool m_showHints, m_showBlues, m_showFamilyBlues;

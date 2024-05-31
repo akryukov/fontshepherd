@@ -216,8 +216,8 @@ void HeadEdit::fillControls () {
     m_magicField->setText (QString ("0x%1").arg (m_head->magicNumber (), 0, 16));
     if (m_head->magicNumber () == 0x5F0F3CF5)
 	m_magicField->setEnabled (false);
-    m_createdBox->setDateTime (QDateTime::fromTime_t (m_head->created ()));
-    m_modifiedBox->setDateTime (QDateTime::fromTime_t (m_head->modified ()));
+    m_createdBox->setDateTime (QDateTime::fromSecsSinceEpoch (m_head->created ()));
+    m_modifiedBox->setDateTime (QDateTime::fromSecsSinceEpoch (m_head->modified ()));
     m_lowestRecBox->setValue (m_head->lowestRecPPEM ());
 
     for (int i=0; i<fontDirHints.size (); i++)
@@ -280,8 +280,8 @@ void HeadEdit::resetData () {
     m_magicField->setText (QString ("0x%1").arg (m_head->magicNumber (), 0, 16));
     if (m_head->magicNumber () == 0x5F0F3CF5)
 	m_magicField->setEnabled (false);
-    m_createdBox->setDateTime (QDateTime::fromTime_t (m_head->created ()));
-    m_modifiedBox->setDateTime (QDateTime::fromTime_t (m_head->modified ()));
+    m_createdBox->setDateTime (QDateTime::fromSecsSinceEpoch (m_head->created ()));
+    m_modifiedBox->setDateTime (QDateTime::fromSecsSinceEpoch (m_head->modified ()));
     m_lowestRecBox->setValue (m_head->lowestRecPPEM ());
     m_fontDirectionBox->setCurrentIndex
 	(m_fontDirectionBox->findData (m_head->fontDirectionHint (), Qt::UserRole));
@@ -350,8 +350,8 @@ void HeadEdit::save () {
 	hd.flags[i] = (item->checkState () == Qt::Checked);
     }
     hd.unitsPerEm = m_unitsPerEmBox->value ();
-    hd.created = m_createdBox->dateTime ().toTime_t ();
-    hd.modified = m_modifiedBox->dateTime ().toTime_t ();
+    hd.created = m_createdBox->dateTime ().toSecsSinceEpoch();
+    hd.modified = m_modifiedBox->dateTime ().toSecsSinceEpoch();
     hd.xMin = m_xMinBox->value ();
     hd.yMin = m_yMinBox->value ();
     hd.xMax = m_xMaxBox->value ();

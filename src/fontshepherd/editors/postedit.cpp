@@ -52,8 +52,8 @@ QList<QPair<QString, double>> PostEdit::postVersions = {
 PostEdit::PostEdit (FontTable* tbl, sFont* font, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (font) {
     m_post = dynamic_cast<PostTable *>(tbl);
-    m_regVal = std::unique_ptr<QRegExpValidator> (new QRegExpValidator ());
-    m_regVal->setRegExp (QRegExp ("(0x[A-Fa-f0-9]+|\\d+)"));
+    m_regVal = std::unique_ptr<QRegularExpressionValidator> (new QRegularExpressionValidator ());
+    m_regVal->setRegularExpression (QRegularExpression ("(0x[A-Fa-f0-9]+|\\d+)"));
 
     m_gnp = std::unique_ptr<GlyphNameProvider> (new GlyphNameProvider (*m_font));
 
