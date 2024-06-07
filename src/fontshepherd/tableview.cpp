@@ -140,8 +140,8 @@ void TableViewContainer::saveFont (bool overwrite, bool ttc) {
 
     try {
         if (!overwrite || !fontFile->hasSource (fidx, ttc)) {
-            newpath = QFileDialog::getSaveFileName(this, tr ("Save Font"), "",
-                tr ("OpenType Font Files (*.ttf *.otf *.ttc)"));
+            newpath = QFileDialog::getSaveFileName (this, tr ("Save Font"), "",
+                tr ("OpenType Font Files (*.ttf *.TTF *.otf *.OTF *.ttc *.TTC)"));
 
             if (!newpath.isEmpty ())
                 fontFile->save (newpath, ttc, fidx);

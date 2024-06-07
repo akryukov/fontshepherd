@@ -26,6 +26,7 @@
 
 #include <sstream>
 #include <ios>
+#include <iostream>
 
 #include "sfnt.h"
 #include "tables.h"
@@ -57,13 +58,15 @@ void HmtxTable::unpackData (sFont *font) {
 
     for (i=0; i<m_hhea->numOfMetrics (); i++) {
         m_widths[i] = getushort (pos); pos+=2;
-        m_lbearings[i] = getushort (pos); pos+=2;
+	uint16_t tmp = getushort (pos); pos+=2;
+        m_lbearings[i] = static_cast<int16_t> (tmp);
     }
     int lastw = m_widths[i-1];
 
     for (i=m_hhea->numOfMetrics (); i<font->glyph_cnt; i++) {
         m_widths[i] = lastw;
-        m_lbearings[i] = getushort (pos); pos+=2;
+	uint16_t tmp = getushort (pos); pos+=2;
+        m_lbearings[i] = static_cast<int16_t> (tmp);
     }
     m_loaded = true;
 }

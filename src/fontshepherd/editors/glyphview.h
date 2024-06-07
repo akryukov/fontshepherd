@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE. */
 
 #include <QtWidgets>
+#include "ftwrapper.h"
 
 #define RULER_BREADTH 24
 #define GV_MIN_Y -4096
@@ -100,7 +101,7 @@ class GlyphScene : public QGraphicsScene {
     Q_OBJECT;
 
 public:
-    GlyphScene (sFont &fnt, GlyphContext &gctx, OutlinesType gtype, QObject *parent = nullptr);
+    GlyphScene (sFont &fnt, FTWrapper &ftw, GlyphContext &gctx, OutlinesType gtype, QObject *parent = nullptr);
 
     void drawBackground (QPainter *painter, const QRectF &exposed);
     void drawForeground (QPainter *painter, const QRectF &exposed);
@@ -156,6 +157,7 @@ private:
     QPointF m_origItemPos;
 
     sFont &m_font;
+    FTWrapper &m_ftWrapper;
     GlyphContext &m_context;
     OutlinesType m_outlines_type;
     bool m_dragValid;
@@ -280,8 +282,10 @@ public:
     static bool showHints ();
     static bool showBlues ();
     static bool showFamilyBlues ();
+    static bool showGridFit ();
 
     bool eventFilter (QObject *watched, QEvent *event) override;
+    FTWrapper *freeTypeWrapper ();
 
 public slots:
     void save ();
@@ -327,11 +331,18 @@ private slots:
     void slot_showHints (const bool val);
     void slot_showBlues (const bool val);
     void slot_showFamilyBlues (const bool val);
+    void slot_showGridFit (const bool val);
+
+    void slot_monoBoxClicked (const bool val);
+    void slot_sameXYBoxClicked (const bool val);
+    void slot_xPpemChanged (const int val);
+    void slot_yPpemChanged (const int val);
 
 private:
     void setStatusBar ();
     void setMenuBar ();
     void setToolsPalette ();
+    void setGridFitPalette (QSettings &settings);
     void setFigPalette (QSettings &settings);
     void setInstrPalette (QSettings &settings);
     void updateViewSetting (const QString key, const bool val);
@@ -347,7 +358,7 @@ private:
     QAction *makePtCornerAction, *makePtCurvedAction, *makePtTangentAction, *makePtFirstAction;
     QAction *zoomInAction, *zoomOutAction;
     QAction *showPtsAction, *showCtlPtsAction, *showPtNumAction, *showExtremaAction, *showFillAction;
-    QAction *showHintsAction, *showBluesAction, *showFamilyBluesAction;
+    QAction *showHintsAction, *showBluesAction, *showFamilyBluesAction, *showGridFitAction;
     QAction *ttSwitchAction, *psSwitchAction, *svgSwitchAction, *colrSwitchAction;
     QAction *autoHintAction, *hmUpdateAction, *clearHintsAction;
     QActionGroup *m_switchOutlineActions;
@@ -366,9 +377,14 @@ private:
     QDockWidget *m_figDock, *m_instrDock;
     QStackedWidget *m_figPalContainer, *m_instrEditContainer;
 
+    QToolBar *m_gfToolbar;
+    QLabel *m_xPpemLabel, *m_yPpemLabel;
+    QSlider *m_xPpemSlider, *m_yPpemSlider;
+
     static bool m_showPoints, m_showControlPoints, m_showPointNumbering, m_showExtrema, m_showFill;
-    static bool m_showHints, m_showBlues, m_showFamilyBlues;
+    static bool m_showHints, m_showBlues, m_showFamilyBlues, m_showGridFit;
     static bool m_settingsDone;
+    FTWrapper ftWrapper;
 
     UndoGroupContainer *m_ug_container;
 };

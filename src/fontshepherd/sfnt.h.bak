@@ -70,17 +70,17 @@ public:
     void removeFromCollection (int index);
 
 private:
-    static uint16_t getushort (QFile *f);
-    static uint32_t getlong (QFile *f);
-    static double getfixed (QFile *f);
-    static double getvfixed (QFile *f);
-    static double get2dot14 (QFile *f);
+    static uint16_t getushort (QDataStream *in);
+    static uint32_t getlong (QDataStream *in);
+    static double getfixed (QDataStream *in);
+    static double getvfixed (QDataStream *in);
+    static double get2dot14 (QDataStream *in);
 
-    static void putushort (QFile *f, uint16_t val);
-    static void putlong (QFile *f, uint32_t val);
-    static void put2d14 (QFile *f, double dval);
-    static uint32_t fileCheck (QFile *f);
-    static uint32_t figureCheck (QFile *f, uint32_t start, uint32_t lcnt);
+    static void putushort (QDataStream *out, uint16_t val);
+    static void putlong (QDataStream *out, uint32_t val);
+    static void put2d14 (QDataStream *out, double dval);
+    static uint32_t fileCheck (QFile *f, QDataStream *in);
+    static uint32_t figureCheck (QFile *f, QDataStream *in, uint32_t start, uint32_t lcnt);
 
     bool checkFSType (sFont *tf);
     QString getFontName (sFont *tf);
@@ -88,15 +88,15 @@ private:
     void getGlyphCnt (sFont *tf);
     void getEmSize (sFont *tf);
 
-    void doLoadFile (QFile *newf);
-    std::shared_ptr<FontTable> readTableHead (QFile *f, int file_idx);
-    void readSfntHeader (QFile *f, int file_idx);
-    void readTtcfHeader (QFile *f, int file_idx);
+    void doLoadFile (QFile *newf, QDataStream &news);
+    std::shared_ptr<FontTable> readTableHead (QFile *f, QDataStream *s, int file_idx);
+    void readSfntHeader (QFile *f, QDataStream *s, int file_idx);
+    void readTtcfHeader (QFile *f, QDataStream *s, int file_idx);
 
-    void dumpFontHeader (QFile *newf, sFont *fnt);
-    void dumpFontTables (QFile *newf);
-    void fntWrite (QFile *newf, sFont *fnt);
-    void ttcWrite (QFile *newf);
+    void dumpFontHeader (QDataStream *news, sFont *fnt);
+    void dumpFontTables (QFile *newf, QDataStream *news);
+    void fntWrite (QFile *newf, QDataStream *news, sFont *fnt);
+    void ttcWrite (QFile *newf, QDataStream *news);
     QFile *makeBackup (QFile *origf);
     void restoreFromBackup (QFile *target, QFile *source, int backidx);
 

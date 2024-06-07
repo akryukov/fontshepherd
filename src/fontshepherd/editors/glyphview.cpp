@@ -45,6 +45,7 @@ bool GlyphViewContainer::m_showFill = false;
 bool GlyphViewContainer::m_showHints = true;
 bool GlyphViewContainer::m_showBlues = true;
 bool GlyphViewContainer::m_showFamilyBlues = true;
+bool GlyphViewContainer::m_showGridFit = false;
 
 bool GlyphViewContainer::showPoints () {
     return m_showPoints;
@@ -78,12 +79,12 @@ bool GlyphViewContainer::showFamilyBlues () {
     return m_showFamilyBlues;
 }
 
+bool GlyphViewContainer::showGridFit () {
+    return m_showGridFit;
+}
+
 GlyphViewContainer::GlyphViewContainer (FontView *fv, sFont &fnt, GlyphContainer *tab) :
-    QMainWindow (fv, Qt::Window),
-    m_fv (fv),
-    m_font (fnt),
-    m_tab (tab)
-{
+    QMainWindow (fv, Qt::Window), m_fv (fv), m_font (fnt), m_tab (tab) {
 
     setAttribute (Qt::WA_DeleteOnClose);
     m_ug_container = new UndoGroupContainer (this);
@@ -104,6 +105,7 @@ GlyphViewContainer::GlyphViewContainer (FontView *fv, sFont &fnt, GlyphContainer
         m_showHints = settings.value ("glyphview/showHints", m_showHints).toBool ();
         m_showBlues = settings.value ("glyphview/showBlues", m_showBlues).toBool ();
         m_showFamilyBlues = settings.value ("glyphview/showFamilyBlues", m_showFamilyBlues).toBool ();
+        m_showGridFit = settings.value ("glyphview/showGridFit", m_showGridFit).toBool ();
         m_settingsDone = true;
     }
 
@@ -117,7 +119,13 @@ GlyphViewContainer::GlyphViewContainer (FontView *fv, sFont &fnt, GlyphContainer
     setToolsPalette ();
     setFigPalette (settings);
     setInstrPalette (settings);
+    setGridFitPalette (settings);
     setMenuBar ();
+
+    if (ftWrapper.hasContext ()) {
+	int idx = m_font.file_index;
+	ftWrapper.init (m_font.container->path (idx), m_font.index);
+    }
 }
 
 GlyphViewContainer::~GlyphViewContainer () {
@@ -259,6 +267,7 @@ void GlyphViewContainer::setMenuBar () {
     showHintsAction = new QAction (tr ("Show &Hints"), this);
     showBluesAction = new QAction (tr ("Show &Blues"), this);
     showFamilyBluesAction = new QAction (tr ("Show Fa&mily Blues"), this);
+    showGridFitAction = new QAction (tr ("Show &Grid Fit"), this);
 
     zoomInAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_Plus));
     zoomOutAction->setShortcut (QKeySequence (Qt::CTRL | Qt::Key_Minus));
@@ -280,6 +289,8 @@ void GlyphViewContainer::setMenuBar () {
     showBluesAction->setChecked (m_showBlues);
     showFamilyBluesAction->setCheckable (true);
     showFamilyBluesAction->setChecked (m_showFamilyBlues);
+    showGridFitAction->setCheckable (true);
+    showGridFitAction->setChecked (m_showGridFit);
 
     connect (zoomInAction, &QAction::triggered, this, &GlyphViewContainer::zoomIn);
     connect (zoomOutAction, &QAction::triggered, this, &GlyphViewContainer::zoomOut);
@@ -292,6 +303,7 @@ void GlyphViewContainer::setMenuBar () {
     connect (showBluesAction, &QAction::triggered, this, &GlyphViewContainer::slot_showBlues);
     connect (showHintsAction, &QAction::triggered, this, &GlyphViewContainer::slot_showHints);
     connect (showFamilyBluesAction, &QAction::triggered, this, &GlyphViewContainer::slot_showFamilyBlues);
+    connect (showGridFitAction, &QAction::triggered, this, &GlyphViewContainer::slot_showGridFit);
 
     autoHintAction = new QAction (tr ("Auto&hint"), this);
     hmUpdateAction = new QAction (tr ("Update hint &masks"), this);
@@ -373,6 +385,7 @@ void GlyphViewContainer::setMenuBar () {
     viewMenu->addAction (showHintsAction);
     viewMenu->addAction (showBluesAction);
     viewMenu->addAction (showFamilyBluesAction);
+    viewMenu->addAction (showGridFitAction);
 }
 
 void GlyphViewContainer::setToolsPalette () {
@@ -437,6 +450,55 @@ void GlyphViewContainer::setToolsPalette () {
     this->addToolBar (Qt::LeftToolBarArea, gvToolbar);
 }
 
+void GlyphViewContainer::setGridFitPalette (QSettings &settings) {
+    m_gfToolbar = new QToolBar (this);
+    bool mono = settings.value ("glyphview/GridFit/monochrome", false).toBool ();
+    bool same = settings.value ("glyphview/GridFit/sameXY", true).toBool ();
+    unsigned int ppemX = settings.value ("glyphview/GridFit/ppemX", 22).toUInt ();
+    unsigned int ppemY = settings.value ("glyphview/GridFit/ppemY", 22).toUInt ();
+
+    m_gfToolbar->setOrientation (Qt::Horizontal);
+    m_gfToolbar->setAllowedAreas (Qt::TopToolBarArea | Qt::BottomToolBarArea);
+
+    QCheckBox *monoBox = new QCheckBox (tr ("Monochrome rendering"));
+    monoBox->setCheckState (mono ? Qt::Checked : Qt::Unchecked);
+    m_gfToolbar->addWidget (monoBox);
+    connect (monoBox, &QCheckBox::clicked, this, &GlyphViewContainer::slot_monoBoxClicked);
+
+    QCheckBox *sameXYBox = new QCheckBox (tr ("Scale X/Y the same"));
+    sameXYBox->setCheckState (same ? Qt::Checked : Qt::Unchecked);
+    m_gfToolbar->addWidget (sameXYBox);
+    connect (sameXYBox, &QCheckBox::clicked, this, &GlyphViewContainer::slot_sameXYBoxClicked);
+
+    m_gfToolbar->addSeparator ();
+
+    m_xPpemLabel = new QLabel (QString ("X PPEM: %1").arg (ppemX));
+    m_gfToolbar->addWidget (m_xPpemLabel);
+    m_xPpemSlider = new QSlider (Qt::Horizontal);
+    m_xPpemSlider->setTickPosition (QSlider::TicksBothSides);
+    m_xPpemSlider->setTickInterval (4);
+    m_xPpemSlider->setRange (8, 48);
+    m_xPpemSlider->setValue (ppemX);
+    m_gfToolbar->addWidget (m_xPpemSlider);
+    connect (m_xPpemSlider, &QSlider::valueChanged, this, &GlyphViewContainer::slot_xPpemChanged);
+
+    m_gfToolbar->addSeparator ();
+
+    m_yPpemLabel = new QLabel (QString ("X PPEM: %1").arg (ppemX));
+    m_yPpemLabel->setEnabled (!same);
+    m_gfToolbar->addWidget (m_yPpemLabel);
+    m_yPpemSlider = new QSlider (Qt::Horizontal);
+    m_yPpemSlider->setTickPosition (QSlider::TicksBothSides);
+    m_yPpemSlider->setTickInterval (4);
+    m_yPpemSlider->setRange (8, 48);
+    m_yPpemSlider->setValue (ppemY);
+    m_yPpemSlider->setEnabled (!same);
+    m_gfToolbar->addWidget (m_yPpemSlider);
+    connect (m_yPpemSlider, &QSlider::valueChanged, this, &GlyphViewContainer::slot_yPpemChanged);
+
+    this->addToolBar (Qt::TopToolBarArea, m_gfToolbar);
+}
+
 void GlyphViewContainer::setFigPalette (QSettings &settings) {
     m_figPalContainer = new QStackedWidget (this);
     m_figDock = new QDockWidget (this);
@@ -494,7 +556,7 @@ void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type
     m_ug_container->addGroup (ug);
     //NB: no need to set this group active right here, as switchToTab () will take care of it
 
-    GlyphScene *scene = new GlyphScene (m_font, gctx, content_type);
+    GlyphScene *scene = new GlyphScene (m_font, ftWrapper, gctx, content_type);
     gctx.appendScene (scene);
 
     GlyphView *view = new GlyphView (scene, m_figPalContainer, m_instrEditContainer, gctx, this);
@@ -551,6 +613,8 @@ void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type
         psSwitchAction->setChecked (true);
     else if (content_type == OutlinesType::SVG)
         svgSwitchAction->setChecked (true);
+
+    m_gfToolbar->setVisible (m_showGridFit && content_type == OutlinesType::TT);
 
     gctx.updatePoints ();
     checkSelection ();
@@ -615,6 +679,8 @@ void GlyphViewContainer::switchToTab (int index) {
     autoHintAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
     hmUpdateAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
     clearHintsAction->setEnabled (gctx.hasOutlinesType (OutlinesType::PS));
+
+    showGridFitAction->setEnabled (gctx.hasOutlinesType (OutlinesType::TT));
 
     m_figPalContainer->setCurrentIndex (index);
     m_instrEditContainer->setCurrentIndex (index);
@@ -964,10 +1030,76 @@ void GlyphViewContainer::slot_showFamilyBlues (const bool val) {
     updateViewSetting ("showFamilyBlues", val);
 }
 
-GlyphView::GlyphView (
-    GlyphScene *scene, QStackedWidget *figPalContainer, QStackedWidget *instrEditContainer, GlyphContext &gctx, QWidget *parent) :
-    QGraphicsView (scene, parent), m_context (gctx)
-{
+void GlyphViewContainer::slot_showGridFit (const bool val) {
+    m_showGridFit = val;
+
+    GlyphView *active = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    OutlinesType ctype = active->outlinesType ();
+
+    m_gfToolbar->setVisible (val && ctype == OutlinesType::TT);
+    updateViewSetting ("showGridFit", val);
+}
+
+void GlyphViewContainer::slot_monoBoxClicked (const bool val) {
+    QSettings settings (QCoreApplication::organizationName (), QCoreApplication::applicationName ());
+    settings.setValue ("glyphview/GridFit/monochrome", val);
+
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    QWidget * viewport = view->viewport ();
+    viewport->update ();
+}
+
+void GlyphViewContainer::slot_sameXYBoxClicked (const bool val) {
+    QSettings settings (QCoreApplication::organizationName (), QCoreApplication::applicationName ());
+    settings.setValue ("glyphview/GridFit/sameXY", val);
+    if (val) {
+	int xval = m_xPpemSlider->value ();
+	m_yPpemSlider->setValue (xval);
+	m_yPpemLabel->setText (QString ("Y PPEM: %1").arg (xval));
+	settings.setValue ("glyphview/GridFit/ppemY", m_xPpemSlider->value ());
+
+	GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+	QWidget * viewport = view->viewport ();
+	viewport->update ();
+    }
+    m_yPpemLabel->setEnabled (!val);
+    m_yPpemSlider->setEnabled (!val);
+}
+
+void GlyphViewContainer::slot_xPpemChanged (const int val) {
+    QSettings settings (QCoreApplication::organizationName (), QCoreApplication::applicationName ());
+    bool same = settings.value ("glyphview/GridFit/sameXY", true).toBool ();
+    settings.setValue ("glyphview/GridFit/ppemX", val);
+    m_xPpemLabel->setText (QString ("X PPEM: %1").arg (val));
+    QToolTip::showText (QCursor::pos (), QString ("%1").arg (val), nullptr);
+    if (same) {
+	// viewport is updated by the Y slider
+	m_yPpemSlider->setValue (val);
+    } else {
+	GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+	QWidget * viewport = view->viewport ();
+	viewport->update ();
+    }
+}
+
+void GlyphViewContainer::slot_yPpemChanged (const int val) {
+    QSettings settings (QCoreApplication::organizationName (), QCoreApplication::applicationName ());
+    settings.setValue ("glyphview/GridFit/ppemY", val);
+    m_yPpemLabel->setText (QString ("Y PPEM: %1").arg (val));
+    QToolTip::showText (QCursor::pos (), QString ("%1").arg (val), nullptr);
+
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    QWidget * viewport = view->viewport ();
+    viewport->update ();
+}
+
+FTWrapper* GlyphViewContainer::freeTypeWrapper () {
+    return &ftWrapper;
+}
+
+GlyphView::GlyphView (GlyphScene *scene, QStackedWidget *figPalContainer,
+    QStackedWidget *instrEditContainer, GlyphContext &gctx, QWidget *parent) :
+    QGraphicsView (scene, parent), m_context (gctx) {
     setViewportMargins (RULER_BREADTH, RULER_BREADTH, 0, 0);
 
     QGridLayout* gridLayout = new QGridLayout ();
@@ -1585,9 +1717,10 @@ QAction* GlyphView::activeAction () {
     return m_activeAction;
 }
 
-GlyphScene::GlyphScene (sFont &fnt, GlyphContext &gctx, OutlinesType gtype, QObject *parent) :
+GlyphScene::GlyphScene (sFont &fnt, FTWrapper &ftw, GlyphContext &gctx, OutlinesType gtype, QObject *parent) :
     QGraphicsScene (parent),
     m_font (fnt),
+    m_ftWrapper (ftw),
     m_context (gctx),
     m_outlines_type (gtype),
     m_dragValid (false),
@@ -1675,9 +1808,107 @@ static void show_hint (QPainter *painter, const QRectF &exposed, const StemInfo 
     }
 }
 
+static void draw_gridFittedBitmap (QPainter *p, ConicGlyph *g, freetype_raster &r, int ppemX, int ppemY) {
+    static QPen whitePen (Qt::white, 1);
+    static QPen melrosePen (QColor (0xb0, 0xb0, 0xff), 1);
+    if (!r.bitmap.empty ()) {
+	p->setPen (whitePen);
+	double px_size_x = static_cast<double> (g->upm ())/ppemX;
+	double px_size_y = static_cast<double> (g->upm ())/ppemY;
+	int start_x = r.lb * px_size_x;
+	int start_y = (r.as-1) * px_size_y;
+	int pos = 0;
+
+	QVector<QBrush> grays;
+	grays.reserve (r.num_grays);
+	unsigned int bgr=127, bgg=127, bgb=127;
+	unsigned int shift=0, mask=0, rem_grays=r.num_grays;
+	while (rem_grays>1) {
+	    rem_grays /= 2;
+	    shift++;
+	    mask = mask << 1;
+	    mask |= 1;
+	}
+
+        for (int i=0; i<r.num_grays; i++) {
+            grays.append (QBrush (QColor (
+		255 - i*bgr/(r.num_grays-1),
+		255 - i*bgg/(r.num_grays-1),
+		255 - i*bgb/(r.num_grays-1)
+            ), Qt::SolidPattern));
+        }
+
+	for (int i=0; i<r.rows; i++) {
+	    pos = r.bytes_per_row*i;
+	    int next = pos + r.bytes_per_row;
+	    int idx = 0;
+	    while (idx < r.cols && pos < next) {
+		uint8_t b = r.bitmap[pos];
+		uint8_t bits_rem = 8;
+		while (idx < r.cols && bits_rem > 0) {
+		    bits_rem -= shift;
+		    uint8_t ccode = (b>>bits_rem)&mask;
+		    p->setBrush (grays[ccode]);
+		    p->drawRect (start_x + (px_size_x*idx), start_y - (px_size_y*i), px_size_x, px_size_y);
+		    idx++;
+		}
+		pos++;
+	    }
+	}
+	// Mark centres of the pixels
+	p->setPen (melrosePen);
+	for (int i=0; i<r.rows; i++) {
+	    for (int j=1; j<=r.cols; j++) {
+		int cx = start_x + (px_size_x*j) - (px_size_x/2);
+		int cy = start_y - (px_size_y*i) + (px_size_y/2);
+		p->drawLine (cx-3, cy, cx+3, cy);
+		p->drawLine (cx, cy-3, cx, cy+3);
+	    }
+	}
+    }
+}
+
 void GlyphScene::drawBackground (QPainter *painter, const QRectF &exposed) {
     static QPen blackPen (Qt::black, 1);
     static QPen bluePen (Qt::blue, 1);
+    static QPen greenPen (Qt::darkGreen, 1);
+    static QPen noPen (Qt::NoPen);
+
+    if (m_outlines_type == OutlinesType::TT && GlyphViewContainer::showGridFit () && m_ftWrapper.hasFace ()) {
+	QPainterPath p;
+	QSettings settings (QCoreApplication::organizationName (), QCoreApplication::applicationName ());
+	bool mono = settings.value ("glyphview/GridFit/monochrome", false).toBool ();
+	unsigned int ppemX = settings.value ("glyphview/GridFit/ppemX", 22).toUInt ();
+	unsigned int ppemY = settings.value ("glyphview/GridFit/ppemY", 22).toUInt ();
+
+	uint16_t ft_flags = FT_LOAD_RENDER | FT_LOAD_NO_BITMAP | FT_LOAD_NO_AUTOHINT;
+	if (mono) {
+	    ft_flags |= FT_LOAD_MONOCHROME;
+	    ft_flags |= FT_LOAD_TARGET_MONO;
+	} else {
+	    ft_flags |= FT_LOAD_TARGET_NORMAL;
+	}
+
+	freetype_raster r = m_ftWrapper.gridFitGlyph (m_context.gid (), ppemX, ppemY, ft_flags, &p);
+
+	if (r.valid) {
+	    draw_gridFittedBitmap (painter, m_context.glyph (m_outlines_type), r, ppemX, ppemY);
+
+	    painter->setPen (greenPen);
+	    painter->setBrush (QBrush (Qt::NoBrush));
+	    double upm = m_context.glyph (m_outlines_type)->upm ();
+	    double xscale = upm/(ppemX*64);
+	    double yscale = upm/(ppemY*64);
+	    QTransform cur_trans = painter->worldTransform ();
+	    QTransform save_trans = cur_trans;
+	    painter->scale (xscale, yscale);
+	    painter->drawPath (p);
+	    painter->setWorldTransform (save_trans);
+
+	    double aw_scaled = r.advance * xscale;
+	    painter->drawLine (QLineF (aw_scaled, exposed.top (), aw_scaled, exposed.bottom ()));
+	}
+    }
 
     painter->setPen (blackPen);
     painter->drawLine (QLineF (exposed.left (), 0, exposed.right (), 0));
@@ -1690,9 +1921,11 @@ void GlyphScene::drawBackground (QPainter *painter, const QRectF &exposed) {
     if (m_outlines_type == OutlinesType::PS) {
 	const PrivateDict *pd = m_context.glyph (m_outlines_type)->privateDict ();
 	double l = exposed.right () - exposed.left ();
+	painter->setPen (noPen);
 
 	if (GlyphViewContainer::showBlues ()) {
-	    painter->setBrush (QBrush (QColor (127, 127, 255, 64)));
+	    static QBrush blueBrush (QColor (127, 127, 255, 64), Qt::Dense5Pattern);
+	    painter->setBrush (blueBrush);
 	    if (pd->has_key (cff::BlueValues)) {
 		const private_entry &blues = pd->get (cff::BlueValues);
 		for (int i=1; i<16 && blues.list[i].valid; i+=2) {
@@ -1709,7 +1942,8 @@ void GlyphScene::drawBackground (QPainter *painter, const QRectF &exposed) {
 	    }
 	}
 	if (GlyphViewContainer::showFamilyBlues ()) {
-	    painter->setBrush (QBrush (QColor (255, 112, 112, 64)));
+	    static QBrush familyBrush (QColor (255, 112, 112, 64), Qt::Dense5Pattern);
+	    painter->setBrush (familyBrush);
 	    if (pd->has_key (cff::FamilyBlues)) {
 		const private_entry &blues = pd->get (cff::FamilyBlues);
 		for (int i=1; i<16 && blues.list[i].valid; i+=2) {

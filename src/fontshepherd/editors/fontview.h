@@ -29,7 +29,6 @@
 
 #include <QtWidgets>
 #include "tables.h" // Have to load it here due to inheritance from TableEdit
-#include "ftwrapper.h"
 #include "charbuffer.h"
 #include "tables/glyphnames.h"
 
