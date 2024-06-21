@@ -42,11 +42,10 @@ FontTable::FontTable (sfntFile *fontfile, const TableHeader &props) :
     len (props.length),
     newlen (len),
     data (nullptr),
-    tv (nullptr),
-    m_loaded (false),
-    m_usable (false) {
+    tv (nullptr) {
 
-    changed = td_changed = required = is_new = freeing = inserted = processed = false;
+    changed = td_changed = required = is_new = freeing = inserted = processed = td_loaded = false;
+    if (infile == nullptr) is_new = true;
 }
 
 FontTable::FontTable (FontTable* table) {
@@ -314,14 +313,18 @@ bool FontTable::loaded () const {
     return (data != nullptr);
 }
 
-bool FontTable::interpreted () const {
-    return m_loaded;
+bool FontTable::isNew () const {
+    return is_new;
+}
+
+bool FontTable::compiled () const {
+    return td_changed;
 }
 
 void FontTable::clearData () {
     delete[] data;
     data = nullptr;
-    m_loaded = false;
+    td_loaded = false;
 }
 
 // See https://docs.microsoft.com/en-us/typography/opentype/otspec140/recom,
@@ -440,14 +443,14 @@ TableEdit *FontTable::editor () {
     return this->tv;
 }
 
-void FontTable::hexEdit (sFont*, QWidget* caller) {
-    if (data == nullptr)
+void FontTable::hexEdit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
+    if (data == nullptr && !is_new)
         fillup ();
 
     if (tv == nullptr) {
-        HexTableEdit *hexedit = new HexTableEdit (this, caller);
+        HexTableEdit *hexedit = new HexTableEdit (tptr, caller);
         hexedit->setWindowTitle
-	    (QString ("%1 - %2").arg (QString::fromStdString (stringName ())).arg (container->name ()));
+	    (QString ("%1 - %2").arg (QString::fromStdString (stringName ())).arg (fnt->fontname));
         hexedit->setData (data, newlen);
         tv = hexedit;
         hexedit->show ();
@@ -456,8 +459,8 @@ void FontTable::hexEdit (sFont*, QWidget* caller) {
     }
 }
 
-void FontTable::edit (sFont* fnt, QWidget* caller) {
-    hexEdit (fnt, caller);
+void FontTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
+    hexEdit (fnt, tptr, caller);
 }
 
 sfntFile* FontTable::containerFile () {
@@ -482,15 +485,15 @@ void GlyphContainer::unpackData (sFont* fnt) {
     m_hmtx->unpackData (fnt);
 }
 
-void GlyphContainer::edit (sFont* fnt, QWidget* caller) {
+void GlyphContainer::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     // No fillup here, as it is done by fontview
     FontView *fv = caller->findChild<FontView *> ();
 
     if (fv) {
-        fv->setTable (this);
+        fv->setTable (tptr);
         fv->raise ();
     } else {
-        fv = new FontView (this, fnt, caller);
+        fv = new FontView (fnt->sharedTable (this->iName ()), fnt, caller);
         if (!fv->isValid ()) {
             fv->close ();
             return;
@@ -523,7 +526,7 @@ OutlinesType GlyphContainer::outlinesType () const {
 }
 
 /* Default editor, based on the QHexEdit widget */
-HexTableEdit::HexTableEdit (FontTable* tab, QWidget* parent) :
+HexTableEdit::HexTableEdit (std::shared_ptr<FontTable> tab, QWidget* parent) :
     TableEdit (parent, Qt::Window), m_table (tab) {
 
     m_edited = m_valid = false;
@@ -654,7 +657,7 @@ bool HexTableEdit::isValid () {
     return m_valid;
 }
 
-FontTable* HexTableEdit::table () {
+std::shared_ptr<FontTable> HexTableEdit::table () {
     return m_table;
 }
 

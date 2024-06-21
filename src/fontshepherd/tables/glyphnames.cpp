@@ -199,13 +199,13 @@ void PostTable::packData () {
     std::copy (st.begin (), st.end (), data);
 }
 
-void PostTable::edit (sFont* fnt, QWidget* caller) {
+void PostTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        PostEdit *postedit = new PostEdit (this, fnt, caller);
+        PostEdit *postedit = new PostEdit (tptr, fnt, caller);
         tv = postedit;
 	FontView *fv = caller->findChild<FontView *> ();
 	if (fv)

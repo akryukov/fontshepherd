@@ -36,24 +36,24 @@
 #include "tables/mtx.h"
 
 GlyfTable::GlyfTable (sfntFile *fontfile, TableHeader &props) :
-    GlyphContainer (fontfile, props), m_loca (nullptr), m_loaded (false) {
+    GlyphContainer (fontfile, props) {
 }
 
 GlyfTable::~GlyfTable () {
 }
 
 void GlyfTable::unpackData (sFont *font) {
-    if (m_loaded)
+    if (td_loaded)
         return;
     GlyphContainer::unpackData (font);
 
-    m_loca = dynamic_cast<LocaTable *> (font->table (CHR ('l','o','c','a')));
+    m_loca = std::dynamic_pointer_cast<LocaTable> (font->sharedTable (CHR ('l','o','c','a')));
     if (!m_loca)
         return;
 
     m_loca->fillup ();
     m_loca->unpackData (font);
-    m_loaded = true;
+    td_loaded = true;
 }
 
 void GlyfTable::packData () {
@@ -118,7 +118,7 @@ uint16_t GlyfTable::addGlyph (sFont* fnt, uint8_t) {
 }
 
 bool GlyfTable::usable () const {
-    return m_loaded;
+    return td_loaded;
 }
 
 LocaTable::LocaTable (sfntFile *fontfile, TableHeader &props) :

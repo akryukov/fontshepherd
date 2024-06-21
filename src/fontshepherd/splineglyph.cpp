@@ -666,7 +666,7 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
 	    int16_t arg1, arg2;
 	    if (ref.round)
 		flags |= _ROUND;
-	    if (ref.use_my_metrics)
+	    if (ref.useMyMetrics ())
 		flags |= _USE_MY_METRICS;
 	    if (i<refs.size ()-1)
 		flags |= _MORE;			/* More components */
@@ -2328,6 +2328,10 @@ uint16_t DrawableReference::depth (uint16_t val) const {
     return (val + cc->componentDepth (val));
 }
 
+bool DrawableReference::useMyMetrics () const {
+    return (use_my_metrics);
+}
+
 uint16_t ConicGlyph::numCompositePoints () const {
     uint16_t ret = 0;
     if (figures.size ()) {
@@ -2358,6 +2362,14 @@ uint16_t ConicGlyph::componentDepth (uint16_t val) const {
 	    ret = rd;
     }
     return ret;
+}
+
+uint16_t ConicGlyph::useMyMetricsGlyph () const {
+    for (auto &ref : refs) {
+	if (ref.useMyMetrics ())
+	    return (ref.GID);
+    }
+    return 0xFFFF;
 }
 
 bool ConicGlyph::autoHint (sFont &fnt) {

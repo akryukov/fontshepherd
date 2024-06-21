@@ -524,14 +524,14 @@ class CmapEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    CmapEdit (FontTable* tab, sFont* font, QWidget *parent);
+    CmapEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~CmapEdit ();
 
     void resetData () override {};
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
     QSize minimumSize () const;
@@ -586,8 +586,7 @@ private:
 
     bool m_valid;
 
-    FontTable *m_table;
-    CmapTable *m_cmap;
+    std::shared_ptr<CmapTable> m_cmap;
     sFont *m_font;
     std::unique_ptr<GidListModel> m_model;
     std::unique_ptr<GidListModel> m_model8;

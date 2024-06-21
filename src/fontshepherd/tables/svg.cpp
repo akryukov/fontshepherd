@@ -40,7 +40,7 @@
 #include "tables/maxp.h"
 
 SvgTable::SvgTable (sfntFile *fontfile, const TableHeader &props) :
-    GlyphContainer (fontfile, props) {
+    GlyphContainer (fontfile, props), m_usable (false) {
 }
 
 SvgTable::~SvgTable () {
@@ -48,9 +48,9 @@ SvgTable::~SvgTable () {
 
 void SvgTable::unpackData (sFont *font) {
     uint32_t pos = 0;
-    if (m_loaded)
+    if (td_loaded)
         return;
-    m_loaded = true;
+    td_loaded = true;
 
     m_glyf = dynamic_cast<GlyfTable *> (font->table (CHR ('g','l','y','f')));
     m_cff = dynamic_cast<CffTable *> (font->table (CHR ('C','F','F',' ')));

@@ -34,9 +34,7 @@
 #include "hea.h"
 
 HmtxTable::HmtxTable (sfntFile *fontfile, TableHeader &props) :
-    FontTable (fontfile, props),
-    m_hhea (nullptr),
-    m_loaded (false) {
+    FontTable (fontfile, props), m_hhea (nullptr) {
 }
 
 HmtxTable::~HmtxTable () {
@@ -68,7 +66,7 @@ void HmtxTable::unpackData (sFont *font) {
 	uint16_t tmp = getushort (pos); pos+=2;
         m_lbearings[i] = static_cast<int16_t> (tmp);
     }
-    m_loaded = true;
+    td_loaded = true;
 }
 
 void HmtxTable::packData () {

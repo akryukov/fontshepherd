@@ -115,14 +115,14 @@ class InstrTableEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    InstrTableEdit (FontTable* tab, sFont* font, QWidget *parent);
+    InstrTableEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~InstrTableEdit () {};
 
     void resetData () override {};
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
 
@@ -134,7 +134,7 @@ private:
     void fillInstrTab ();
 
     sFont *m_font;
-    FontTable *m_tbl;
+    std::shared_ptr<FontTable> m_table;
     InstrEdit *m_instrEdit;
     bool m_valid;
 

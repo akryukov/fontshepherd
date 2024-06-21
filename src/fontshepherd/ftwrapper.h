@@ -37,6 +37,7 @@ struct freetype_raster {
     uint16_t bytes_per_row;
     uint16_t num_grays;
     uint16_t advance;
+    uint16_t linear_advance;
     std::vector<uint8_t> bitmap;
     QPixmap *pixmap;
 
@@ -60,7 +61,8 @@ public:
 
     void init (const char* filename, int idx);
     void init (const QString &fpath, int idx);
-    struct freetype_raster gridFitGlyph (uint16_t gid, int xsize, int ysize, uint16_t flags, QPainterPath *p);
+    int setPixelSize (int xsize, int ysize);
+    struct freetype_raster gridFitGlyph (uint16_t gid, uint16_t flags, QPainterPath *p);
     bool hasContext ();
     bool hasFace ();
 

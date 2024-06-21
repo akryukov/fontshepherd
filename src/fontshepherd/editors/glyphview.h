@@ -170,6 +170,7 @@ private:
     std::unique_ptr<QGraphicsEllipseItem> m_addEllipse;
     std::unique_ptr<QGraphicsRectItem> m_addRect;
     QGraphicsItem *m_rootItem;
+    QGraphicsSimpleTextItem* m_awValueItem;
 };
 
 class InstrEdit;

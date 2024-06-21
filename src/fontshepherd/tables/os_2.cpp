@@ -162,13 +162,13 @@ void OS_2Table::packData () {
     std::copy (st.begin (), st.end (), data);
 }
 
-void OS_2Table::edit (sFont* fnt, QWidget* caller) {
+void OS_2Table::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        OS_2Edit *os_2edit = new OS_2Edit (this, fnt, caller);
+        OS_2Edit *os_2edit = new OS_2Edit (tptr, fnt, caller);
         tv = os_2edit;
         os_2edit->show ();
     } else {

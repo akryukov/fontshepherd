@@ -44,14 +44,14 @@ public:
     QVariant headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
     bool removeRows (int row, int count, const QModelIndex &index) override;
 
-    bool insertTable (int row, FontTable *tbl);
+    bool insertTable (int row, std::shared_ptr<FontTable> tptr);
     bool pasteTable (int row, FontTable *tbl);
 
 signals:
     void needsSelectionUpdate (int row);
 
 public slots:
-    void updateViews (FontTable *tbl);
+    void updateViews (std::shared_ptr<FontTable> tptr);
 
 private:
     sFont *m_font = nullptr;
@@ -80,10 +80,14 @@ public slots:
     void unselect ();
     void edit ();
     void hexEdit ();
+    void genHdmxTable ();
+    void genLtshTable ();
+    void genVdmxTable ();
     void doubleClickHandler (const QModelIndex &index);
     void updateSelection (int row);
 
 private:
+    void editTable (std::shared_ptr<FontTable> tptr, bool hex);
     void editTable (int row, bool hex);
     int getSelectionIndex ();
 

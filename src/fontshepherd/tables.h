@@ -80,8 +80,9 @@ public:
     uint32_t iName (int index=0) const;
 
     virtual void unpackData (sFont*) {};
-    virtual void edit (sFont* fnt, QWidget* caller);
-    void hexEdit (sFont* fnt, QWidget* caller);
+    // takes shared_ptr to itself, as it is needed for the editor class
+    virtual void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
+    void hexEdit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
 
     void setModified (bool val);
     bool modified () const;
@@ -90,7 +91,8 @@ public:
     void setEditor (TableEdit *editor);
     TableEdit *editor ();
     bool loaded () const;
-    bool interpreted () const;
+    bool compiled () const;
+    bool isNew () const;
     void clearData ();
     int orderingVal ();
 
@@ -121,17 +123,17 @@ protected:
 
     uint32_t newchecksum;	/* used during saving */
     uint32_t newstart;		/* used during saving */
-    uint32_t newlen;		/* actual length, but data will be */
-    char *data;			/*  padded out to 32bit boundary with 0*/
-    bool changed: 1;		/* someone has changed either data or table_data */
-    bool td_changed: 1;		/* it's table_data that has changed */
+    uint32_t newlen;		// actual length, but data will be padded out to 32bit boundary with 0
+    char *data;
+    bool changed: 1;		// the table has been modified, but the changes not yet compiled
+    bool td_changed: 1;		// the table has been compiled (so table data changed), but not yet saved
     bool required: 1;
-    bool is_new: 1;		/* table is new, nothing to revert to */
-    bool freeing: 1;		/* table has been put on list of tables to be freed */
-    bool inserted: 1;		/* table has been inserted into ordered table list (for save) */
-    bool processed: 1;
+    bool is_new: 1;		// table is new, nothing to revert to
+    bool freeing: 1;		// table has been put on list of tables to be freed
+    bool inserted: 1;		// temporary: table has been inserted into ordered table list (for save)
+    bool processed: 1;		// seems to be currently unused
+    bool td_loaded: 1;		// data has been read into table structures
     TableEdit *tv;
-    bool m_loaded, m_usable;
 };
 
 class TableEdit : public QMainWindow {
@@ -144,17 +146,17 @@ public:
     virtual bool checkUpdate (bool can_cancel) = 0;
     virtual bool isModified () = 0;
     virtual bool isValid () = 0;
-    virtual FontTable* table () = 0;
+    virtual std::shared_ptr<FontTable> table () = 0;
 
 signals:
-    void update (FontTable *ft);
+    void update (std::shared_ptr<FontTable> ft);
 };
 
 class HexTableEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    HexTableEdit (FontTable* tab, QWidget* parent);
+    HexTableEdit (std::shared_ptr<FontTable> tab, QWidget* parent);
     ~HexTableEdit ();
 
     void setData (char *data, int len);
@@ -162,7 +164,7 @@ public:
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
     void closeEvent (QCloseEvent *event);
 
 private slots:
@@ -172,7 +174,7 @@ private slots:
     void toggleOverwrite (bool val);
 
 private:
-    FontTable *m_table;
+    std::shared_ptr<FontTable> m_table;
     QHexEdit *m_hexedit;
     bool m_edited, m_valid;
 

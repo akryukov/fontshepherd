@@ -63,6 +63,7 @@ private:
     void setRecentFilesVisible (bool visible);
     static QString strippedName (const QString &fullFileName);
     void contextMenuEvent (QContextMenuEvent *event);
+    bool hasTrueType ();
 
     QApplication *m_application;
     std::unique_ptr<TableViewContainer> m_tableMatrix;
@@ -76,8 +77,9 @@ private:
     QAction *cutAction, *copyAction, *pasteAction, *clearAction, *unselectAction, *editAction, *hexEditAction;
     QAction *recentFileActs[MaxRecentFiles], *recentFileSeparator, *recentFileSubMenuAct;
     QAction *undoAction, *redoAction;
+    QAction *hdmxAction, *ltshAction, *vdmxAction;
 
     QPushButton *openButton, *saveButton, *closeButton;
 
-    QMenu *fileMenu, *editMenu;
+    QMenu *fileMenu, *editMenu, *toolMenu;
 };

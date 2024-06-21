@@ -52,7 +52,7 @@ public:
     ~GaspTable () {};
     void unpackData (sFont *font);
     void packData ();
-    void edit (sFont* fnt, QWidget* caller);
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
 
     uint16_t version () const;
     uint16_t numRanges () const;

@@ -53,7 +53,7 @@ void ColrTable::unpackData (sFont *fnt) {
     uint32_t pos = 0;
     uint16_t i;
     std::vector<layer_record> layer_records;
-    if (m_loaded)
+    if (td_loaded)
 	return;
 
     GlyphContainer::unpackData (fnt);
@@ -87,7 +87,7 @@ void ColrTable::unpackData (sFont *fnt) {
     }
 
     if (m_version == 0) {
-	m_loaded = true;
+	td_loaded = true;
 	return;
     }
 
@@ -158,7 +158,7 @@ void ColrTable::unpackData (sFont *fnt) {
 	FontVariations::readIndexMap (data, varIndexMapOffset, m_deltaSetIndexMap);
     if (itemVariationStoreOffset)
 	FontVariations::readVariationStore (data, itemVariationStoreOffset, m_varStore);
-    m_loaded = true;
+    td_loaded = true;
 }
 
 std::shared_ptr<ColorLine> ColrTable::readColorLine (
@@ -429,10 +429,10 @@ std::vector<struct layer_record> &ColrTable::glyphLayers (uint16_t gid) {
 }
 
 // NB: same function as for GlyphContainer
-void ColrTable::edit (sFont* fnt, QWidget* caller) {
+void ColrTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     // No fillup here, as it is done by fontview
     if (!tv) {
-        FontView *fv = new FontView (this, fnt, caller);
+        FontView *fv = new FontView (tptr, fnt, caller);
         if (!fv->isValid ()) {
             fv->close ();
             return;
@@ -646,7 +646,7 @@ uint16_t ColrTable::addGlyph (sFont* fnt, uint8_t) {
 }
 
 bool ColrTable::usable () const {
-    return m_loaded;
+    return td_loaded;
 }
 
 CpalTable::CpalTable (sfntFile *fontfile, TableHeader &props) :
@@ -656,13 +656,13 @@ CpalTable::CpalTable (sfntFile *fontfile, TableHeader &props) :
 CpalTable::~CpalTable () {
 }
 
-void CpalTable::edit (sFont* fnt, QWidget* caller) {
+void CpalTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        CpalEdit *cpaledit = new CpalEdit (this, fnt, caller);
+        CpalEdit *cpaledit = new CpalEdit (tptr, fnt, caller);
         tv = cpaledit;
         cpaledit->show ();
     } else {

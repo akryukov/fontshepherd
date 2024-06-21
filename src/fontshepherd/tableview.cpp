@@ -30,6 +30,7 @@
 #include "tableview.h"
 #include "sfnt.h"
 #include "tables.h"
+#include "tables/devmetrics.h"
 
 #include "fs_notify.h"
 
@@ -64,7 +65,9 @@ TableViewContainer::TableViewContainer (QString &path, QWidget* parent_w) :
 	QUndoStack *us = new QUndoStack (ugptr);
         TableView* tbl_matrix = new TableView (fnt, i, us, this);
 	m_uStackMap.insert (tbl_matrix, us);
-	connect (us, &QUndoStack::cleanChanged, this, [this, i](bool val) {this->setFontModified (i, !val);});
+	connect (us, &QUndoStack::cleanChanged, this, [this, i](bool val) {
+	    this->setFontModified (i, !val);
+	});
 	connect (tbl_matrix, &TableView::rowSelected, fsptr, &FontShepherdMain::enableEditActions);
         addTab (tbl_matrix, fnt->fontname);
     }
@@ -105,7 +108,9 @@ bool TableViewContainer::loadFont (QString &path) {
 	QUndoStack *us = new QUndoStack (ugptr);
         TableView* tbl_matrix = new TableView (fnt, i, us, this);
 	m_uStackMap.insert (tbl_matrix, us);
-	connect (us, &QUndoStack::cleanChanged, this, [this, i](bool val) {this->setFontModified (i, !val);});
+	connect (us, &QUndoStack::cleanChanged, this, [this, i](bool val) {
+	    this->setFontModified (i, !val);
+	});
 	connect (tbl_matrix, &TableView::rowSelected, fsptr, &FontShepherdMain::enableEditActions);
         addTab (tbl_matrix, fnt->fontname);
     }
@@ -250,7 +255,7 @@ QVariant TableViewModel::data (const QModelIndex &index, int role) const {
 	}
 	break;
       case Qt::ForegroundRole:
-	if (m_font->tbls[index.row ()].use_count () > 1)
+	if (m_font->container->tableRefCount (m_font->tbls[index.row ()].get ()) > 1)
 	    return QColor (Qt::green);
 	break;
       case Qt::TextAlignmentRole:
@@ -305,10 +310,10 @@ bool TableViewModel::removeRows (int row, int count, const QModelIndex &index) {
     return true;
 }
 
-bool TableViewModel::insertTable (int row, FontTable *tbl) {
-    tbl->container = m_font->container;
+bool TableViewModel::insertTable (int row, std::shared_ptr<FontTable> tptr) {
+    tptr->container = m_font->container;
     beginInsertRows (QModelIndex (), row, row);
-    m_font->tbls.insert (m_font->tbls.begin () + row, std::shared_ptr<FontTable> (tbl));
+    m_font->tbls.insert (m_font->tbls.begin () + row, tptr);
     endInsertRows ();
     emit needsSelectionUpdate (row);
     return true;
@@ -323,15 +328,22 @@ bool TableViewModel::pasteTable (int row, FontTable *tbl) {
     return true;
 }
 
-void TableViewModel::updateViews (FontTable *tbl) {
+void TableViewModel::updateViews (shared_ptr<FontTable> tptr) {
     int row = 0;
-    for (int i=0; i<m_font->tableCount (); i++) {
-	if (m_font->tbls[i].get () == tbl) {
-	    row = i;
-	    break;
+    if (tptr->compiled ()) {
+	if (tptr->isNew ()) {
+	    row = rowCount (QModelIndex ());
+	    insertTable (row, tptr);
+	} else {
+	    for (int i=0; i<m_font->tableCount (); i++) {
+		if (m_font->tbls[i] == tptr) {
+		    row = i;
+		    break;
+		}
+	    }
 	}
+	emit dataChanged (index (row, 0, QModelIndex ()), index (row, 2, QModelIndex ()));
     }
-    emit dataChanged (index (row, 0, QModelIndex ()), index (row, 2, QModelIndex ()));
 }
 
 TableView::TableView (sFont* fnt, int idx, QUndoStack *us, QWidget* parent) :
@@ -484,22 +496,27 @@ void TableView::unselect () {
     setCurrentIndex (QModelIndex ());
 }
 
+void TableView::editTable (std::shared_ptr<FontTable> tptr, bool hex) {
+    if (hex)
+	tptr->hexEdit (m_font, tptr, this);
+    else
+	tptr->edit (m_font, tptr, this);
+    TableViewContainer *contptr = qobject_cast<TableViewContainer *> (m_parent);
+    if (tptr->editor ()) {
+	TableViewModel *modptr = dynamic_cast<TableViewModel *> (m_model.get ());
+        connect (tptr->editor (), &TableEdit::update, modptr, &TableViewModel::updateViews);
+        connect (tptr->editor (), &TableEdit::update, contptr, [=] () {
+	    contptr->setFontModified (m_index, true);
+	});
+    }
+}
+
 void TableView::editTable (int row, bool hex) {
     Q_ASSERT (row>=0 && row < m_font->tableCount ());
-    FontTable* curTable = m_font->tbls[row].get ();
+    std::shared_ptr<FontTable> curTable = m_font->tbls[row];
     if (curTable == nullptr)
         return;
-
-    if (hex)
-	curTable->hexEdit (m_font, this);
-    else
-	curTable->edit (m_font, this);
-    TableViewContainer *contptr = qobject_cast<TableViewContainer *> (m_parent);
-    if (curTable->editor ()) {
-	TableViewModel *modptr = dynamic_cast<TableViewModel *> (m_model.get ());
-        connect (curTable->editor (), &TableEdit::update, modptr, &TableViewModel::updateViews);
-        connect (curTable->editor (), &TableEdit::update, contptr, [=] () {contptr->setFontModified (m_index, true);});
-    }
+    editTable (curTable, hex);
 }
 
 void TableView::edit () {
@@ -510,6 +527,82 @@ void TableView::edit () {
 void TableView::hexEdit () {
     int row = getSelectionIndex ();
     editTable (row, true);
+}
+
+void TableView::genHdmxTable () {
+    std::shared_ptr<HdmxTable> hdmx =
+	std::dynamic_pointer_cast<HdmxTable> (m_font->sharedTable (CHR ('h','d','m','x')));
+    if (!hdmx) {
+	std::vector<uint8_t> hdmx_sizes {
+	    11, 12, 13, 15, 16, 17, 19, 20, 21, 24, 27, 29,
+	    32, 33, 37, 42, 46, 50, 54, 58, 67, 75, 83, 92, 100
+	};
+	TableHeader props;
+	props.file = nullptr;
+	props.iname = CHR ('h','d','m','x');
+	props.off = 0xffffffff;
+	props.length = 0;
+	props.checksum = 0;
+	hdmx = std::make_shared<HdmxTable> (m_font->container, props);
+
+	hdmx->addSize (hdmx_sizes[0]);
+	hdmx->setNumGlyphs (m_font->glyph_cnt);
+	for (size_t i=1; i<hdmx_sizes.size (); i++) {
+	    hdmx->addSize (hdmx_sizes[i]);
+	}
+    }
+    // sequence:: editTable calls hdmx->edit and connects TableEdit::update to updateViews;
+    // if user canceled, the table is restored in HdmxEdit::save;
+    // updateViews inserts the table into the model or deletes it, if necessary
+    editTable (hdmx, false);
+}
+
+void TableView::genLtshTable () {
+    std::shared_ptr<LtshTable> ltsh =
+	dynamic_pointer_cast<LtshTable> (m_font->sharedTable (CHR ('L','T','S','H')));
+    if (!ltsh) {
+	TableHeader props;
+	props.file = nullptr;
+	props.iname = CHR ('L','T','S','H');
+	props.off = 0xffffffff;
+	props.length = 0;
+	props.checksum = 0;
+	ltsh = std::make_shared<LtshTable> (m_font->container, props);
+    }
+    ltsh->setNumGlyphs (m_font->glyph_cnt, true);
+
+    DeviceMetricsProvider dmp (*m_font);
+    if (!dmp.calculateLtsh (*ltsh, this)) {
+	ltsh->packData ();
+	TableViewModel *modptr = dynamic_cast<TableViewModel *> (m_model.get ());
+	modptr->updateViews (ltsh);
+    } else {
+        // unpackData already includes a check for is_new
+	ltsh->unpackData (nullptr);
+    }
+}
+
+void TableView::genVdmxTable () {
+    std::shared_ptr<VdmxTable> vdmx =
+	std::dynamic_pointer_cast<VdmxTable> (m_font->sharedTable (CHR ('V','D','M','X')));
+    if (!vdmx) {
+	TableHeader props;
+	props.file = nullptr;
+	props.iname = CHR ('V','D','M','X');
+	props.off = 0xffffffff;
+	props.length = 0;
+	props.checksum = 0;
+	vdmx = std::make_shared<VdmxTable> (m_font->container, props);
+
+	vdmx->addRatio (1, 1, 1);
+	vdmx->setRatioRange (0, 8, 255);
+	vdmx->addRatio (2, 1, 1);
+	vdmx->setRatioRange (1, 8, 255);
+    }
+    // sequence:: editTable calls hdmx->edit and connects TableEdit::update to updateViews;
+    // if user canceled, the table is restored in HdmxEdit::save;
+    // updateViews inserts the table into the model or deletes it, if necessary
+    editTable (vdmx, false);
 }
 
 void TableView::doubleClickHandler (const QModelIndex &index) {
@@ -551,17 +644,17 @@ void AddOrRemoveTableCommand::redo () {
     if (m_remove)
 	m_model->removeRow (m_row, QModelIndex ());
     else {
-	FontTable *tbl = new FontTable (m_table);
-	tbl->setModified (true);
-	tbl->setContainer (m_font->container);
-	m_model->insertTable (m_row, tbl);
+	std::shared_ptr<FontTable> tptr = std::make_shared<FontTable> (m_table);
+	tptr->setModified (true);
+	tptr->setContainer (m_font->container);
+	m_model->insertTable (m_row, tptr);
     }
 }
 
 void AddOrRemoveTableCommand::undo () {
     if (m_remove) {
-	FontTable *tbl = new FontTable (m_table);
-	m_model->insertTable (m_row, tbl);
+	std::shared_ptr<FontTable> tptr = std::make_shared<FontTable> (m_table);
+	m_model->insertTable (m_row, tptr);
     } else
 	m_model->removeRow (m_row, QModelIndex ());
 }

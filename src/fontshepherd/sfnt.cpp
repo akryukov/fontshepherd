@@ -34,6 +34,7 @@
 #include "sfnt.h"
 #include "editors/fontview.h"
 #include "tables/cmap.h"
+#include "tables/devmetrics.h"
 #include "tables/hea.h"
 #include "tables/name.h"
 #include "tables/maxp.h"
@@ -51,6 +52,16 @@
 #include "tables/gasp.h"
 
 #include "fs_notify.h"
+
+std::shared_ptr<FontTable> ttffont::sharedTable (uint32_t tag) const {
+    for (auto tptr: tbls) {
+	for (int i=0; i<4 && tptr->iName (i); i++) {
+	    if (tptr->iName (i) == tag)
+		return tptr;
+	}
+    }
+    return nullptr;
+}
 
 FontTable *ttffont::table (uint32_t tag) const {
     for (auto tptr: tbls) {
@@ -291,6 +302,9 @@ std::shared_ptr<FontTable> sfntFile::readTableHead (QFile *f, int file_idx) {
         case CHR('G','D','E','F'):
             table = new GdefTable (this, props);
             break;
+        case CHR('h','d','m','x'):
+            table = new HdmxTable (this, props);
+            break;
         case CHR('h','e','a','d'):
             table = new HeadTable (this, props);
             break;
@@ -306,6 +320,9 @@ std::shared_ptr<FontTable> sfntFile::readTableHead (QFile *f, int file_idx) {
         case CHR('l','o','c','a'):
             table = new LocaTable (this, props);
             break;
+        case CHR('L','T','S','H'):
+            table = new LtshTable (this, props);
+            break;
         case CHR('m','a','x','p'):
             table = new MaxpTable (this, props);
             break;
@@ -320,6 +337,9 @@ std::shared_ptr<FontTable> sfntFile::readTableHead (QFile *f, int file_idx) {
             break;
         case CHR('S','V','G',' '):
             table = new SvgTable (this, props);
+            break;
+        case CHR('V','D','M','X'):
+            table = new VdmxTable (this, props);
             break;
         case CHR('v','h','e','a'):
             table = new HeaTable (this, props);
@@ -590,7 +610,7 @@ bool sfntFile::save (const QString &newpath, bool ttc, int fidx) {
 	    FontTable *tab = tf->tbls[j].get ();
 	    tab->newstart = 0;
 	    tab->newchecksum = 0;
-	    tab->inserted = 0;
+	    tab->inserted = false;
        }
        // Sort tables alphabetically for font header output and further
        // displaying in table view. The actual order of table data in the
@@ -639,7 +659,10 @@ bool sfntFile::save (const QString &newpath, bool ttc, int fidx) {
 	QFile *oldf = m_files[backup_idx].get ();
 	makeBackup (oldf);
 	oldf->remove ();
+    } else if (testf.exists ()) {
+	testf.remove ();
     }
+
     if (newf.copy (newpath)) {
 	newf.close ();
 
@@ -668,6 +691,7 @@ bool sfntFile::save (const QString &newpath, bool ttc, int fidx) {
 		tab->changed = tab->td_changed = false;
 		tab->inserted = false;
 		tab->infile = m_files.back ().get ();
+		tab->is_new = false;
 	    }
 	}
 	if (m_fonts.size () == 1 || (ttc && m_fonts.size () > 1)) {
@@ -767,6 +791,17 @@ void sfntFile::removeFromCollection (int index) {
     if (m_fonts.size () > 1 && index >=0 && (size_t) index < m_fonts.size ())
 	m_fonts.erase (m_fonts.begin () + index);
     changed = true;
+}
+
+int sfntFile::tableRefCount (FontTable *tbl) {
+    int cnt = 0;
+    for (auto &fnt: m_fonts) {
+	for (auto &tptr : fnt->tbls) {
+	    if (tptr.get () == tbl)
+		cnt++;
+	}
+    }
+    return cnt;
 }
 
 sfntFile::sfntFile (const QString &path, QWidget *w) : m_parent (w), changed (false) {

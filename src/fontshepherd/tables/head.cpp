@@ -105,13 +105,13 @@ void HeadTable::packData () {
     std::copy (st.begin (), st.end (), data);
 }
 
-void HeadTable::edit (sFont* fnt, QWidget* caller) {
+void HeadTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        HeadEdit *headedit = new HeadEdit (this, fnt, caller);
+        HeadEdit *headedit = new HeadEdit (tptr, fnt, caller);
         tv = headedit;
         headedit->show ();
     } else {
@@ -139,6 +139,12 @@ bool HeadTable::flags (int nbit) const {
     if (nbit>=0 &&nbit<16)
 	return (contents.flags[nbit]);
     return false;
+}
+
+void HeadTable::setBitFlag (int nbit, bool val) {
+    if (nbit>=0 &&nbit<16)
+	contents.flags[nbit] = val;
+    changed = true;
 }
 
 uint16_t HeadTable::unitsPerEm () const {

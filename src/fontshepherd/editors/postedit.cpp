@@ -49,9 +49,9 @@ QList<QPair<QString, double>> PostEdit::postVersions = {
     {"4.0: Character codes for composite fonts (deprecated)", 4.0},
 };
 
-PostEdit::PostEdit (FontTable* tbl, sFont* font, QWidget *parent) :
+PostEdit::PostEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (font) {
-    m_post = dynamic_cast<PostTable *>(tbl);
+    m_post = std::dynamic_pointer_cast<PostTable> (tptr);
     m_regVal = std::unique_ptr<QRegularExpressionValidator> (new QRegularExpressionValidator ());
     m_regVal->setRegularExpression (QRegularExpression ("(0x[A-Fa-f0-9]+|\\d+)"));
 
@@ -224,7 +224,7 @@ bool PostEdit::isValid () {
     return m_valid;
 }
 
-FontTable* PostEdit::table () {
+std::shared_ptr<FontTable> PostEdit::table () {
     return m_post;
 }
 

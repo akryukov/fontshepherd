@@ -199,7 +199,7 @@ public:
     CmapTable (sfntFile* fontfile, TableHeader &props);
     ~CmapTable ();
     void unpackData (sFont *font);
-    void edit (sFont* fnt, QWidget* caller) override;
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) override;
 
     uint16_t numTables ();
     CmapEncTable* getTable (uint16_t idx);

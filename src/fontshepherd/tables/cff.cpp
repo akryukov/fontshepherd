@@ -403,7 +403,7 @@ static std::string print_ps (const std::string &s, struct pschars *gsubrs=nullpt
 CffTable::CffTable (sfntFile *fontfile, TableHeader &props) :
     GlyphContainer (fontfile, props) {
 
-    m_loaded = m_bad_cff = false;
+    m_bad_cff = false;
     m_version = (props.iname == CHR('C','F','F','2')) ? 2 : 1;
 }
 
@@ -1600,11 +1600,11 @@ void CffTable::readCffNames (std::vector<std::string> &names) {
 }
 
 void CffTable::unpackData (sFont *font) {
-    if (m_loaded)
+    if (td_loaded)
         return;
     // reading PS data may fail in various places, so set this flag here
     // (rather than at the end of the function)
-    m_loaded = true;
+    td_loaded = true;
     GlyphContainer::unpackData (font);
 
     uint8_t version = data[0];
@@ -1701,7 +1701,6 @@ void CffTable::unpackData (sFont *font) {
         m_pos = m_core_font.top_dict[cff::FDSelect].i;
 	readfdselect (m_core_font.fdselect, m_core_font.glyphs.cnt);
     }
-    m_usable = true;
 }
 
 void CffTable::updateGlyph (uint16_t gid) {
@@ -1908,7 +1907,7 @@ void CffTable::packData () {
 }
 
 ConicGlyph* CffTable::glyph (sFont* fnt, uint16_t gid) {
-    if (!m_usable || gid >= m_glyphs.size ())
+    if (!usable () || gid >= m_glyphs.size ())
 	return nullptr;
     if (m_glyphs[gid])
         return m_glyphs[gid];
@@ -1994,7 +1993,7 @@ int CffTable::version () const {
 }
 
 bool CffTable::usable () const {
-    return (m_loaded && !m_bad_cff);
+    return (td_loaded && !m_bad_cff);
 }
 
 int CffTable::numSubFonts () const {

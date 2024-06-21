@@ -59,13 +59,13 @@ void NameEdit::setEditWidth (QTableView *edit, int height_ratio) {
     edit->selectRow (0);
 }
 
-NameEdit::NameEdit (FontTable* tbl, sFont* font, QWidget *parent) :
-    TableEdit (parent, Qt::Window), m_table (tbl), m_font (font) {
+NameEdit::NameEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
+    TableEdit (parent, Qt::Window), m_font (font) {
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString ("name - ").append (m_font->fontname));
 
-    m_name = dynamic_cast<NameTable *> (m_table);
+    m_name = std::dynamic_pointer_cast<NameTable> (tptr);
     m_uGroup = std::unique_ptr<QUndoGroup> (new QUndoGroup (this));
 
     QWidget *window = new QWidget (this);
@@ -162,14 +162,14 @@ bool NameEdit::isValid () {
     return m_valid;
 }
 
-FontTable* NameEdit::table () {
-    return m_table;
+std::shared_ptr<FontTable> NameEdit::table () {
+    return m_name;
 }
 
 void NameEdit::closeEvent (QCloseEvent *event) {
     // If we are going to delete the font, ignore changes in table edits
     if (!isModified () || checkUpdate (true))
-        m_table->clearEditor ();
+        m_name->clearEditor ();
     else
         event->ignore ();
 }
@@ -190,7 +190,7 @@ void NameEdit::save () {
     m_nameStack->setClean ();
     m_langStack->setClean ();
     updateLabels ();
-    emit (update (m_table));
+    emit (update (m_name));
 }
 
 void NameEdit::switchTableVersion (int index) {
@@ -285,7 +285,7 @@ void NameEdit::customContextMenu (const QPoint &point) {
 void NameEdit::addNameRecord () {
     name_record rec;
 
-    AddNameDialog dlg (m_name, this);
+    AddNameDialog dlg (m_name.get (), this);
     switch (dlg.exec ()) {
       case QDialog::Accepted:
 	break;
@@ -323,7 +323,7 @@ void NameEdit::removeNameRecord () {
 }
 
 void NameEdit::addLangTag () {
-    AddLangTagDialog dlg (m_name, this);
+    AddLangTagDialog dlg (m_name.get (), this);
     switch (dlg.exec ()) {
       case QDialog::Accepted:
 	break;
@@ -448,7 +448,7 @@ void NameEdit::setMenuBar () {
 void NameEdit::fillNameTable () {
     m_nameStack = new QUndoStack (m_uGroup.get ());
 
-    m_nameModel = std::unique_ptr<QAbstractItemModel> (new NameRecordModel (m_name));
+    m_nameModel = std::unique_ptr<QAbstractItemModel> (new NameRecordModel (m_name.get ()));
     NameRecordModel *modptr = dynamic_cast<NameRecordModel *> (m_nameModel.get ());
     QAbstractItemDelegate *dlg = new TextDelegate (m_nameStack, m_nametab);
 
@@ -464,7 +464,7 @@ void NameEdit::fillNameTable () {
 void NameEdit::fillLangTable () {
     m_langStack = new QUndoStack (m_uGroup.get ());
 
-    m_langModel = std::unique_ptr<QAbstractItemModel> (new LangTagModel (m_name, 0x8000));
+    m_langModel = std::unique_ptr<QAbstractItemModel> (new LangTagModel (m_name.get (), 0x8000));
     LangTagModel *modptr = dynamic_cast<LangTagModel *> (m_langModel.get ());
     QAbstractItemDelegate *dlg = new TextDelegate (m_langStack, m_langtab);
 

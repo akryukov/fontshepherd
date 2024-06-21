@@ -35,12 +35,12 @@
 InstrTable::InstrTable (sfntFile *fontfile, TableHeader &props) :
     FontTable (fontfile, props) {}
 
-void InstrTable::edit (sFont* fnt, QWidget* caller) {
+void InstrTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
-        InstrTableEdit *instredit = new InstrTableEdit (this, fnt, caller);
+        InstrTableEdit *instredit = new InstrTableEdit (tptr, fnt, caller);
         tv = instredit;
         instredit->show ();
     } else {

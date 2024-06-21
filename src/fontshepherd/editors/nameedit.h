@@ -204,7 +204,7 @@ class NameEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    NameEdit (FontTable* tab, sFont* font, QWidget *parent);
+    NameEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~NameEdit ();
 
     static void setEditWidth (QTableView *edit, int height_ratio=10);
@@ -213,7 +213,7 @@ public:
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
     QSize minimumSize () const;
@@ -242,7 +242,7 @@ private:
     bool m_valid;
 
     FontTable *m_table;
-    NameTable *m_name;
+    std::shared_ptr<NameTable> m_name;
     sFont *m_font;
 
     std::unique_ptr<QUndoGroup> m_uGroup;

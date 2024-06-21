@@ -472,6 +472,7 @@ public:
     uint16_t numContours () const;
     uint16_t numPoints () const;
     uint16_t depth (uint16_t val) const;
+    bool useMyMetrics () const;
 };
 
 // Need this to reduce number of constructor arguments for ConicGlyph,
@@ -564,6 +565,7 @@ public:
     uint16_t numCompositeContours () const;
     uint16_t numCompositePoints () const;
     uint16_t componentDepth (uint16_t val=0) const;
+    uint16_t useMyMetricsGlyph () const;
 
     bool addExtrema (bool selected);
     bool roundToInt (bool selected);

@@ -99,13 +99,13 @@ bool HeaTable::isVertical () const {
     return m_tags[0] == CHR('v','h','e','a');
 }
 
-void HeaTable::edit (sFont* fnt, QWidget* caller) {
+void HeaTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        HeaEdit *heaedit = new HeaEdit (this, fnt, caller);
+        HeaEdit *heaedit = new HeaEdit (tptr, fnt, caller);
         tv = heaedit;
         heaedit->show ();
     } else {

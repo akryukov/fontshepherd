@@ -40,7 +40,7 @@ public:
 
     virtual void unpackData (sFont*);
     virtual void packData () = 0;
-    virtual void edit (sFont* fnt, QWidget* caller);
+    virtual void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
     virtual ConicGlyph* glyph (sFont* fnt, uint16_t gid) = 0;
     virtual uint16_t addGlyph (sFont* fnt, uint8_t subfont=0) = 0;
     virtual bool usable () const = 0;

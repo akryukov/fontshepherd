@@ -45,5 +45,4 @@ private:
     std::vector<int> m_lbearings;
     std::vector<uint16_t> m_widths;
     HeaTable *m_hhea;
-    bool m_loaded;
 };

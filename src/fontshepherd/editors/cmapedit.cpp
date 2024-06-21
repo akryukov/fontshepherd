@@ -44,14 +44,14 @@
 
 // Main class, representing the cmap table editing window
 
-CmapEdit::CmapEdit (FontTable* tbl, sFont *fnt, QWidget *parent) :
-    TableEdit (parent, Qt::Window), m_table (tbl), m_font (fnt) {
+CmapEdit::CmapEdit (std::shared_ptr<FontTable> tptr, sFont *fnt, QWidget *parent) :
+    TableEdit (parent, Qt::Window), m_font (fnt) {
     uint16_t i;
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString("cmap - ").append (m_font->fontname));
 
-    m_cmap = dynamic_cast<CmapTable *> (m_table);
+    m_cmap = std::dynamic_pointer_cast<CmapTable> (tptr);
     m_gnp = std::unique_ptr<GlyphNameProvider> (new GlyphNameProvider (*m_font));
     m_uGroup = std::unique_ptr<QUndoGroup> (new QUndoGroup (this));
 
@@ -144,14 +144,14 @@ bool CmapEdit::isValid () {
     return m_valid;
 }
 
-FontTable* CmapEdit::table () {
-    return m_table;
+std::shared_ptr<FontTable> CmapEdit::table () {
+    return m_cmap;
 }
 
 void CmapEdit::closeEvent (QCloseEvent *event) {
     // If we are going to delete the font, ignore changes in table edits
     if (!isModified () || checkUpdate (true)) {
-        m_table->clearEditor ();
+        m_cmap->clearEditor ();
     } else {
         event->ignore ();
     }
@@ -197,7 +197,7 @@ void CmapEdit::save () {
     for (auto w: m_uStackMap.keys ())
 	m_uStackMap[w]->setClean ();
     updateSubTableLabels ();
-    emit (update (m_table));
+    emit (update (m_cmap));
 }
 
 void CmapEdit::removeEncodingRecord () {
@@ -215,7 +215,7 @@ void CmapEdit::removeEncodingRecord () {
 void CmapEdit::addEncodingRecord () {
     uint16_t platform, specific, subtable;
 
-    AddTableDialog dlg (m_cmap, this);
+    AddTableDialog dlg (m_cmap.get (), this);
     switch (dlg.exec ()) {
       case QDialog::Accepted:
 	break;
@@ -337,7 +337,7 @@ void CmapEdit::addSubTable () {
     CmapEnc *newenc;
     std::map<std::string, int> args;
 
-    AddSubTableDialog dlg (m_cmap, m_gnp->fontHasGlyphNames (), this);
+    AddSubTableDialog dlg (m_cmap.get (), m_gnp->fontHasGlyphNames (), this);
     switch (dlg.exec ()) {
       case QDialog::Accepted:
 	break;
@@ -899,8 +899,8 @@ void CmapEdit::fillTables () {
     QUndoStack *us = new QUndoStack (m_uGroup.get ());
     m_uStackMap.insert (m_tabtab, us);
 
-    QAbstractItemDelegate *dlg = new SubtableSelectorDelegate (m_cmap, us, m_tabtab);
-    std::unique_ptr<QAbstractItemModel> model (new CmapTableModel (m_cmap, m_tabtab));
+    QAbstractItemDelegate *dlg = new SubtableSelectorDelegate (m_cmap.get (), us, m_tabtab);
+    std::unique_ptr<QAbstractItemModel> model (new CmapTableModel (m_cmap.get (), m_tabtab));
     m_model_storage.push_back (std::move (model));
     CmapTableModel *modptr = qobject_cast<CmapTableModel *> (m_model_storage.back ().get ());
 

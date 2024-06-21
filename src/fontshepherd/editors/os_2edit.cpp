@@ -844,9 +844,9 @@ QVector<QVector <uni_range>> OS_2Edit::uniRangeList = {
 	    { QWidget::tr ("Mahjong Tiles"), 0x1F000, 0x1F02F }},
 };
 
-OS_2Edit::OS_2Edit (FontTable* tbl, sFont* font, QWidget *parent) :
+OS_2Edit::OS_2Edit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (font) {
-    m_os_2 = dynamic_cast<OS_2Table *> (tbl);
+    m_os_2 = std::dynamic_pointer_cast<OS_2Table> (tptr);
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString ("OS/2 - ").append (m_font->fontname));
@@ -1283,7 +1283,7 @@ bool OS_2Edit::isValid () {
     return m_valid;
 }
 
-FontTable* OS_2Edit::table () {
+std::shared_ptr<FontTable> OS_2Edit::table () {
     return m_os_2;
 }
 

@@ -1733,6 +1733,14 @@ GlyphScene::GlyphScene (sFont &fnt, FTWrapper &ftw, GlyphContext &gctx, Outlines
     m_knifeLine.setPen (QPen (Qt::darkGreen, 3, Qt::SolidLine));
     m_selectionRect.setPen (QPen (Qt::darkBlue, 3, Qt::DotLine));
     setSceneRect (QRectF (GV_MIN_X, GV_MIN_Y, GV_MAX_X, GV_MAX_Y));
+
+    QFont awfnt = QFont ();
+    awfnt.setStyleHint (QFont::SansSerif);
+    awfnt.setPointSize (8);
+    m_awValueItem = new QGraphicsSimpleTextItem ();
+    m_awValueItem->setFont (awfnt);
+    m_awValueItem->setFlag (QGraphicsItem::ItemIgnoresTransformations);
+    addItem (m_awValueItem);
 }
 
 static void show_hint (QPainter *painter, const QRectF &exposed, const StemInfo &stem, bool is_v) {
@@ -1889,24 +1897,26 @@ void GlyphScene::drawBackground (QPainter *painter, const QRectF &exposed) {
 	    ft_flags |= FT_LOAD_TARGET_NORMAL;
 	}
 
-	freetype_raster r = m_ftWrapper.gridFitGlyph (m_context.gid (), ppemX, ppemY, ft_flags, &p);
+	if (!m_ftWrapper.setPixelSize (ppemX, ppemY)) {
+	    freetype_raster r = m_ftWrapper.gridFitGlyph (m_context.gid (), ft_flags, &p);
 
-	if (r.valid) {
-	    draw_gridFittedBitmap (painter, m_context.glyph (m_outlines_type), r, ppemX, ppemY);
+	    if (r.valid) {
+		draw_gridFittedBitmap (painter, m_context.glyph (m_outlines_type), r, ppemX, ppemY);
 
-	    painter->setPen (greenPen);
-	    painter->setBrush (QBrush (Qt::NoBrush));
-	    double upm = m_context.glyph (m_outlines_type)->upm ();
-	    double xscale = upm/(ppemX*64);
-	    double yscale = upm/(ppemY*64);
-	    QTransform cur_trans = painter->worldTransform ();
-	    QTransform save_trans = cur_trans;
-	    painter->scale (xscale, yscale);
-	    painter->drawPath (p);
-	    painter->setWorldTransform (save_trans);
+		painter->setPen (greenPen);
+		painter->setBrush (QBrush (Qt::NoBrush));
+		double upm = m_context.glyph (m_outlines_type)->upm ();
+		double xscale = upm/(ppemX*64);
+		double yscale = upm/(ppemY*64);
+		QTransform cur_trans = painter->worldTransform ();
+		QTransform save_trans = cur_trans;
+		painter->scale (xscale, yscale);
+		painter->drawPath (p);
+		painter->setWorldTransform (save_trans);
 
-	    double aw_scaled = r.advance * xscale;
-	    painter->drawLine (QLineF (aw_scaled, exposed.top (), aw_scaled, exposed.bottom ()));
+		double aw_scaled = r.advance * xscale;
+		painter->drawLine (QLineF (aw_scaled, exposed.top (), aw_scaled, exposed.bottom ()));
+	    }
 	}
     }
 
@@ -1970,21 +1980,25 @@ void GlyphScene::drawBackground (QPainter *painter, const QRectF &exposed) {
     }
 }
 
-void GlyphScene::drawForeground (QPainter *painter, const QRectF &exposed) {
+void GlyphScene::drawForeground (QPainter *, const QRectF &exposed) {
     ConicGlyph *g = m_context.glyph (m_outlines_type);
-    QPointF pos (g->advanceWidth () + 4, -exposed.bottom () + RULER_BREADTH);
-    QFont fnt = QFont ();
-    fnt.setStyleHint (QFont::SansSerif);
-    fnt.setPointSize (12);
+#if 0
+    const QFont &f = m_awValueItem->font ();
+    QFontMetrics fm (f);
+    int h = fm.boundingRect ("000").height ();
+#endif
+    QPointF pos (g->advanceWidth () + 4, exposed.bottom () - 4);
 
     // NB: need an update at this point (otherwise artefacts are produced when
     // scrolling), but calling update () or invalidate () here will
     // hang everything if there are more than one GlyphView windows. Calling
     // viewport ()->update () from view->scrolled{Horizontally|Vertically} instead
     // seems to fix the problem
-    painter->scale (1, -1);
-    painter->setFont (fnt);
-    painter->drawText (pos, QString ("%1").arg (g->advanceWidth ()));
+
+    // Don't take reference shift into account here, as label is shifted together
+    // with the whole group
+    m_awValueItem->setText (QString::number (g->advanceWidth ()));
+    m_awValueItem->setPos (pos);
 }
 
 void GlyphScene::setRootItem (QGraphicsItem *root) {

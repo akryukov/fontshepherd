@@ -44,14 +44,14 @@ class OS_2Edit : public TableEdit {
     Q_OBJECT;
 
 public:
-    OS_2Edit (FontTable* tab, sFont* font, QWidget *parent);
+    OS_2Edit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~OS_2Edit () {};
 
     void resetData () override {};
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
     QSize sizeHint () const override;
@@ -82,7 +82,7 @@ private:
     static QVector<QVector <uni_range>> uniRangeList;
     static QVector<QPair<QString, int>> codepageList;
 
-    OS_2Table *m_os_2;
+    std::shared_ptr<OS_2Table> m_os_2;
     sFont *m_font;
     bool m_valid;
 

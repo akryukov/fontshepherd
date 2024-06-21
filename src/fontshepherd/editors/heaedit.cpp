@@ -70,9 +70,9 @@ QStringList HeaEdit::vLabels = {
     QWidget::tr ("Number of advance heights in 'vmtx' table"),
 };
 
-HeaEdit::HeaEdit (FontTable* tbl, sFont* font, QWidget *parent) :
+HeaEdit::HeaEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (font) {
-    m_hea = dynamic_cast<HeaTable *> (tbl);
+    m_hea = std::dynamic_pointer_cast<HeaTable> (tptr);
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString ("%1 - %2").arg
@@ -195,7 +195,7 @@ bool HeaEdit::isValid () {
     return m_valid;
 }
 
-FontTable* HeaEdit::table () {
+std::shared_ptr<FontTable> HeaEdit::table () {
     return m_hea;
 }
 

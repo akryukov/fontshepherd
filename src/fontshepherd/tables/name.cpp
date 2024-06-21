@@ -148,7 +148,7 @@ void NameTable::unpackData (sFont *) {
     uint32_t fpos=0;
     uint16_t count, string_off;
     std::string uni_enc = is_big_endian () ? "UTF-16BE" : "UTF-16LE";
-    if (m_loaded)
+    if (td_loaded)
         return;
 
     this->fillup ();
@@ -182,7 +182,7 @@ void NameTable::unpackData (sFont *) {
 	    lang_tag_records[i].language = decodeString (uni_enc, 0, 3, strptr, len);
 	}
     }
-    m_loaded = true;
+    td_loaded = true;
 }
 
 std::string NameTable::encodeString (bool big_endian, uint16_t platformID, uint16_t encodingID, QString &uni_str) {
@@ -294,13 +294,13 @@ void NameTable::packData () {
     std::copy (st.begin (), st.end (), data);
 }
 
-void NameTable::edit (sFont* fnt, QWidget* caller) {
+void NameTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        NameEdit *nameedit = new NameEdit (this, fnt, caller);
+        NameEdit *nameedit = new NameEdit (tptr, fnt, caller);
         tv = nameedit;
         nameedit->show ();
     } else {

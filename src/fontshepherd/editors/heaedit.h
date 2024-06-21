@@ -37,14 +37,14 @@ class HeaEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    HeaEdit (FontTable* tab, sFont* font, QWidget *parent);
+    HeaEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~HeaEdit () {};
 
     void resetData () override {};
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
 
@@ -57,7 +57,7 @@ private:
     static QStringList vLabels;
     static QStringList hLabels;
 
-    HeaTable *m_hea;
+    std::shared_ptr<HeaTable> m_hea;
     sFont *m_font;
     bool m_valid;
 

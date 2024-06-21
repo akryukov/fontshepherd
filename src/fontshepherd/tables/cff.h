@@ -102,7 +102,7 @@ private:
 
     double m_version;
     uint16_t m_td_idx; // normally zero
-    bool m_loaded, m_bad_cff;
+    bool m_bad_cff;
     uint32_t m_pos;
     struct pschars m_gsubrs;
     struct cff_font m_core_font;

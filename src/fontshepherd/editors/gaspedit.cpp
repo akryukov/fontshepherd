@@ -39,9 +39,9 @@
 
 #include "fs_notify.h"
 
-GaspEdit::GaspEdit (FontTable* tbl, sFont* font, QWidget *parent) :
+GaspEdit::GaspEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (font) {
-    m_gasp = dynamic_cast<GaspTable *> (tbl);
+    m_gasp = std::dynamic_pointer_cast<GaspTable> (tptr);
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString ("%1 - %2").arg
@@ -101,7 +101,7 @@ bool GaspEdit::isValid () {
     return m_valid;
 }
 
-FontTable* GaspEdit::table () {
+std::shared_ptr<FontTable> GaspEdit::table () {
     return m_gasp;
 }
 
@@ -181,7 +181,6 @@ void GaspEdit::save () {
     for (size_t i=0; i<nranges; i++) {
 	auto item = m_rangeTab->item (i, 0);
 	gd.ranges[i].rangeMaxPPEM = item->data (Qt::UserRole).toUInt ();
-	std::cerr << item->data (Qt::UserRole).toUInt () << std::endl;
 	gd.ranges[i].rangeGaspBehavior = 0;
 
 	bool gf_flag = m_rangeTab->item (i, 1)->data (Qt::UserRole).toBool ();
@@ -262,8 +261,8 @@ void GaspEdit::addBooleanCellItem (bool val, int x, int y) {
     m_rangeTab->setItem (y, x, item);
 }
 
-TrueFalseDelegate::TrueFalseDelegate (QObject *parent) :
-    QStyledItemDelegate (parent) {
+TrueFalseDelegate::TrueFalseDelegate (QObject *parent, QString false_str, QString true_str) :
+    QStyledItemDelegate (parent), m_false (false_str), m_true (true_str) {
 }
 
 QWidget* TrueFalseDelegate::createEditor (QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const {
@@ -271,8 +270,8 @@ QWidget* TrueFalseDelegate::createEditor (QWidget *parent, const QStyleOptionVie
     Q_UNUSED (index);
 
     QComboBox *combo = new QComboBox (parent);
-    combo->addItem ("true", true);
-    combo->addItem ("false", false);
+    combo->addItem (m_false, false);
+    combo->addItem (m_true, true);
 
     return combo;
 }
@@ -280,19 +279,24 @@ QWidget* TrueFalseDelegate::createEditor (QWidget *parent, const QStyleOptionVie
 void TrueFalseDelegate::setEditorData (QWidget *editor, const QModelIndex &index) const {
     bool value = index.model ()->data (index, Qt::UserRole).toBool ();
     QComboBox *combo = qobject_cast<QComboBox*> (editor);
-    combo->setCurrentText (value ? "true" : "false");
-    std::cerr << "set data " << value << std::endl;
+    combo->setCurrentText (value ? m_true : m_false);
 }
 
 void TrueFalseDelegate::setModelData (QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const {
     QComboBox* combo = qobject_cast<QComboBox*> (editor);
     bool value = combo->currentData (Qt::UserRole).toBool ();
-    model->setData (index, value, Qt::EditRole);
+    // NB: set the UserRole after the DisplayRole
+    model->setData (index, (value ? m_true : m_false), Qt::DisplayRole);
+    model->setData (index, value, Qt::UserRole);
 }
 
 void TrueFalseDelegate::updateEditorGeometry (QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const {
     Q_UNUSED (index);
     editor->setGeometry (option.rect);
+}
+
+QString TrueFalseDelegate::byVal (bool val) const {
+    return (val ? m_true : m_false);
 }
 
 SortedSpinBoxDelegate::SortedSpinBoxDelegate (QObject *parent) :

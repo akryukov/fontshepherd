@@ -42,8 +42,7 @@ public:
     bool usable () const;
 
 private:
-    LocaTable *m_loca;
-    bool m_loaded;
+    std::shared_ptr<LocaTable> m_loca;
 };
 
 class LocaTable : public FontTable {

@@ -121,7 +121,7 @@ class FontView : /*public QMainWindow, virtual */ public TableEdit {
     Q_OBJECT;
 
 public:
-    FontView (FontTable* tab, sFont* font, QWidget *parent);
+    FontView (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~FontView ();
 
     void resetData () override {};
@@ -129,8 +129,8 @@ public:
     bool isModified () override;
     bool isValid () override;
     void clearGV ();
-    FontTable* table () override;
-    void setTable (FontTable* tbl);
+    std::shared_ptr<FontTable> table () override;
+    void setTable (std::shared_ptr<FontTable> tbl);
 
     bool eventFilter (QObject *object, QEvent *event) override;
 
@@ -239,10 +239,10 @@ private:
     QAction *addGlyphAction, *clearSvgGlyphAction;
     QAction *autoHintAction, *clearHintsAction;
 
-    FontTable *m_table;
-    GlyphContainer *m_gc_table, *m_glyf_table, *m_svg_table, *m_cff_table;
-    ColrTable *m_colr;
-    CpalTable *m_cpal;
+    std::shared_ptr<FontTable> m_table;
+    std::shared_ptr<GlyphContainer> m_gc_table, m_glyf_table, m_svg_table, m_cff_table;
+    std::shared_ptr<ColrTable> m_colr;
+    std::shared_ptr<CpalTable> m_cpal;
     sFont *m_font;
     GlyphNameProvider m_gnp;
     bool m_edited, m_valid;

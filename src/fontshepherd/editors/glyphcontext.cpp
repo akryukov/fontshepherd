@@ -2269,6 +2269,10 @@ AdvanceWidthItem::AdvanceWidthItem (qreal pos, QGraphicsItem *parent) :
 
     setPen (QPen (Qt::blue));
     setPos (pos, 0);
+
+    QFont name_font = QFont ();
+    name_font.setStyleHint (QFont::SansSerif);
+    name_font.setPointSize (8);
 }
 
 QRectF AdvanceWidthItem::boundingRect () const {

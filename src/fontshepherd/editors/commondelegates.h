@@ -72,6 +72,8 @@ private:
     int m_min, m_max;
 };
 
+// This one checks the next and previous row to make sure the value doesn't
+// get out of the range
 class SortedSpinBoxDelegate : public SpinBoxDelegate {
     Q_OBJECT;
 
@@ -85,10 +87,14 @@ class TrueFalseDelegate : public QStyledItemDelegate {
     Q_OBJECT;
 
 public:
-    explicit TrueFalseDelegate (QObject *parent = nullptr);
+    explicit TrueFalseDelegate (QObject *parent = nullptr, QString false_str = "false", QString true_str = "true");
 
     QWidget* createEditor (QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
     void setEditorData (QWidget *editor, const QModelIndex &index) const override;
     void setModelData (QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     void updateEditorGeometry (QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+    QString byVal (bool val) const;
+private:
+    QString m_false, m_true;
 };

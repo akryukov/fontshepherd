@@ -59,7 +59,7 @@ public:
     ~HeadTable () {};
     void unpackData (sFont *font);
     void packData ();
-    void edit (sFont* fnt, QWidget* caller) override;
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) override;
 
     double version () const;
     double fontRevision () const;
@@ -82,6 +82,7 @@ public:
     void updateModified ();
     void setCheckSumAdjustment (uint32_t adj);
     void setIndexToLocFormat (bool is_long);
+    void setBitFlag (int nbit, bool val);
 
 protected:
     struct head_data contents;

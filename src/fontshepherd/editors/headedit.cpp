@@ -76,9 +76,9 @@ QList<QPair<QString, int>> HeadEdit::fontDirHints = {
     {"-2: Like -1 but also contains neutrals", -2},
 };
 
-HeadEdit::HeadEdit (FontTable* tbl, sFont* font, QWidget *parent) :
+HeadEdit::HeadEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (font) {
-    m_head = dynamic_cast<HeadTable *>(tbl);
+    m_head = std::dynamic_pointer_cast<HeadTable> (tptr);
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString ("head - ").append (m_font->fontname));
@@ -315,7 +315,7 @@ bool HeadEdit::isValid () {
     return m_valid;
 }
 
-FontTable* HeadEdit::table () {
+std::shared_ptr<FontTable> HeadEdit::table () {
     return m_head;
 }
 

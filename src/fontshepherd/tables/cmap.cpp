@@ -71,7 +71,7 @@ void CmapTable::unpackData (sFont *font) {
     CmapEnc *enc;
     uint32_t fpos;
 
-    if (m_loaded)
+    if (td_loaded)
         return;
     this->fillup ();
 
@@ -342,7 +342,7 @@ void CmapTable::unpackData (sFont *font) {
     }
 
     sortSubTables ();
-    m_loaded = true;
+    td_loaded = true;
 }
 
 void CmapTable::findBestSubTable (sFont *font) {
@@ -991,12 +991,12 @@ void CmapTable::setSubTablesModified (bool val) {
     m_subtables_changed = val;
 }
 
-void CmapTable::edit (sFont* fnt, QWidget* caller) {
+void CmapTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
-        CmapEdit *cmapedit = new CmapEdit (this, fnt, caller);
+        CmapEdit *cmapedit = new CmapEdit (tptr, fnt, caller);
         tv = cmapedit;
         cmapedit->show ();
     } else {

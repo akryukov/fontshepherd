@@ -37,14 +37,14 @@ class HeadEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    HeadEdit (FontTable* tab, sFont* font, QWidget *parent);
+    HeadEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~HeadEdit () {};
 
     void resetData () override;
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
 
@@ -58,7 +58,7 @@ private:
     static QStringList macStyleDesc;
     static QList<QPair<QString, int>> fontDirHints;
 
-    HeadTable *m_head;
+    std::shared_ptr<HeadTable> m_head;
     sFont *m_font;
     bool m_valid;
 

@@ -132,14 +132,14 @@ class CpalEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    CpalEdit (FontTable* tab, sFont* font, QWidget *parent);
+    CpalEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~CpalEdit ();
 
     void resetData () override {};
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
     QSize minimumSize () const;
@@ -165,8 +165,8 @@ private:
 
     bool m_valid;
 
-    CpalTable *m_cpal;
-    NameTable *m_name;
+    std::shared_ptr<CpalTable> m_cpal;
+    std::shared_ptr<NameTable> m_name;
     sFont *m_font;
     std::unique_ptr<ListEntryIdModel> m_entry_id_model;
     std::unique_ptr<NameProxy> m_nameProxy;

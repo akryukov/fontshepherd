@@ -81,7 +81,7 @@ public:
     ~OS_2Table () {};
     void unpackData (sFont *font);
     void packData ();
-    void edit (sFont* fnt, QWidget* caller) override;
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) override;
 
     uint16_t version () const;
     int16_t  xAvgCharWidth () const;

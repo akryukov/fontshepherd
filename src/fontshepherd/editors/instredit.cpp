@@ -38,14 +38,14 @@
 
 #include "fs_notify.h"
 
-InstrTableEdit::InstrTableEdit (FontTable* tbl, sFont* font, QWidget *parent) :
-    TableEdit (parent, Qt::Window), m_font (font), m_tbl (tbl) {
+InstrTableEdit::InstrTableEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent) :
+    TableEdit (parent, Qt::Window), m_font (font), m_table (tptr) {
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString ("%1 - %2").arg
-	(QString::fromStdString (m_tbl->stringName ())).arg (m_font->fontname));
+	(QString::fromStdString (m_table->stringName ())).arg (m_font->fontname));
 
-    InstrTable *ftbl = dynamic_cast<InstrTable *> (m_tbl);
+    std::shared_ptr<InstrTable> ftbl = std::dynamic_pointer_cast<InstrTable> (m_table);
     uint8_t *tbldata = reinterpret_cast<uint8_t *> (ftbl->getData ());
     uint32_t tblsize = ftbl->length ();
 
@@ -75,30 +75,30 @@ bool InstrTableEdit::checkUpdate (bool) {
 }
 
 bool InstrTableEdit::isModified () {
-    return m_tbl->modified ();
+    return m_table->modified ();
 }
 
 bool InstrTableEdit::isValid () {
     return m_valid;
 }
 
-FontTable* InstrTableEdit::table () {
-    return m_tbl;
+std::shared_ptr<FontTable> InstrTableEdit::table () {
+    return m_table;
 }
 
 void InstrTableEdit::closeEvent (QCloseEvent *event) {
     // If we are going to delete the font, ignore changes in table edits
     if (!isModified () || checkUpdate (true))
-        m_tbl->clearEditor ();
+        m_table->clearEditor ();
     else
         event->ignore ();
 }
 
 void InstrTableEdit::save () {
     if (m_instrEdit->changed ()) {
-	InstrTable *ftbl = dynamic_cast<InstrTable *> (m_tbl);
+	std::shared_ptr<InstrTable> ftbl = std::dynamic_pointer_cast<InstrTable> (m_table);
 	ftbl->setData (m_instrEdit->data ());
-	emit (update (m_tbl));
+	emit (update (m_table));
     }
     close ();
 }

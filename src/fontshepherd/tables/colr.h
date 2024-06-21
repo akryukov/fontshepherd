@@ -183,7 +183,7 @@ public:
     ColrTable (sfntFile* fontfile, TableHeader &props);
     ~ColrTable ();
     void unpackData (sFont *font);
-    void edit (sFont* fnt, QWidget* caller);
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
 
     std::vector<struct layer_record> &glyphLayers (uint16_t gid);
     uint16_t numGlyphLayers (uint16_t gid);
@@ -237,7 +237,7 @@ public:
     ~CpalTable ();
     void unpackData (sFont *font);
     void packData ();
-    void edit (sFont* fnt, QWidget* caller);
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
     uint16_t version () const;
     uint16_t numPalettes () const;
     void setNumPalettes (uint16_t val);

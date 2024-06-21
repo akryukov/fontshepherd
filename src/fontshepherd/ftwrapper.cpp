@@ -132,17 +132,22 @@ void FTWrapper::init (const QString &fpath, int idx) {
     }
 }
 
-struct freetype_raster FTWrapper::gridFitGlyph (uint16_t gid, int xsize, int ysize, uint16_t flags, QPainterPath *p) {
+int FTWrapper::setPixelSize (int xsize, int ysize) {
+    int ret = FT_Set_Pixel_Sizes (m_aface, xsize, ysize);
+    if (ret)
+        FontShepherd::postError (
+	    tr ("Error setting pixel size: X=%1, Y=%2").arg (xsize).arg (ysize)
+	);
+    return ret;
+}
+
+struct freetype_raster FTWrapper::gridFitGlyph (uint16_t gid, uint16_t flags, QPainterPath *p) {
     struct freetype_raster ret;
 
-    if (FT_Set_Pixel_Sizes (m_aface, xsize, ysize)) {
-        std::cout << "Error setting pixel size: could not load glyph " << gid << "\n";
-        return ret;
-    }
-
-    // FT_LOAD_RENDER | FT_LOAD_NO_BITMAP | FT_LOAD_NO_AUTOHINT | FT_LOAD_MONOCHROME
     if (FT_Load_Glyph (m_aface, gid, flags)) {
-        std::cout << "Missing glyph: could not load glyph " << gid << "\n";
+        FontShepherd::postError (
+	    tr ("Missing glyph: could not load glyph %1").arg (gid)
+	);
         return ret;
     }
 
@@ -154,6 +159,7 @@ struct freetype_raster FTWrapper::gridFitGlyph (uint16_t gid, int xsize, int ysi
     ret.lb = slot->bitmap_left;
     ret.num_grays = flags&FT_LOAD_MONOCHROME ? 2 : slot->bitmap.num_grays;
     ret.advance = slot->advance.x;
+    ret.linear_advance = slot->linearHoriAdvance;
     size_t bsize = ret.rows*ret.bytes_per_row;
     ret.bitmap.insert (ret.bitmap.end (), slot->bitmap.buffer, slot->bitmap.buffer + bsize);
     ret.valid = true;
@@ -168,8 +174,10 @@ struct freetype_raster FTWrapper::gridFitGlyph (uint16_t gid, int xsize, int ysi
 
     FT_Outline &outline = slot->outline;
 
-    if (FT_Outline_Decompose (&outline, &callbacks, p)) {
-        std::cout << "Missing glyph: could not decompose outline " << gid << "\n";
+    if (p && FT_Outline_Decompose (&outline, &callbacks, p)) {
+        FontShepherd::postError (
+	    tr ("Missing glyph: could not decompose outline for %1").arg (gid)
+	);
     }
     return ret;
 }

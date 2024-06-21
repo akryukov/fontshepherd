@@ -39,6 +39,7 @@ GaspTable::GaspTable (sfntFile *fontfile, TableHeader &props) :
 }
 
 void GaspTable::unpackData (sFont*) {
+    if (is_new) return;
     uint32_t pos = 0;
     this->fillup ();
 
@@ -75,13 +76,13 @@ void GaspTable::packData () {
     std::copy (st.begin (), st.end (), data);
 }
 
-void GaspTable::edit (sFont* fnt, QWidget* caller) {
+void GaspTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
     if (data == nullptr)
         fillup ();
 
     if (tv == nullptr) {
 	unpackData (fnt);
-        GaspEdit *gaspedit = new GaspEdit (this, fnt, caller);
+        GaspEdit *gaspedit = new GaspEdit (tptr, fnt, caller);
         tv = gaspedit;
         gaspedit->show ();
     } else {

@@ -31,7 +31,7 @@ class FontTable;
 class InstrTable : public FontTable {
 public:
     InstrTable (sfntFile* fontfile, TableHeader &props);
-    void edit (sFont* fnt, QWidget* caller);
+    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) override;
     char* getData ();
     uint32_t length ();
     void setData (const std::vector<uint8_t> &instr);

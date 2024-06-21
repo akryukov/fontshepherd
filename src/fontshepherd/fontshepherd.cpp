@@ -83,6 +83,10 @@ FontShepherdMain::FontShepherdMain (QApplication *app, QString &path) {
     undoAction->setShortcut (QKeySequence::Undo);
     redoAction->setShortcut (QKeySequence::Redo);
 
+    hdmxAction = new QAction (tr ("Calculate \'hdmx\' table..."), app);
+    ltshAction = new QAction (tr ("Calculate \'LTSH\' table..."), app);
+    vdmxAction = new QAction (tr ("Calculate \'VDMX\' table..."), app);
+
     connectEditActions (0);
     connect (QApplication::clipboard (), &QClipboard::dataChanged, this, &FontShepherdMain::checkClipboard);
 
@@ -136,6 +140,11 @@ FontShepherdMain::FontShepherdMain (QApplication *app, QString &path) {
     editMenu->addSeparator ();
     editMenu->addAction (undoAction);
     editMenu->addAction (redoAction);
+
+    toolMenu = menuBar ()->addMenu (tr ("&Tools"));
+    toolMenu->addAction (hdmxAction);
+    toolMenu->addAction (ltshAction);
+    toolMenu->addAction (vdmxAction);
 
     saveButton = new QPushButton (QWidget::tr ("&Save"));
     closeButton = new QPushButton (QWidget::tr ("&Close"));
@@ -312,6 +321,10 @@ void FontShepherdMain::connectEditActions (int index) {
         disconnect (unselectAction, &QAction::triggered, tv, &TableView::unselect);
         disconnect (editAction, &QAction::triggered, tv, &TableView::edit);
         disconnect (hexEditAction, &QAction::triggered, tv, &TableView::hexEdit);
+
+        disconnect (hdmxAction, &QAction::triggered, tv, &TableView::genHdmxTable);
+        disconnect (ltshAction, &QAction::triggered, tv, &TableView::genLtshTable);
+        disconnect (vdmxAction, &QAction::triggered, tv, &TableView::genVdmxTable);
     }
     if (index >= 0) {
 	QWidget *w = m_tableMatrix->widget (index);
@@ -328,8 +341,15 @@ void FontShepherdMain::connectEditActions (int index) {
 	    connect (editAction, &QAction::triggered, tv, &TableView::edit);
 	    connect (hexEditAction, &QAction::triggered, tv, &TableView::hexEdit);
 
+	    connect (hdmxAction, &QAction::triggered, tv, &TableView::genHdmxTable);
+	    connect (ltshAction, &QAction::triggered, tv, &TableView::genLtshTable);
+	    connect (vdmxAction, &QAction::triggered, tv, &TableView::genVdmxTable);
 	    checkSelection (tv);
 	}
+	bool tt = hasTrueType ();
+	hdmxAction->setEnabled (tt);
+	ltshAction->setEnabled (tt);
+	vdmxAction->setEnabled (tt);
     }
 }
 
@@ -429,6 +449,14 @@ void FontShepherdMain::updateRecentFileActions () {
 void FontShepherdMain::openRecentFile () {
     if (const QAction *action = qobject_cast<const QAction *> (sender ()))
         open (action->data ().toString ());
+}
+
+bool FontShepherdMain::hasTrueType () {
+    sfntFile *fcont = m_tableMatrix->font ();
+    int index = m_tableMatrix->currentIndex ();
+    sFont *fnt = fcont->font (index);
+    FontTable *glyf = fnt->table (CHR ('g','l','y','f'));
+    return (glyf != nullptr);
 }
 
 int main (int argc, char **argv) {

@@ -40,6 +40,7 @@
 #include "tables/cff.h"
 #include "editors/cffedit.h"
 #include "tables/colr.h"
+#include "tables/devmetrics.h"
 #include "tables/svg.h"
 #include "tables/name.h"
 #include "tables/maxp.h"
@@ -197,8 +198,8 @@ void FVLayout::setPixelSize (int size) {
     }
 }
 
-FontView::FontView (FontTable* tbl, sFont *fnt, QWidget *parent) :
-    TableEdit (parent, Qt::Window), m_table (tbl), m_font (fnt),
+FontView::FontView (std::shared_ptr<FontTable> tptr, sFont *fnt, QWidget *parent) :
+    TableEdit (parent, Qt::Window), m_table (tptr), m_font (fnt),
     m_gnp (GlyphNameProvider (*fnt)),
     m_post_changed (false), m_cmap_changed (false),
     m_gcount_changed (false), m_gdef_changed (false),
@@ -816,7 +817,7 @@ void FontView::clearSvgGlyph () {
     if (!m_selected.size () || m_content_type != OutlinesType::SVG)
         return;
     bool plural = m_selected.size () > 1;
-    SvgTable *svgt = dynamic_cast<SvgTable *> (m_svg_table);
+    std::shared_ptr<SvgTable> svgt = std::dynamic_pointer_cast<SvgTable> (m_svg_table);
     QMessageBox::StandardButton ask;
     ask = QMessageBox::question (this,
         tr (plural ? "Clear SVG glyphs" : "Clear SVG glyph"),
@@ -862,7 +863,7 @@ void FontView::loadTables (uint32_t tag) {
     for (auto &tbl : m_font->tbls) {
 	switch (tbl->iName ()) {
           case CHR('g','l','y','f'):
-            m_glyf_table = dynamic_cast<GlyphContainer *> (tbl.get ());
+            m_glyf_table = std::dynamic_pointer_cast<GlyphContainer> (tbl);
             m_glyf_table->fillup ();
             m_glyf_table->unpackData (m_font);
             m_outlines_avail |= (uint8_t) OutlinesType::TT;
@@ -871,7 +872,7 @@ void FontView::loadTables (uint32_t tag) {
 	    break;
           case CHR('C','F','F',' '):
           case CHR('C','F','F','2'):
-            m_cff_table = dynamic_cast<GlyphContainer *> (tbl.get ());
+            m_cff_table = std::dynamic_pointer_cast<GlyphContainer> (tbl);
             m_cff_table->fillup ();
             m_cff_table->unpackData (m_font);
             m_outlines_avail |= (uint8_t) OutlinesType::PS;
@@ -879,7 +880,7 @@ void FontView::loadTables (uint32_t tag) {
                 m_gc_table = m_cff_table;
 	    break;
           case CHR('S','V','G',' '):
-            m_svg_table = dynamic_cast<GlyphContainer *> (tbl.get ());
+            m_svg_table = std::dynamic_pointer_cast<GlyphContainer> (tbl);
             m_svg_table->fillup ();
             m_svg_table->unpackData (m_font);
             m_outlines_avail |= (uint8_t) OutlinesType::SVG;
@@ -887,7 +888,7 @@ void FontView::loadTables (uint32_t tag) {
                 m_gc_table = m_svg_table;
 	    break;
           case CHR('C','O','L','R'):
-            m_colr = dynamic_cast<ColrTable *> (tbl.get ());
+            m_colr = std::dynamic_pointer_cast<ColrTable> (tbl);
             m_colr->fillup ();
             m_colr->unpackData (m_font);
             m_outlines_avail |= (uint8_t) OutlinesType::COLR;
@@ -895,12 +896,12 @@ void FontView::loadTables (uint32_t tag) {
                 m_gc_table = m_colr;
 	    break;
           case CHR('C','P','A','L'):
-            m_cpal = dynamic_cast<CpalTable *> (tbl.get ());
+            m_cpal = std::dynamic_pointer_cast<CpalTable> (tbl);
             m_cpal->fillup ();
             m_cpal->unpackData (m_font);
 	    break;
 	  case CHR('G','D','E','F'):
-            GdefTable *gdef = dynamic_cast<GdefTable *> (tbl.get ());
+            std::shared_ptr<GdefTable> gdef = std::dynamic_pointer_cast<GdefTable> (tbl);
             gdef->fillup ();
             gdef->unpackData (m_font);
 	    break;
@@ -962,7 +963,7 @@ void FontView::save () {
     // Note that the opposite is not necessary, as it is OK to have some glyphs
     // missing in the SVG table
     if (m_gcount_changed && m_gc_table == m_svg_table) {
-	GlyphContainer *other_cnt = m_glyf_table ? m_glyf_table : m_cff_table;
+	std::shared_ptr<GlyphContainer> other_cnt = m_glyf_table ? m_glyf_table : m_cff_table;
 	OutlinesType other_type = other_cnt->outlinesType ();
 
 	QProgressDialog progress (tr ("Loading glyphs..."), tr ("Abort"), 0, gcnt, this);
@@ -986,6 +987,11 @@ void FontView::save () {
     for (auto &gc : m_glyphs) {
 	NonExclusiveUndoGroup *ug = gc.undoGroup ();
 	ug->setClean (true);
+    }
+
+    if (m_gcount_changed && m_glyf_table) {
+	DeviceMetricsProvider dmp (*m_font);
+	dmp.checkGlyphCount (m_glyf_table.get (), gcnt);
     }
 
     // While compiling the CFF/glyf/SVG tables, glyph metrics may be stored
@@ -1036,16 +1042,16 @@ bool FontView::isModified () {
     return ret;
 }
 
-FontTable* FontView::table () {
+std::shared_ptr<FontTable> FontView::table () {
     return m_table;
 }
 
-void FontView::setTable (FontTable* tbl) {
-    if (m_table != tbl) {
+void FontView::setTable (std::shared_ptr<FontTable> tptr) {
+    if (m_table != tptr) {
         OutlinesType val;
         if (m_table)
 	    m_table->setEditor (this);
-        switch (tbl->iName ()) {
+        switch (tptr->iName ()) {
           case CHR('g','l','y','f'):
             val = OutlinesType::TT;
           break;
@@ -1061,7 +1067,7 @@ void FontView::setTable (FontTable* tbl) {
           break;
         }
         switchOutlines (val);
-        m_table = tbl;
+        m_table = tptr;
     }
 }
 
@@ -1414,7 +1420,7 @@ void FontView::glyphEdit (GlyphBox *gb) {
     ensureGlyphOutlinesLoaded (gid);
 
     if (!m_gv) {
-        m_gv = new GlyphViewContainer (this, *m_font, m_gc_table);
+        m_gv = new GlyphViewContainer (this, *m_font, m_gc_table.get ());
         m_gv->show ();
         m_gv->addGlyph (m_glyphs[gid], m_content_type);
 
@@ -1478,7 +1484,7 @@ void FontView::showGlyphProps () {
 	m_gdef_changed = true;
     }
     if (m_cff_table) {
-	CffTable *cff = dynamic_cast<CffTable *> (m_cff_table);
+	std::shared_ptr<CffTable> cff = std::dynamic_pointer_cast<CffTable> (m_cff_table);
 	if (cff->cidKeyed ())
 	    cff->setFdSelect (gid, subf);
     }
@@ -1488,8 +1494,8 @@ void FontView::showGlyphProps () {
 
 void FontView::editCFF () {
     if (m_content_type == OutlinesType::PS) {
-	CffTable *cff = dynamic_cast<CffTable *> (m_cff_table);
-	CffDialog edit (m_font, cff, this);
+	std::shared_ptr<CffTable> cff = std::dynamic_pointer_cast<CffTable> (m_cff_table);
+	CffDialog edit (m_font, cff.get (), this);
 	connect (&edit, &CffDialog::glyphNamesChanged, this, &FontView::updateGlyphNames);
 	edit.exec ();
     }
@@ -1510,7 +1516,7 @@ void FontView::ensureGlyphOutlinesLoaded (uint16_t gid) {
     }
     if (m_svg_table && m_content_type == OutlinesType::SVG &&
 	!gctx.hasOutlinesType (OutlinesType::SVG)) {
-	SvgTable *svgt = dynamic_cast<SvgTable *> (m_svg_table);
+	std::shared_ptr<SvgTable> svgt = std::dynamic_pointer_cast<SvgTable> (m_svg_table);
 	if (!svgt->hasGlyph (gid)) {
 	    svgt->addGlyphAt (m_font, gid);
 	    g = m_svg_table->glyph (m_font, gid);

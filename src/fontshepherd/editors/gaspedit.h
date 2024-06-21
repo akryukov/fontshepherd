@@ -60,14 +60,14 @@ class GaspEdit : public TableEdit {
     Q_OBJECT;
 
 public:
-    GaspEdit (FontTable* tab, sFont* font, QWidget *parent);
+    GaspEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
     ~GaspEdit () {};
 
     void resetData () override {};
     bool checkUpdate (bool can_cancel) override;
     bool isModified () override;
     bool isValid () override;
-    FontTable* table () override;
+    std::shared_ptr<FontTable> table () override;
 
     void closeEvent (QCloseEvent *event);
 
@@ -81,7 +81,7 @@ private:
     void fillControls ();
     void addBooleanCellItem (bool val, int x, int y);
 
-    GaspTable *m_gasp;
+    std::shared_ptr<GaspTable> m_gasp;
     sFont *m_font;
     bool m_valid;
 

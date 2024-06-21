@@ -44,14 +44,14 @@
 
 // Main class, representing the cpal table editing window
 
-CpalEdit::CpalEdit (FontTable* tbl, sFont *fnt, QWidget *parent) :
+CpalEdit::CpalEdit (std::shared_ptr<FontTable> tptr, sFont *fnt, QWidget *parent) :
     TableEdit (parent, Qt::Window), m_font (fnt) {
 
     setAttribute (Qt::WA_DeleteOnClose);
     setWindowTitle (QString("CPAL - ").append (m_font->fontname));
 
-    m_cpal = dynamic_cast<CpalTable *> (tbl);
-    m_name = dynamic_cast<NameTable *> (m_font->table (CHR ('n','a','m','e')));
+    m_cpal = std::dynamic_pointer_cast<CpalTable> (tptr);
+    m_name = std::dynamic_pointer_cast<NameTable> (m_font->sharedTable (CHR ('n','a','m','e')));
 
     std::vector<FontShepherd::numbered_string> name_lst;
     name_lst.reserve (m_cpal->numPaletteEntries ());
@@ -62,7 +62,7 @@ CpalEdit::CpalEdit (FontTable* tbl, sFont *fnt, QWidget *parent) :
 	}
     }
 
-    m_nameProxy = std::unique_ptr<NameProxy> (new NameProxy (m_name));
+    m_nameProxy = std::unique_ptr<NameProxy> (new NameProxy (m_name.get ()));
     m_nameProxy->update (name_lst);
 
     m_entryNames.reserve (m_cpal->numPaletteEntries ());
@@ -109,7 +109,7 @@ CpalEdit::CpalEdit (FontTable* tbl, sFont *fnt, QWidget *parent) :
     m_palContainer = new QTabWidget ();
     m_tab->addTab (m_palContainer, QWidget::tr ("CPAL p&alettes"));
     for (uint16_t i=0; i<m_cpal->numPalettes (); i++) {
-	auto ptab = new PaletteTab (m_cpal->palette (i), m_name, i, m_entryNames);
+	auto ptab = new PaletteTab (m_cpal->palette (i), m_name.get (), i, m_entryNames);
 	ptab->setTableVersion (m_cpal->version ());
 	connect (ptab, &PaletteTab::needsLabelUpdate, this, &CpalEdit::updatePaletteLabel);
 	connect (ptab, &PaletteTab::tableModified, this, [=] (bool val) {m_cpal->setModified (val);});
@@ -204,7 +204,7 @@ bool CpalEdit::isValid () {
     return m_valid;
 }
 
-FontTable* CpalEdit::table () {
+std::shared_ptr<FontTable> CpalEdit::table () {
     return m_cpal;
 }
 
@@ -327,7 +327,7 @@ void CpalEdit::setPalettesNumber (int value) {
 	    uint16_t old_cnt = m_cpal->m_paletteList.size ();
 	    m_cpal->setNumPalettes (value);
 	    for (uint16_t i = old_cnt; i<value; i++) {
-		auto ptab = new PaletteTab (m_cpal->palette (i), m_name, i, m_entryNames);
+		auto ptab = new PaletteTab (m_cpal->palette (i), m_name.get (), i, m_entryNames);
 		ptab->setTableVersion (m_cpal->version ());
 		connect (ptab, &PaletteTab::needsLabelUpdate, this, &CpalEdit::updatePaletteLabel);
 		m_palContainer->addTab (ptab, ptab->label ());

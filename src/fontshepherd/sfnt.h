@@ -51,6 +51,7 @@ typedef struct ttffont {
     int file_index = 0;
 
     FontTable *table (uint32_t tag) const;
+    std::shared_ptr<FontTable> sharedTable (uint32_t tag) const;
     double italicAngle () const;
     int tableCount () const;
 } sFont;
@@ -68,6 +69,7 @@ public:
     sFont *font (int index);
     void addToCollection (const QString &path);
     void removeFromCollection (int index);
+    int tableRefCount (FontTable *tbl);
 
 private:
     static uint16_t getushort (QFile *f);

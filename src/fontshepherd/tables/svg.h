@@ -65,6 +65,7 @@ private:
     void cleanupDocEntries ();
     CffTable *m_cff = nullptr;
     GlyfTable *m_glyf = nullptr;
+    bool m_usable;
 
     uint32_t m_version, m_offsetToSVGDocIndex;
     std::vector<struct svg_document_index_entry> m_iEntries;
