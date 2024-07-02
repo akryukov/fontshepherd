@@ -555,7 +555,7 @@ int DeviceMetricsProvider::calculateLtsh (LtshTable &ltsh, QWidget *parent) {
 	if (msource != 0xFFFF)
 	    ltsh.yPixels[i] = ltsh.yPixels[msource];
     }
-    progress.setValue (0);
+    progress.setValue (255);
     return 0;
 }
 

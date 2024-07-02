@@ -24,60 +24,56 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
-#include <QtGlobal>
-#include <ctime>
+#include <QtWidgets>
+#include "tables.h" // Have to load it here due to inheritance from TableEdit
 
-class ConicGlyph;
-
-struct maxp_data {
-    double version;
-    uint16_t numGlyphs = 0;
-    uint16_t maxPoints = 0;
-    uint16_t maxContours = 0;
-    uint16_t maxCompositePoints = 0;
-    uint16_t maxCompositeContours = 0;
-    uint16_t maxZones = 0;
-    uint16_t maxTwilightPoints = 0;
-    uint16_t maxStorage = 0;
-    uint16_t maxFunctionDefs = 0;
-    uint16_t maxInstructionDefs = 0;
-    uint16_t maxStackElements = 0;
-    uint16_t maxSizeOfInstructions = 0;
-    uint16_t maxComponentElements = 0;
-    uint16_t maxComponentDepth = 0;
-};
-
+class sfntFile;
+typedef struct ttffont sFont;
 class FontTable;
-class MaxpEdit;
+class MaxpTable;
+class TableEdit;
+class GlyphContainer;
 
-class MaxpTable : public FontTable {
-    friend class ConicGlyph;
-    friend class MaxpEdit;
+struct maxp_data;
+
+class MaxpEdit : public TableEdit {
+    Q_OBJECT;
+
 public:
-    MaxpTable (sfntFile* fontfile, TableHeader &props);
-    ~MaxpTable () {};
-    void unpackData (sFont *font);
-    void packData ();
-    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
+    MaxpEdit (std::shared_ptr<FontTable> tptr, sFont* font, QWidget *parent);
+    ~MaxpEdit () {};
 
-    void setGlyphCount (uint16_t cnt);
+    void resetData () override {};
+    bool checkUpdate (bool can_cancel) override;
+    bool isModified () override;
+    bool isValid () override;
+    std::shared_ptr<FontTable> table () override;
 
-    double version () const;
-    uint16_t numGlyphs () const;
-    uint16_t maxPoints () const;
-    uint16_t maxContours () const;
-    uint16_t maxCompositePoints () const;
-    uint16_t maxCompositeContours () const;
-    uint16_t maxZones () const;
-    uint16_t maxTwilightPoints () const;
-    uint16_t maxStorage () const;
-    uint16_t maxFunctionDefs () const;
-    uint16_t maxInstructionDefs () const;
-    uint16_t maxStackElements () const;
-    uint16_t maxSizeOfInstructions () const;
-    uint16_t maxComponentElements () const;
-    uint16_t maxComponentDepth () const;
+    void closeEvent (QCloseEvent *event);
+
+public slots:
+    void save ();
+    void calculate ();
+    void setTableVersion (int idx);
 
 private:
-    struct maxp_data contents;
+    void fillControls (maxp_data &d);
+    void calculateCFF (GlyphContainer *cff);
+    void calculateTTF (GlyphContainer *glyf);
+
+    std::shared_ptr<MaxpTable> m_maxp;
+    sFont *m_font;
+    bool m_valid;
+
+    QGridLayout *maxp_layout;
+    QComboBox *m_versionBox;
+    QSpinBox *m_numGlyphsBox, *m_maxPointsBox, *m_maxContoursBox;
+    QSpinBox *m_maxCompositePointsBox, *m_maxCompositeContoursBox;
+    QSpinBox *m_maxZonesBox;
+    QSpinBox *m_maxTwilightBox, *m_maxStorageBox;
+    QSpinBox *m_maxFunctionDefsBox, *m_maxInstructionDefsBox;
+    QSpinBox *m_maxStackElementsBox, *m_maxSizeOfInstructionsBox;
+    QSpinBox *m_maxComponentElementsBox, *m_maxComponentDepthBox;
+
+    QPushButton *saveButton, *calcButton, *closeButton, *helpButton;
 };

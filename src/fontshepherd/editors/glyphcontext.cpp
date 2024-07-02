@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <limits>
+#include <random>
 #include <QtSvg>
 
 #include "sfnt.h"
@@ -180,14 +181,13 @@ bool GlyphContext::resolveRefs (OutlinesType gtype) {
     static bool seac_warned = false;
     ConicGlyph *g = glyph (gtype);
     if (!g) return false;
-    uint16_t cnt=0;
 
     if (!g->refs.empty ()) {
         for (auto &ref : g->refs) {
 	    if (ref.outType == OutlinesType::NONE && hasOutlinesType (OutlinesType::COLR))
 		ref.outType = hasOutlinesType (OutlinesType::TT) ?
 		    OutlinesType::TT : OutlinesType::PS;
-            g->provideRef (m_glyphSet[ref.GID].glyph (ref.outType), cnt++);
+            ref.setGlyph (m_glyphSet[ref.GID].glyph (ref.outType));
 	}
         if (g->checkRefs (g->gid (), m_glyphSet.size ()) != 0)
             return false;
@@ -218,7 +218,7 @@ bool GlyphContext::resolveRefs (OutlinesType gtype) {
 void GlyphContext::update (OutlinesType gtype) {
     uint16_t i;
     for (i=0; i<m_cells.size (); i++)
-        m_cells[i]->update ();
+        m_cells[i]->updatePixmap (0);
     for (uint16_t gid: m_dependent) {
         GlyphContext &depctx = m_glyphSet[gid];
 	ConicGlyph *g = depctx.glyph (gtype);
@@ -286,14 +286,19 @@ static void drawPath (DrawableFigure &fig, QPainterPath &path) {
     }
 }
 
-static void drawPoints (DrawableFigure &fig, QGraphicsPathItem *path, bool is_ref) {
+static void drawPoints (DrawableFigure &fig, QGraphicsPathItem *path, RefItem *group) {
     std::vector<ConicPointList> &conics = fig.contours;
+    bool is_ref = (group != nullptr);
 
     for (auto &spls: conics) {
         ConicPoint *sp = spls.first;
         do {
-            if (!sp->item) {
-		auto item = new ConicPointItem (*sp, fig, path, is_ref);
+	    // As we don't change points in references, probably there is no need
+	    // to have an item associated. Otherwise multiple items would be needed,
+	    // as it is possible to have multiple references to the same glyph
+	    // displayed at the same time, even at the same scene
+            if (!sp->item || is_ref) {
+		auto item = new ConicPointItem (*sp, fig, path, group);
 		item->setSelected (sp->selected);
 	    }
             sp = (sp->next) ? sp->next->to : nullptr;
@@ -460,18 +465,21 @@ void GlyphContext::drawGlyph (ConicGlyph *gref, std::map<std::string, Gradient> 
         } else if (GlyphViewContainer::showFill ())
             item->setBrush (QColor (0x80, 0x70, 0x70, 0x70));
 	// Will have no effect for ellipses and rects, where there is no contours
-	drawPoints (fig, item, group != nullptr);
+	drawPoints (fig, item, group);
     }
     if (!gref->figures.empty () && !group)
 	updatePoints ();
-    for (size_t i=0; i<gref->refs.size (); i++) {
-        DrawableReference &ref = gref->refs[i];
-        RefItem *g = new RefItem (ref, i, m_gnp.nameByGid (ref.GID));
+    int ref_pcnt = 0;
+    for (auto it = gref->refs.begin (); it != gref->refs.end (); it++) {
+	auto &ref = *it;
+        RefItem *g = new RefItem (ref, m_gnp.nameByGid (ref.GID));
+	g->setFirstPointNumber (ref_pcnt);
         QTransform reftrans (
             ref.transform[0], ref.transform[1], ref.transform[2],
             ref.transform[3], ref.transform[4], ref.transform[5]
         );
         drawGlyph (ref.cc, gref->gradients, g);
+	ref_pcnt += ref.cc->numCompositePoints ();
 
         if (group) {
             for (QGraphicsItem *item: g->childItems ()) {
@@ -749,13 +757,6 @@ bool GlyphContext::clearSelected (bool merge) {
 		pathItem->setPath (path);
 	    }
 	}
-
-	// but update point numbering for all SVG figures
-	uint16_t lastpt=0;
-	for (auto &fig: scene_glyph->figures)
-	    lastpt = fig.renumberPoints (lastpt);
-	updateControlPoints ();
-	updatePointNumbers ();
     }
 
     if (changed && !merge) {
@@ -776,6 +777,20 @@ bool GlyphContext::clearSelected (bool merge) {
 	    } else
 		it++;
 	}
+    }
+
+    if (changed) {
+	// update point numbering for all SVG figures and references
+	uint16_t lastpt=0;
+	for (auto &fig: scene_glyph->figures)
+	    lastpt = fig.renumberPoints (lastpt);
+	lastpt = 0;
+	for (auto &ref: scene_glyph->refs) {
+	    ref.setFirstPointNumber (lastpt);
+	    lastpt += ref.numPoints ();
+	}
+	updatePointNumbers ();
+	updateControlPoints ();
     }
     return changed;
 }
@@ -990,18 +1005,18 @@ OnCurvePointItem* GlyphContext::addPoint (QPointF &pos, enum pointtype ptype) {
             sp->isfirst = true;
             do_next = false;
         }
-        retItem = new ConicPointItem (*sp, fig, pathItem, false);
+        retItem = new ConicPointItem (*sp, fig, pathItem, nullptr);
         finalizeSpline (spl, do_next);
     // Insert a new point into an existing spline
     } else if (actSpl) {
         sp = fig.bisectSpline (actSpl, t);
         sp->pointtype = ptype;
-        retItem = new ConicPointItem (*sp, fig, pathItem, false);
+        retItem = new ConicPointItem (*sp, fig, pathItem, nullptr);
     // Just add a new point
     } else {
         sp = fig.points_pool.construct (pos.x (), pos.y ());
         sp->pointtype = ptype;
-        retItem = new ConicPointItem (*sp, fig, pathItem, false);
+        retItem = new ConicPointItem (*sp, fig, pathItem, nullptr);
         fig.contours.emplace_back ();
         ConicPointList &spls = fig.contours.back ();
         spls.first = spls.last = sp;
@@ -1081,8 +1096,8 @@ bool GlyphContext::cutSplines (const QPointF &lstart, const QPointF &lend) {
 			if (do_append)
 			    fig.contours.push_back (news);
 
-			new ConicPointItem (*mid1, fig, pathItem, false);
-			new ConicPointItem (*mid2, fig, pathItem, false);
+			new ConicPointItem (*mid1, fig, pathItem, nullptr);
+			new ConicPointItem (*mid2, fig, pathItem, nullptr);
 			fig_changed = true;
 		    }
 		}
@@ -1257,7 +1272,7 @@ void GlyphContext::addEllipse (const QRectF &rect) {
 	QPainterPath path;
 	drawPath (front, path);
 	pathItem->setPath (path);
-	drawPoints (front, pathItem, false);
+	drawPoints (front, pathItem, nullptr);
 	updatePointNumbers ();
     }
 }
@@ -1307,7 +1322,7 @@ void GlyphContext::addRect (const QRectF &rect) {
 	QPainterPath path;
 	drawPath (front, path);
 	pathItem->setPath (path);
-	drawPoints (front, pathItem, false);
+	drawPoints (front, pathItem, nullptr);
 	updatePointNumbers ();
     }
 }
@@ -1611,9 +1626,10 @@ bool OffCurvePointItem::isNextCP () const {
     return m_next;
 }
 
-ConicPointItem::ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsItem *parent, bool is_ref) :
+ConicPointItem::ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsItem *parent, RefItem *ref) :
     QAbstractGraphicsShapeItem (parent),
-    m_valid (true), m_point (pt), m_fig (fig), m_isRef (is_ref), m_nextItem (nullptr), m_prevItem (nullptr) {
+    m_valid (true), m_point (pt), m_fig (fig), m_isRef (ref != nullptr),
+    m_nextItem (nullptr), m_prevItem (nullptr) {
 
     m_point.item = this;
     setFlag (QGraphicsItem::ItemHasNoContents);
@@ -1622,7 +1638,8 @@ ConicPointItem::ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsIt
     num_font.setStyleHint (QFont::SansSerif);
     num_font.setPointSize (8);
 
-    makeNextCP ();
+    int pcnt_shift = m_isRef ? ref->firstPointNumber () : 0;
+    makeNextCP (pcnt_shift);
     makePrevCP ();
 
     m_baseItem = new OnCurvePointItem (m_point, fig, this, m_isRef);
@@ -1632,7 +1649,7 @@ ConicPointItem::ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsIt
     // item is set to its nominal parent. That is to make its shift relative to a spline
     // point independent from the viewport scale. The same technique is applied to a text
     // item responsible for displaying nextcpindex
-    m_baseNumItem = new QGraphicsSimpleTextItem (QString ("%1").arg (m_point.ttfindex));
+    m_baseNumItem = new QGraphicsSimpleTextItem (QString ("%1").arg (m_point.ttfindex + pcnt_shift));
     m_baseNumItem->setBrush (QBrush (Qt::red));
     m_baseNumItem->setFont (num_font);
     m_baseNumItem->setFlag (QGraphicsItem::ItemIgnoresTransformations);
@@ -1642,7 +1659,8 @@ ConicPointItem::ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsIt
 }
 
 ConicPointItem::~ConicPointItem () {
-    m_point.item = nullptr;
+    if (m_point.item == this)
+	m_point.item = nullptr;
 }
 
 bool ConicPointItem::valid () const {
@@ -1669,7 +1687,7 @@ int ConicPointItem::type () const {
     return Type;
 }
 
-void ConicPointItem::makeNextCP () {
+void ConicPointItem::makeNextCP (int pcnt_shift) {
     QFont num_font = QFont ();
     num_font.setStyleHint (QFont::SansSerif);
     num_font.setPointSize (8);
@@ -1682,10 +1700,10 @@ void ConicPointItem::makeNextCP () {
         this);
     m_nextHandle->setPen (QPen (QColor (0, 0x70, 0x90)));
     m_nextHandle->setVisible (!m_point.nonextcp &&
-	panel ()->isActive () &&
-        !m_isRef && GlyphViewContainer::showPoints () && GlyphViewContainer::showControlPoints ());
+	panel ()->isActive () && !m_isRef &&
+        GlyphViewContainer::showPoints () && GlyphViewContainer::showControlPoints ());
 
-    m_nextNumItem = new QGraphicsSimpleTextItem (QString ("%1").arg (m_point.nextcpindex));
+    m_nextNumItem = new QGraphicsSimpleTextItem (QString ("%1").arg (m_point.nextcpindex + pcnt_shift));
     m_nextNumItem->setBrush (QBrush (Qt::red));
     m_nextNumItem->setFont (num_font);
     m_nextNumItem->setFlag (QGraphicsItem::ItemIgnoresTransformations);
@@ -1704,8 +1722,8 @@ void ConicPointItem::makePrevCP () {
         this);
     m_prevHandle->setPen (QPen (QColor (0xCC, 0, 0xCC)));
     m_prevHandle->setVisible (!m_point.noprevcp &&
-	panel ()->isActive () &&
-        !m_isRef && GlyphViewContainer::showPoints () && GlyphViewContainer::showControlPoints ());
+	panel ()->isActive () && !m_isRef &&
+        GlyphViewContainer::showPoints () && GlyphViewContainer::showControlPoints ());
 }
 
 void ConicPointItem::basePointMoved (QPointF newPos) {
@@ -1835,7 +1853,7 @@ bool ConicPointItem::isConicPointSelected () const {
 }
 
 void ConicPointItem::prepareGeometryChange () {
-    m_baseItem->setVisible (m_baseItem->isActive ());
+    m_baseItem->setVisible (m_baseItem->isActive () || m_isRef);
     if (!m_baseItem->isVisible ()) return;
     m_baseItem->prepareGeometryChange ();
 
@@ -1872,31 +1890,42 @@ int ConicPointItem::nextcpindex () {
 }
 
 void ConicPointItem::updatePointNumbers () {
+    uint16_t shift = 0;
     if (m_valid) {
-	m_baseNumItem->setText (QString::number (m_point.ttfindex));
-	m_nextNumItem->setText (QString::number (m_point.nextcpindex));
+	if (m_isRef) {
+	    auto parent = this->parentItem ();
+	    if (parent) {
+		auto grandp = qgraphicsitem_cast<RefItem *> (parent->parentItem ());
+		if (grandp) shift = grandp->firstPointNumber ();
+	    }
+	}
+	m_baseNumItem->setText (QString::number (m_point.ttfindex + shift));
+	m_nextNumItem->setText (QString::number (m_point.nextcpindex + shift));
     }
 }
 
 // The underlying data has been changed, but the scene items not yet
 void ConicPointItem::updateControlPoints () {
     bool cp_visible = (
-	!m_isRef && (
-	    (GlyphViewContainer::showPoints () && GlyphViewContainer::showControlPoints ()) ||
-	    m_baseItem->isSelected ())
+	!m_isRef && GlyphViewContainer::showPoints () && panel ()->isActive () &&
+	    (GlyphViewContainer::showControlPoints () || isConicPointSelected ())
     );
 
     m_nextItem->setPos (m_point.nextcp.x-m_point.me.x, m_point.nextcp.y-m_point.me.y);
-    m_nextItem->setVisible (!m_point.noCP (true) && cp_visible);
+    // NB: control points are always marked visible, as otherwise the point number would
+    // not be visible too (and it should be, as its visibility is controlled by a separate
+    // setting). However the actual visibility of the control point is controlled
+    // in OffCurvePointItem::paint
+    m_nextItem->setVisible (!m_point.noCP (true));
     m_nextHandle->setLine (
         QLineF (0, 0, m_nextItem->pos ().x (), m_nextItem->pos ().y ()));
-    m_nextHandle->setVisible (m_nextItem->isVisible ());
+    m_nextHandle->setVisible (cp_visible);
 
     m_prevItem->setPos (m_point.prevcp.x-m_point.me.x, m_point.prevcp.y-m_point.me.y);
-    m_prevItem->setVisible (!m_point.noCP (false) && cp_visible);
+    m_prevItem->setVisible (!m_point.noCP (false));
     m_prevHandle->setLine (
         QLineF (0, 0, m_prevItem->pos ().x (), m_prevItem->pos ().y ()));
-    m_prevHandle->setVisible (m_prevItem->isVisible ());
+    m_prevHandle->setVisible (cp_visible);
 }
 
 FigurePathItem::FigurePathItem (const QPainterPath &path, DrawableFigure &fig) :
@@ -2309,13 +2338,17 @@ void AdvanceWidthItem::hoverLeaveEvent (QGraphicsSceneHoverEvent *) {
     QApplication::restoreOverrideCursor ();
 }
 
-RefItem::RefItem (DrawableReference &ref, uint16_t idx, const std::string &name, QGraphicsItem *parent) :
+RefItem::RefItem (DrawableReference &ref, const std::string &name, QGraphicsItem *parent) :
     QGraphicsItemGroup (parent),
     m_ref (ref),
     m_glyph (ref.cc),
-    m_name (QString::fromStdString (name)),
-    m_idx (idx) {
+    m_name (QString::fromStdString (name)) {
     m_ref.item = this;
+
+    std::random_device rd;
+    std::mt19937 mt (rd ());
+    std::uniform_int_distribution<int> dist (1, 0xFFFF);
+    m_idx = dist (mt);
 
     QFont name_font = QFont ();
     name_font.setStyleHint (QFont::SansSerif);
@@ -2381,4 +2414,12 @@ void RefItem::refMoved (QPointF shift) {
     QGraphicsItemGroup::setTransform (QTransform (1, 0, 0, 1, shift.x (), shift.y ()), true);
     m_ref.transform[4] += shift.x ();
     m_ref.transform[5] += shift.y ();
+}
+
+void RefItem::setFirstPointNumber (int val) {
+    m_ref.setFirstPointNumber (val);
+}
+
+int RefItem::firstPointNumber () {
+    return m_ref.firstPointNumber ();
 }

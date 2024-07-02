@@ -31,6 +31,7 @@
 #include "sfnt.h"
 #include "tables.h"
 #include "maxp.h"
+#include "editors/maxpedit.h"
 
 MaxpTable::MaxpTable (sfntFile *fontfile, TableHeader &props) :
     FontTable (fontfile, props) {
@@ -94,6 +95,20 @@ void MaxpTable::packData () {
     newlen = st.length ();
     data = new char[newlen];
     std::copy (st.begin (), st.end (), data);
+}
+
+void MaxpTable::edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller) {
+    if (data == nullptr && !is_new)
+        fillup ();
+
+    if (tv == nullptr) {
+	unpackData (fnt);
+        MaxpEdit *edit = new MaxpEdit (tptr, fnt, caller);
+        tv = edit;
+        edit->show ();
+    } else {
+        tv->raise ();
+    }
 }
 
 double MaxpTable::version () const {

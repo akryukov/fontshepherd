@@ -225,7 +225,7 @@ class ConicPointItem : public QAbstractGraphicsShapeItem {
     friend class GlyphContext;
 
 public:
-    ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsItem *parent, bool is_ref);
+    ConicPointItem (ConicPoint &pt, DrawableFigure &fig, QGraphicsItem *parent, RefItem *ref);
     ~ConicPointItem ();
 
     QRectF boundingRect () const;
@@ -233,7 +233,7 @@ public:
     enum { Type = UserType + GlyphGraphicItems::ConicPoint };
     int type () const;
 
-    void makeNextCP ();
+    void makeNextCP (int pcnt_shift);
     void makePrevCP ();
 
     void basePointMoved (QPointF newpos);
@@ -377,7 +377,7 @@ class RefItem : public QGraphicsItemGroup {
     friend class GlyphContext;
 
 public:
-    RefItem (DrawableReference &ref, uint16_t idx, const std::string &name, QGraphicsItem *parent=nullptr);
+    RefItem (DrawableReference &ref, const std::string &name, QGraphicsItem *parent=nullptr);
     ~RefItem ();
     void paint (QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     enum { Type = UserType + GlyphGraphicItems::Ref };
@@ -390,10 +390,15 @@ public:
 
     void refMoved (QPointF shift);
 
+    void setFirstPointNumber (int val);
+    int firstPointNumber ();
+
 private:
     DrawableReference &m_ref;
     ConicGlyph *m_glyph;
     QString m_name;
+    // Used to have an index corresponding to the reference number in
+    // the list, but let it be a (unique) random code now
     uint16_t m_idx;
     QGraphicsSimpleTextItem *m_nameItem;
 };

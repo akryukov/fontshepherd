@@ -111,6 +111,14 @@ uint32_t FontTable::iName (int index) const {
     return 0;
 }
 
+uint32_t FontTable::dataLength () const {
+    return newlen;
+}
+
+bool FontTable::isRequired () const {
+    return required;
+}
+
 std::string FontTable::stringName (int index) const {
     std::stringbuf sb;
 

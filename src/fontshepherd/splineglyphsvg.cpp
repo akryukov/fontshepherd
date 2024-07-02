@@ -913,10 +913,8 @@ void ConicGlyph::svgDumpHints (std::stringstream &ss) {
 
 void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &processed, uint8_t flags) {
     BasePoint last;
-    uint16_t i, j;
     ConicPointList *spls;
     Conic *spl, *first;
-    DrawableReference *ref;
     std::string glyph_tag = (flags & SVGOptions::asReference) ? "symbol" : "g";
     std::string id_base = (m_outType == OutlinesType::COLR) ? "colr-glyph" : "glyph";
     int hintcnt = hstem.size () + vstem.size ();
@@ -935,13 +933,12 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
 	    ss << "  </defs>\n";
 	}
 
-	for (i=0; i<refs.size (); i++) {
-	    ref = &refs[i];
-	    if (selected && !ref->selected)
+	for (auto &ref : refs) {
+	    if (selected && !ref.selected)
 		continue;
-	    if (ref->cc && !processed.count (ref->cc->gid ())) {
-		ref->cc->svgDumpGlyph (ss, processed, flags | SVGOptions::asReference);
-		processed.insert (ref->cc->gid ());
+	    if (ref.cc && !processed.count (ref.cc->gid ())) {
+		ref.cc->svgDumpGlyph (ss, processed, flags | SVGOptions::asReference);
+		processed.insert (ref.cc->gid ());
 	    }
 	}
     }
@@ -1025,7 +1022,7 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
             ss << "    <path";
             svgDumpColorProps (ss, fig.svgState);
             ss << " d=\"";
-            for (j=0; j<conics.size (); j++) {
+            for (size_t j=0; j<conics.size (); j++) {
                 bool open = false;
 		ConicPoint *startpt = nullptr, *curpt, *headpt;
                 spls = &conics[j];
@@ -1128,7 +1125,7 @@ void ConicGlyph::svgDumpGlyph (std::stringstream &ss, std::set<uint16_t> &proces
 	if (ref.svgState.fill_set || ref.svgState.stroke_set)
 	    svgDumpColorProps (ss, ref.svgState);
 	ss << " transform=\"matrix(";
-	for (j=0; j<4; j++)
+	for (size_t j=0; j<4; j++)
 	    ss << ref.transform[j] << ' ';
 	ss << (ref.transform[4]) << ' ' << (ref_y_shift - ref.transform[5]) << ")\"/>\n";
     }
@@ -2147,7 +2144,6 @@ bool ConicGlyph::fromSVG (pugi::xml_document &doc, int g_idx, DrawableFigure *ta
     std::array<double, 6> trans = {1, 0, 0, 1, 0, 0};
     SvgState state;
     std::array<double, 6> inv = {1, 0, 0, -1, 0, 0};
-    uint16_t i, j;
     uint16_t old_fig_cnt = figures.size (), old_ref_cnt = refs.size ();
 
     char element_spec[32] = {0};
@@ -2211,12 +2207,14 @@ bool ConicGlyph::fromSVG (pugi::xml_document &doc, int g_idx, DrawableFigure *ta
             svgTransformRect (fig, inv);
         } else if (fig.contours.size () > 0) {
             std::vector<ConicPointList> &conics = fig.contours;
-            for (j=0; j<conics.size (); j++)
-                conics[j].doTransform (inv);
+            for (auto &c : conics)
+                c.doTransform (inv);
         }
     }
-    for (i=old_ref_cnt; i<refs.size (); i++) {
-        DrawableReference &ref = refs[i];
+    auto refit = refs.begin ();
+    std::advance (refit, old_ref_cnt);
+    for (; refit != refs.end (); refit++) {
+        DrawableReference &ref = *refit;
         ref.transform[5] *= -1;
     }
     if (target && (int) figures.size () == old_fig_cnt + 1) {
@@ -2362,7 +2360,7 @@ ElementType DrawableFigure::elementType () const {
         sp = next;
     } while (linear && sp && sp!=spls.first);
 
-    if (linear) {
+    if (linear && spl_cnt) {
 	if (spl_cnt == 1)
 	    return ElementType::Line;
 	else if (spls.first == spls.last)

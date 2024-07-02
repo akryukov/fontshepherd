@@ -78,6 +78,8 @@ public:
     QByteArray serialize ();
     sfntFile *containerFile ();
     uint32_t iName (int index=0) const;
+    uint32_t dataLength () const;
+    bool isRequired () const;
 
     virtual void unpackData (sFont*) {};
     // takes shared_ptr to itself, as it is needed for the editor class
@@ -100,8 +102,9 @@ public:
     static uint32_t getlong (char *bdata, uint32_t pos);
     static double get2dot14 (char *bdata, uint32_t pos);
 
-protected:
     uint16_t getushort (uint32_t pos);
+
+protected:
     uint32_t get3bytes (uint32_t pos);
     uint32_t getlong (uint32_t pos);
     double getfixed (uint32_t pos);

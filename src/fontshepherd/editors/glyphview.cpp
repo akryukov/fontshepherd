@@ -1818,7 +1818,7 @@ static void show_hint (QPainter *painter, const QRectF &exposed, const StemInfo 
 
 static void draw_gridFittedBitmap (QPainter *p, ConicGlyph *g, freetype_raster &r, int ppemX, int ppemY) {
     static QPen whitePen (Qt::white, 1);
-    static QPen melrosePen (QColor (0xb0, 0xb0, 0xff), 1);
+    static QPen melrosePen (QColor (0xb0, 0xb0, 0xff), 3);
     if (!r.bitmap.empty ()) {
 	p->setPen (whitePen);
 	double px_size_x = static_cast<double> (g->upm ())/ppemX;
@@ -1869,8 +1869,8 @@ static void draw_gridFittedBitmap (QPainter *p, ConicGlyph *g, freetype_raster &
 	    for (int j=1; j<=r.cols; j++) {
 		int cx = start_x + (px_size_x*j) - (px_size_x/2);
 		int cy = start_y - (px_size_y*i) + (px_size_y/2);
-		p->drawLine (cx-3, cy, cx+3, cy);
-		p->drawLine (cx, cy-3, cx, cy+3);
+		p->drawLine (cx-6, cy, cx+6, cy);
+		p->drawLine (cx, cy-6, cx, cy+6);
 	    }
 	}
     }

@@ -102,9 +102,11 @@ typedef struct steminfo {
     double width;		/* or height */
 } StemInfo;
 
+#ifndef _FS_STRUCT_BASEPOINT_DEFINED
+#define _FS_STRUCT_BASEPOINT_DEFINED
 typedef struct ipoint {
-    int x = 0;
-    int y = 0;
+    int32_t x = 0;
+    int32_t y = 0;
 } IPoint;
 
 typedef struct basepoint {
@@ -113,6 +115,7 @@ typedef struct basepoint {
 
     void transform (basepoint *from, const std::array<double, 6> &transform);
 } BasePoint;
+#endif
 
 #if 0
 typedef struct basepoint {
@@ -466,6 +469,7 @@ public:
     ConicGlyph *cc;
     RefItem *item;
 
+    void setGlyph (ConicGlyph *g);
     ElementType elementType () const override;
     void quickBounds (DBounds &b);
     void realBounds (DBounds &b, bool do_init=false);
@@ -473,6 +477,11 @@ public:
     uint16_t numPoints () const;
     uint16_t depth (uint16_t val) const;
     bool useMyMetrics () const;
+    void setFirstPointNumber (const uint16_t first=0);
+    uint16_t firstPointNumber () const;
+
+private:
+    uint16_t m_first_pt_num = 0;
 };
 
 // Need this to reduce number of constructor arguments for ConicGlyph,
@@ -500,6 +509,8 @@ namespace SVGOptions {
 	asReference = 16
     };
 };
+
+class GlyphContainer;
 
 class ConicGlyph {
     Q_DECLARE_TR_FUNCTIONS (ConicGlyph)
@@ -537,7 +548,7 @@ public:
     void clear ();
 
     std::vector<uint16_t> refersTo () const;
-    void provideRef (ConicGlyph *g, uint16_t refidx);
+    void provideRefGlyphs (sFont *fnt, GlyphContainer *gc);
     int checkRefs (uint16_t gid, uint16_t gcnt);
     void finalizeRefs ();
     void renumberPoints ();
@@ -629,9 +640,10 @@ private:
     bool loaded: 1;
     bool widthset: 1;
     const PrivateDict *m_private = nullptr;
+    BasePoint origPoint, awPoint;
     OutlinesType m_outType = OutlinesType::NONE;
 
-    std::vector<DrawableReference> refs;
+    std::list<DrawableReference> refs;
     std::vector<ConicGlyph*> dependents;
     std::vector <HintMask> countermasks;
     std::unique_ptr<QUndoStack> m_undoStack;

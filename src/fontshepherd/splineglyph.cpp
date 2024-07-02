@@ -89,6 +89,8 @@ ConicGlyph::ConicGlyph (uint16_t gid, BaseMetrics gm) :
     GID (gid), units_per_em (gm.upm), m_ascent (gm.ascent), m_descent (gm.descent) {
     bb = DBounds ();
     clipBox = { 0, 0, 0, 0 };
+    origPoint = { 0, 0 };
+    awPoint = { 0, 0 };
     m_undoStack = std::unique_ptr<QUndoStack> (new QUndoStack ());
 };
 
@@ -171,9 +173,11 @@ void ConicGlyph::ttfBuildContours (int path_cnt, uint16_t *endpt, uint8_t *flags
 	    }
 	    ++i;
 	}
-	if (start==i-1) {
+	if (start==i-1 && !(flags[start]&_On_Curve)) {
 	    /* GWW: MS chinese fonts have contours consisting of a single off curve*/
 	    /*  point. What on earth do they think that means? */
+	    // AMK: I suppose this was just to mark something for TTF instructions.
+	    // But I guess it would not be a problem to turn such a point into oncurve
 	    sp = points_pool.construct ();
 	    sp->me.x = pts[start].x;
 	    sp->me.y = pts[start].y;
@@ -205,7 +209,8 @@ void ConicGlyph::ttfBuildContours (int path_cnt, uint16_t *endpt, uint8_t *flags
 	    sp->nextcpindex = start; num--;
 	}
 
-	splines_pool.construct (cur.last, cur.first, true);
+	if (cur.last && cur.first && cur.last != cur.first)
+	    splines_pool.construct (cur.last, cur.first, true);
 	cur.last = cur.first;
 	conics.push_back (cur);
     }
@@ -425,9 +430,19 @@ void ConicGlyph::readttfcompositeglyph (BoostIn &buf) {
 std::vector<uint16_t> ConicGlyph::refersTo () const {
     std::vector<uint16_t> ret;
     ret.reserve (refs.size ());
-    for (uint16_t i=0; i<refs.size (); i++)
-	ret.push_back (refs[i].GID);
+    for (auto &ref : refs)
+	ret.push_back (ref.GID);
     return ret;
+}
+
+void ConicGlyph::provideRefGlyphs (sFont *fnt, GlyphContainer *gc) {
+    for (auto &ref: refs) {
+	if (!ref.cc) {
+	    ConicGlyph *g = gc->glyph (fnt, ref.GID);
+	    g->provideRefGlyphs (fnt, gc);
+	    ref.setGlyph (g);
+	}
+    }
 }
 
 int ConicGlyph::checkRefs (uint16_t gid, uint16_t gcnt) {
@@ -462,40 +477,38 @@ int ConicGlyph::checkRefs (uint16_t gid, uint16_t gcnt) {
     return 0;
 }
 
-void ConicGlyph::provideRef (ConicGlyph *g, uint16_t refidx) {
-    assert (refidx < refs.size ());
-    refs[refidx].cc = g;
-}
-
 uint16_t ConicGlyph::getTTFPoint (uint16_t pnum, uint16_t add, BasePoint *&pt) {
+    int last = -1;
     if (!figures.empty ()) {
         std::vector<ConicPointList> &conics = figures.front ().contours;
         for (auto &spls : conics) {
             ConicPoint *sp = spls.first;
             do {
-                if ((sp->ttfindex + add) == pnum) {
+		if ((sp->ttfindex + add) == pnum) {
                     pt = &sp->me;
                     return pnum;
-                } else if (!sp->nonextcp && (sp->nextcpindex+add) == pnum) {
+                } else if (!sp->nonextcp && (sp->nextcpindex + add) == pnum) {
                     pt = &sp->nextcp;
                     return pnum;
                 }
+		last = (sp->ttfindex > sp->nextcpindex) ? sp->ttfindex : sp->nextcpindex;
                 sp = (sp->next) ? sp->next->to : nullptr;
             } while (sp && sp != spls.first);
         }
-        if (!conics.empty ()) {
-	    auto &spls = conics.back ();
-            add = (spls.last->ttfindex > spls.last->nextcpindex) ?
-                spls.last->ttfindex : spls.last->nextcpindex;
-	}
     }
+    if (add) return (add + last);
+    add += last;
 
     for (auto &ref : refs) {
-	add = ref.cc->getTTFPoint (pnum, add, pt);
+	add = ref.cc->getTTFPoint (pnum, add+1, pt);
 	if (pt)
 	    break;
     }
 
+    if (pnum == last+1)
+	pt = &this->origPoint;
+    else if (pnum == last+2)
+	pt = &this->awPoint;
     return (add);
 }
 
@@ -555,11 +568,14 @@ void ConicGlyph::unlinkRef (DrawableReference &ref) {
 
 void ConicGlyph::unlinkRefs (bool selected) {
     int lastpt = 0;
-    for (int i=this->refs.size ()-1; i>=0; i--) {
-	auto &ref = this->refs[i];
+    auto it = this->refs.begin();
+    while (it != this->refs.end()) {
+	auto &ref = *it;
 	if (ref.selected || !selected) {
 	    unlinkRef (ref);
-	    this->refs.erase (this->refs.begin () + i);
+	    it = this->refs.erase (it);
+	} else {
+	    it++;
 	}
     }
     for (auto &figure : this->figures)
@@ -660,15 +676,15 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
     } else if (refs.size ()) {
 	if (refs.size () > maxp->maxComponentElements ())
 	    maxp_contents.maxComponentElements = refs.size ();
-	for (size_t i=0; i<refs.size (); i++) {
-	    DrawableReference &ref = refs[i];
+	size_t i=1;
+	for (auto &ref : refs) {
 	    uint16_t flags = 0;
 	    int16_t arg1, arg2;
 	    if (ref.round)
 		flags |= _ROUND;
 	    if (ref.useMyMetrics ())
 		flags |= _USE_MY_METRICS;
-	    if (i<refs.size ()-1)
+	    if (i < refs.size ())
 		flags |= _MORE;			/* More components */
 	    else if (instructions.size ())	/* Composits also inherit instructions */
 		flags |= _INSTR;		/* Instructions appear after last ref */
@@ -726,6 +742,7 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
 		maxp_contents.maxCompositeContours = comp_cc;
 	    if (maxp->maxComponentDepth () < comp_dp)
 		maxp_contents.maxComponentDepth = comp_dp;
+	    i++;
 	}
         if (instructions.size ()) {
 	    uint16_t instr_cnt = instructions.size ();
@@ -2265,6 +2282,7 @@ void ConicGlyph::checkBounds (DBounds &b, bool quick, const std::array<double, 6
 void ConicGlyph::setHMetrics (int lsb, int aw) {
     m_lsb = lsb;
     m_aw = aw;
+    awPoint.x = aw;
     widthset = true;
 }
 
@@ -2282,6 +2300,7 @@ int ConicGlyph::advanceWidth () {
 
 void ConicGlyph::setAdvanceWidth (int val) {
     m_aw = val;
+    awPoint.x = m_aw;
     widthset = true;
 }
 
@@ -2299,6 +2318,10 @@ OutlinesType ConicGlyph::outlinesType () const {
 
 QUndoStack *ConicGlyph::undoStack () {
     return m_undoStack.get ();
+}
+
+void DrawableReference::setGlyph (ConicGlyph *g) {
+    this->cc = g;
 }
 
 ElementType DrawableReference::elementType () const {
@@ -2325,11 +2348,19 @@ uint16_t DrawableReference::numPoints () const {
 }
 
 uint16_t DrawableReference::depth (uint16_t val) const {
-    return (val + cc->componentDepth (val));
+    return (cc->componentDepth (val));
 }
 
 bool DrawableReference::useMyMetrics () const {
     return (use_my_metrics);
+}
+
+void DrawableReference::setFirstPointNumber (const uint16_t first) {
+    m_first_pt_num = first;
+}
+
+uint16_t DrawableReference::firstPointNumber () const {
+    return m_first_pt_num;
 }
 
 uint16_t ConicGlyph::numCompositePoints () const {
@@ -2357,7 +2388,7 @@ uint16_t ConicGlyph::numCompositeContours () const {
 uint16_t ConicGlyph::componentDepth (uint16_t val) const {
     uint16_t ret = val;
     for (auto &ref : refs) {
-	uint16_t rd = ref.depth (val);
+	uint16_t rd = ref.depth (val+1);
 	if (rd > ret)
 	    ret = rd;
     }

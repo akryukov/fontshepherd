@@ -498,7 +498,7 @@ void MoveCommand::iterateFigs (bool undo) {
 }
 
 void MoveCommand::iterateRefs (bool undo) {
-    uint16_t i, j, cnt=0;
+    uint16_t cnt=0;
     std::vector<bool> moved;
     QPointF vector = m_move;
     if (undo) vector *= -1;
@@ -506,10 +506,10 @@ void MoveCommand::iterateRefs (bool undo) {
     moved.resize (m_refs.size ());
     std::fill (moved.begin (), moved.end (), 0);
 
-    for (i=0; i<m_glyph->refs.size () && cnt<m_refs.size (); i++) {
-        DrawableReference &rg = m_glyph->refs[i];
-        for (j=0; j<m_refs.size () && cnt<m_refs.size (); j++) {
-            UniqueRef ur = {rg.transform[4], rg.transform[5], i, rg.GID};
+    for (auto it = m_glyph->refs.begin (); it != m_glyph->refs.end (); it++) {
+	auto &rg = *it;
+        for (size_t j=0; j<m_refs.size () && cnt<m_refs.size (); j++) {
+            UniqueRef ur = {rg.transform[4], rg.transform[5], rg.item->idx (), rg.GID};
             if (!moved[j] && ur == m_refs[j]) {
                 if (rg.item) {
                     rg.item->refMoved (vector);
