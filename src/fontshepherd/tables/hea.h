@@ -55,6 +55,7 @@ class HeaTable : public FontTable {
 
 public:
     HeaTable (sfntFile* fontfile, TableHeader &props);
+    HeaTable (HeaTable* source);
     ~HeaTable () {};
     void unpackData (sFont *font);
     void packData ();

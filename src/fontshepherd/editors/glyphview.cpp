@@ -84,7 +84,7 @@ bool GlyphViewContainer::showGridFit () {
 }
 
 GlyphViewContainer::GlyphViewContainer (FontView *fv, sFont &fnt, GlyphContainer *tab) :
-    QMainWindow (fv, Qt::Window), m_fv (fv), m_font (fnt), m_tab (tab) {
+    QMainWindow (fv, Qt::Window), m_fv (fv), m_font (fnt), m_tab (tab), tfp (&fnt, this) {
 
     setAttribute (Qt::WA_DeleteOnClose);
     m_ug_container = new UndoGroupContainer (this);
@@ -121,11 +121,6 @@ GlyphViewContainer::GlyphViewContainer (FontView *fv, sFont &fnt, GlyphContainer
     setInstrPalette (settings);
     setGridFitPalette (settings);
     setMenuBar ();
-
-    if (ftWrapper.hasContext ()) {
-	int idx = m_font.file_index;
-	ftWrapper.init (m_font.container->path (idx), m_font.index);
-    }
 }
 
 GlyphViewContainer::~GlyphViewContainer () {
@@ -556,13 +551,17 @@ void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type
     m_ug_container->addGroup (ug);
     //NB: no need to set this group active right here, as switchToTab () will take care of it
 
+    if (tfp.valid ()) {
+	tfp.appendOrReloadGlyph (gctx.gid ());
+	tfp.compile ();
+	ftWrapper.init (&tfp);
+    }
     GlyphScene *scene = new GlyphScene (m_font, ftWrapper, gctx, content_type);
     gctx.appendScene (scene);
 
     GlyphView *view = new GlyphView (scene, m_figPalContainer, m_instrEditContainer, gctx, this);
     int idx = m_glyphAreaContainer->addTab (view, gctx.name ());
     m_glyphAreaContainer->setCurrentIndex (idx);
-
     m_tabmap[gctx.gid ()] = idx;
 
     int base_w = g->isEmpty () ? g->advanceWidth () : g->bb.maxx - g->bb.minx;
@@ -589,11 +588,14 @@ void GlyphViewContainer::addGlyph (GlyphContext &gctx, OutlinesType content_type
 	disconnect (gscene, &GlyphScene::mousePointerMoved, this, &GlyphViewContainer::showMousePointerPos);
         disconnect (m_palActions, &QActionGroup::triggered, gv, &GlyphView::toolSelected);
         disconnect (m_switchOutlineActions, &QActionGroup::triggered, gv, &GlyphView::on_switchOutlines);
+	disconnect (gv, &GlyphView::requestUpdateGridFit, this, &GlyphViewContainer::updateGridFitActive);
     }
     connect (scene, &QGraphicsScene::selectionChanged, this, &GlyphViewContainer::checkSelection);
     connect (scene, &GlyphScene::mousePointerMoved, this, &GlyphViewContainer::showMousePointerPos);
     connect (m_palActions, &QActionGroup::triggered, view, &GlyphView::toolSelected);
     connect (m_switchOutlineActions, &QActionGroup::triggered, view, &GlyphView::on_switchOutlines);
+    connect (view, &GlyphView::requestUpdateGridFit, this, &GlyphViewContainer::updateGridFitActive);
+
     scene->installEventFilter (this);
 
     m_defaultPaletteToolAction->setChecked (true);
@@ -652,11 +654,13 @@ void GlyphViewContainer::switchToTab (int index) {
 	disconnect (gscene, &GlyphScene::mousePointerMoved, this, &GlyphViewContainer::showMousePointerPos);
         disconnect (m_palActions, &QActionGroup::triggered, gv, &GlyphView::toolSelected);
         disconnect (m_switchOutlineActions, &QActionGroup::triggered, gv, &GlyphView::on_switchOutlines);
+	disconnect (gv, &GlyphView::requestUpdateGridFit, this, &GlyphViewContainer::updateGridFitActive);
     }
     connect (act_scene, &QGraphicsScene::selectionChanged, this, &GlyphViewContainer::checkSelection);
     connect (act_scene, &GlyphScene::mousePointerMoved, this, &GlyphViewContainer::showMousePointerPos);
     connect (m_palActions, &QActionGroup::triggered, active, &GlyphView::toolSelected);
     connect (m_switchOutlineActions, &QActionGroup::triggered, active, &GlyphView::on_switchOutlines);
+    connect (active, &GlyphView::requestUpdateGridFit, this, &GlyphViewContainer::updateGridFitActive);
 
     QAction *vAction = active->activeAction ();
     if (!vAction)
@@ -729,6 +733,23 @@ void GlyphViewContainer::switchToGlyph (const uint16_t gid, OutlinesType ctype) 
         svgSwitchAction->trigger ();
 }
 
+void GlyphViewContainer::updateGridFit () {
+    if (tfp.valid ()) {
+	tfp.reloadGlyphs ();
+	tfp.compile ();
+	ftWrapper.init (&tfp);
+    }
+}
+
+void GlyphViewContainer::updateGridFitActive () {
+    GlyphView *active = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    if (active->outlinesType () == OutlinesType::TT) {
+	tfp.appendOrReloadGlyph (active->gid ());
+	tfp.compile ();
+	ftWrapper.init (&tfp);
+    }
+}
+
 void GlyphViewContainer::reallyCloseGlyphTab (int idx) {
     GlyphView *gv = qobject_cast<GlyphView*> (m_glyphAreaContainer->widget (idx));
     GlyphScene *gscene = qobject_cast<GlyphScene *> (gv->scene ());
@@ -738,6 +759,7 @@ void GlyphViewContainer::reallyCloseGlyphTab (int idx) {
     disconnect (gscene, &GlyphScene::mousePointerMoved, this, &GlyphViewContainer::showMousePointerPos);
     disconnect (m_palActions, &QActionGroup::triggered, gv, &GlyphView::toolSelected);
     disconnect (m_switchOutlineActions, &QActionGroup::triggered, gv, &GlyphView::on_switchOutlines);
+    disconnect (gv, &GlyphView::requestUpdateGridFit, this, &GlyphViewContainer::updateGridFitActive);
 
     QWidget *pal_tab = m_figPalContainer->widget (idx);
     m_figPalContainer->removeWidget (pal_tab);
@@ -818,6 +840,7 @@ void GlyphViewContainer::checkSelection () {
 }
 
 void GlyphViewContainer::save () {
+    m_fv->save ();
 }
 
 void GlyphViewContainer::close () {
@@ -1604,7 +1627,9 @@ void GlyphView::on_instrChanged () {
     if (outlinesType () == OutlinesType::TT) {
 	ConicGlyph *g = m_context.glyph (OutlinesType::TT);
 	g->instructions = m_instrEdit->data ();
-	g->setModified (true);
+	m_context.setGlyphChanged (true);
+	emit (requestUpdateGridFit ());
+	scene ()->update ();
     }
 }
 

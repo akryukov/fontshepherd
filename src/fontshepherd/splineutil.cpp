@@ -4574,7 +4574,9 @@ void DrawableFigure::toQuadratic (double fudge) {
 	    } else
 		sp = nullptr;
         } while (sp && sp != spls.first);
-	spls.reverse ();
+	// Used to reverse spline direction when converting to quadratic, but what if it was
+	// already quadratic?
+	//spls.reverse ();
     }
     roundToInt (false);
 }

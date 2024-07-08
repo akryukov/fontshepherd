@@ -44,6 +44,8 @@ struct freetype_raster {
     freetype_raster (): valid (false), rows (0), cols(0), as(0), lb(0), bytes_per_row(0), num_grays(0) {}
 };
 
+class TinyFontProvider;
+
 class FTWrapper {
     Q_DECLARE_TR_FUNCTIONS (FTWrapper);
 
@@ -61,6 +63,8 @@ public:
 
     void init (const char* filename, int idx);
     void init (const QString &fpath, int idx);
+    void init (TinyFontProvider *tfp);
+
     int setPixelSize (int xsize, int ysize);
     struct freetype_raster gridFitGlyph (uint16_t gid, uint16_t flags, QPainterPath *p);
     bool hasContext ();
@@ -73,6 +77,7 @@ private:
     bool m_hasContext, m_hasFace;
     FT_Library m_context;
     FT_Face m_aface;
+    TinyFontProvider *m_tfp;
 };
 
 #endif

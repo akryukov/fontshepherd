@@ -89,23 +89,27 @@ int ttffont::tableCount () const {
     return static_cast<int> (tbls.size ());
 }
 
-uint16_t sfntFile::getushort (QFile *f) {
+uint16_t sfntFile::getushort (QIODevice *f) {
     char ch[2] = { 0 };
     if ((f->read (ch, 2)) < 0) {
-        throw FileDamagedException (f->fileName ().toStdString());
+	QFile *qf = qobject_cast<QFile *> (f);
+	std::string path = qf ? qf->fileName ().toStdString() : "<IO Device>";
+        throw FileDamagedException (path);
     }
     return (((uint8_t) ch[0]<<8)|(uint8_t) ch[1]);
 }
 
-uint32_t sfntFile::getlong (QFile *f) {
+uint32_t sfntFile::getlong (QIODevice *f) {
     char ch[4] = { 0 };
     if ((f->read (ch, 4)) < 0) {
-        throw FileDamagedException (f->fileName ().toStdString());
+	QFile *qf = qobject_cast<QFile *> (f);
+	std::string path = qf ? qf->fileName ().toStdString() : "<IO Device>";
+        throw FileDamagedException (path);
     }
     return (((uint8_t) ch[0]<<24)|((uint8_t) ch[1]<<16)|((uint8_t) ch[2]<<8)|(uint8_t) ch[3]);
 }
 
-double sfntFile::getfixed (QFile *f) {
+double sfntFile::getfixed (QIODevice *f) {
     uint32_t val = getlong (f);
     int mant = val&0xffff;
     /* GWW: This oddity may be needed to deal with the first 16 bits being signed */
@@ -116,14 +120,14 @@ double sfntFile::getfixed (QFile *f) {
 /* GWW: In table version numbers, the high order nibble of mantissa is in bcd, not hex */
 /* I've no idea whether the lower order nibbles should be bcd or hex */
 /* But let's assume some consistancy... */
-double sfntFile::getvfixed (QFile *f) {
+double sfntFile::getvfixed (QIODevice *f) {
     uint32_t val = getlong (f);
     int mant = val&0xffff;
     mant = ((mant&0xf000)>>12)*1000 + ((mant&0xf00)>>8)*100 + ((mant&0xf0)>>4)*10 + (mant&0xf);
     return ((double) (val>>16) + (mant/10000.0));
 }
 
-double sfntFile::get2dot14 (QFile *f) {
+double sfntFile::get2dot14 (QIODevice *f) {
     uint16_t val = getushort (f);
     int mant = val&0x3fff;
     /* GWW: This oddity may be needed to deal with the first 2 bits being signed */
@@ -131,19 +135,19 @@ double sfntFile::get2dot14 (QFile *f) {
     return ((double) ((val<<16)>>(16+14)) + (mant/16384.0));
 }
 
-void sfntFile::putushort (QFile *f, uint16_t val) {
+void sfntFile::putushort (QIODevice *f, uint16_t val) {
     f->putChar (val>>8);
     f->putChar (val&0xff);
 }
 
-void sfntFile::putlong (QFile *f, uint32_t val) {
+void sfntFile::putlong (QIODevice *f, uint32_t val) {
     f->putChar (val>>24);
     f->putChar ((val>>16)&0xff);
     f->putChar ((val>>8)&0xff);
     f->putChar (val&0xff);
 }
 
-void sfntFile::put2d14 (QFile *f, double dval) {
+void sfntFile::put2d14 (QIODevice *f, double dval) {
     uint16_t val, mant;
 
     val = floor (dval);
@@ -152,7 +156,7 @@ void sfntFile::put2d14 (QFile *f, double dval) {
     putushort (f, val);
 }
 
-uint32_t sfntFile::fileCheck (QFile *f) {
+uint32_t sfntFile::fileCheck (QIODevice *f) {
     uint32_t sum = 0, chunk;
 
     f->seek (0);
@@ -165,7 +169,7 @@ uint32_t sfntFile::fileCheck (QFile *f) {
     return (sum);
 }
 
-uint32_t sfntFile::figureCheck (QFile *f, uint32_t start, uint32_t lcnt) {
+uint32_t sfntFile::figureCheck (QIODevice *f, uint32_t start, uint32_t lcnt) {
     uint32_t sum = 0, chunk;
 
     f->seek (start);
@@ -395,7 +399,7 @@ void sfntFile::readTtcfHeader (QFile *f, int file_idx) {
         throw FileLoadCanceledException (f->fileName ().toStdString());
 }
 
-void sfntFile::dumpFontHeader (QFile *newf, sFont *fnt) {
+void sfntFile::dumpFontHeader (QIODevice *newf, sFont *fnt) {
     int bit, i;
     int tbl_cnt = fnt->tableCount ();
     FontTable *tab;
@@ -416,17 +420,17 @@ void sfntFile::dumpFontHeader (QFile *newf, sFont *fnt) {
     }
 }
 
-void sfntFile::dumpFontTables (QFile *newf) {
+void sfntFile::dumpFontTables (QIODevice *newf, std::vector<sFont *> fonts) {
     int cnt;
-    int font_cnt = m_fonts.size ();
+    int font_cnt = fonts.size ();
     FontTable *tab;
     std::vector<std::shared_ptr<FontTable>> ordered;
 
     for (int i=cnt=0; i<font_cnt; ++i)
-        cnt += m_fonts[i]->tableCount ();
+        cnt += fonts[i]->tableCount ();
     ordered.reserve (cnt);
     for (int i=0; i<font_cnt; ++i) {
-	sFont *fnt = m_fonts[i].get ();
+	sFont *fnt = fonts[i];
         for (int j=0; j<fnt->tableCount (); ++j) {
 	    tab = fnt->tbls[j].get ();
 	    if (!tab->inserted) {
@@ -482,15 +486,15 @@ void sfntFile::dumpFontTables (QFile *newf) {
     }
 }
 
-void sfntFile::fntWrite (QFile *newf, sFont *fnt) {
+void sfntFile::fntWrite (QIODevice *newf, sFont *fnt) {
     fnt->version_pos = newf->pos ();
     dumpFontHeader (newf, fnt);		/* Placeholder */
-    dumpFontTables (newf);
+    dumpFontTables (newf, { fnt });
     newf->seek (fnt->version_pos);
     dumpFontHeader (newf, fnt);		/* Filling with correct values now we know them */
 }
 
-void sfntFile::ttcWrite (QFile *newf) {
+void sfntFile::ttcWrite (QIODevice *newf) {
     int32_t pos;
     int i;
     int font_cnt = m_fonts.size ();
@@ -509,8 +513,12 @@ void sfntFile::ttcWrite (QFile *newf) {
     newf->seek (3*sizeof (int32_t));
     for (i=0; i<font_cnt; ++i)
 	putlong (newf, m_fonts[i]->version_pos);/* GWW: Fill in first set of placeholders */
+
     newf->seek (pos);
-    dumpFontTables (newf);
+    std::vector<sFont *> fnt_raw (m_fonts.size ());
+    for (auto &fptr : m_fonts) fnt_raw.push_back (fptr.get ());
+    dumpFontTables (newf, fnt_raw);
+
     newf->seek (m_fonts[0]->version_pos);
     for (i=0; i<font_cnt; ++i) {
 	sFont *fnt = m_fonts[i].get ();

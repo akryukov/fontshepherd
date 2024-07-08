@@ -57,6 +57,7 @@ typedef struct ttffont {
 } sFont;
 
 class sfntFile {
+    friend class TinyFontProvider;
 public:
     sfntFile (const QString &path, QWidget *w);
     ~sfntFile ();
@@ -72,17 +73,23 @@ public:
     int tableRefCount (FontTable *tbl);
 
 private:
-    static uint16_t getushort (QFile *f);
-    static uint32_t getlong (QFile *f);
-    static double getfixed (QFile *f);
-    static double getvfixed (QFile *f);
-    static double get2dot14 (QFile *f);
+    static uint16_t getushort (QIODevice *f);
+    static uint32_t getlong (QIODevice *f);
+    static double getfixed (QIODevice *f);
+    static double getvfixed (QIODevice *f);
+    static double get2dot14 (QIODevice *f);
 
-    static void putushort (QFile *f, uint16_t val);
-    static void putlong (QFile *f, uint32_t val);
-    static void put2d14 (QFile *f, double dval);
-    static uint32_t fileCheck (QFile *f);
-    static uint32_t figureCheck (QFile *f, uint32_t start, uint32_t lcnt);
+    static void putushort (QIODevice *f, uint16_t val);
+    static void putlong (QIODevice *f, uint32_t val);
+    static void put2d14 (QIODevice *f, double dval);
+    static uint32_t fileCheck (QIODevice *f);
+    static uint32_t figureCheck (QIODevice *f, uint32_t start, uint32_t lcnt);
+
+    static void dumpFontHeader (QIODevice *newf, sFont *fnt);
+    static void dumpFontTables (QIODevice *newf, std::vector<sFont *> fonts);
+    static void fntWrite (QIODevice *newf, sFont *fnt);
+
+    void ttcWrite (QIODevice *newf);
 
     bool checkFSType (sFont *tf);
     QString getFontName (sFont *tf);
@@ -95,10 +102,6 @@ private:
     void readSfntHeader (QFile *f, int file_idx);
     void readTtcfHeader (QFile *f, int file_idx);
 
-    void dumpFontHeader (QFile *newf, sFont *fnt);
-    void dumpFontTables (QFile *newf);
-    void fntWrite (QFile *newf, sFont *fnt);
-    void ttcWrite (QFile *newf);
     QFile *makeBackup (QFile *origf);
     void restoreFromBackup (QFile *target, QFile *source, int backidx);
 

@@ -28,8 +28,14 @@
 #include <QtGlobal>
 #include <QImage>
 #include <QPainterPath>
+
+#include "tables.h"
+#include "tables/glyphcontainer.h" // also includes splineglyph.h
+#include "tables/glyf.h"
+#include "editors/tinyfont.h"
 #include "fs_notify.h"
 #include "ftwrapper.h"
+
 #include <freetype/tttables.h>
 #include FT_OUTLINE_H
 #include FT_MODULE_H
@@ -75,7 +81,7 @@ int FTWrapper::cubicToFunction (const FT_Vector *c1, const FT_Vector *c2, const 
 }
 
 
-FTWrapper::FTWrapper () : m_hasContext (false), m_hasFace (false) {
+FTWrapper::FTWrapper () : m_hasContext (false), m_hasFace (false), m_tfp (nullptr) {
     int err = FT_Init_FreeType (&m_context);
     if (!err) m_hasContext = true;
 
@@ -132,6 +138,26 @@ void FTWrapper::init (const QString &fpath, int idx) {
     }
 }
 
+void FTWrapper::init (TinyFontProvider *tfp) {
+    m_tfp = tfp;
+    if (m_tfp && m_hasContext) {
+	if (m_hasFace)
+	    FT_Done_Face (m_aface);
+
+	const uint8_t *buf = reinterpret_cast<const uint8_t *> (m_tfp->fontData ());
+	size_t size = m_tfp->fontDataSize ();
+	int err = FT_New_Memory_Face (m_context, buf, size, 0, &m_aface);
+
+	if (err) {
+	    FontShepherd::postError (
+		tr ("Could not create tiny font: freetype error %1 occured").arg (err)
+	    );
+	    FT_Done_Face (m_aface);
+	} else
+	    m_hasFace = true;
+    }
+}
+
 int FTWrapper::setPixelSize (int xsize, int ysize) {
     int ret = FT_Set_Pixel_Sizes (m_aface, xsize, ysize);
     if (ret)
@@ -144,9 +170,10 @@ int FTWrapper::setPixelSize (int xsize, int ysize) {
 struct freetype_raster FTWrapper::gridFitGlyph (uint16_t gid, uint16_t flags, QPainterPath *p) {
     struct freetype_raster ret;
 
-    if (FT_Load_Glyph (m_aface, gid, flags)) {
+    uint16_t real_gid = m_tfp ? m_tfp->gidCorr (gid) : gid;
+    if (FT_Load_Glyph (m_aface, real_gid, flags)) {
         FontShepherd::postError (
-	    tr ("Missing glyph: could not load glyph %1").arg (gid)
+	    tr ("Missing glyph: could not load glyph %1").arg (real_gid)
 	);
         return ret;
     }
@@ -176,7 +203,7 @@ struct freetype_raster FTWrapper::gridFitGlyph (uint16_t gid, uint16_t flags, QP
 
     if (p && FT_Outline_Decompose (&outline, &callbacks, p)) {
         FontShepherd::postError (
-	    tr ("Missing glyph: could not decompose outline for %1").arg (gid)
+	    tr ("Missing glyph: could not decompose outline for %1").arg (real_gid)
 	);
     }
     return ret;

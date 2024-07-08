@@ -55,6 +55,7 @@ FontTable::FontTable (FontTable* table) {
     len = table->len;
     newlen = table->newlen == 0 ? table->len : table->newlen;
     oldchecksum = table->oldchecksum;
+    tv = nullptr;
 
     if (table->data) {
         data = new char[(newlen+3)&~3]; // padding to uint32

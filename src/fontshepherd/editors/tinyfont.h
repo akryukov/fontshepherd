@@ -24,61 +24,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE. */
 
-#include <QtGlobal>
-#include <ctime>
+#include <QtWidgets>
+#include "tables.h" // Have to load it here due to inheritance from TableEdit
+#include "sfnt.h"
 
+class sfntFile;
+typedef struct ttffont sFont;
+class FontTable;
+class GlyfTable;
+class GlyphContainer;
 class ConicGlyph;
 
-struct maxp_data {
-    double version;
-    uint16_t numGlyphs = 0;
-    uint16_t maxPoints = 0;
-    uint16_t maxContours = 0;
-    uint16_t maxCompositePoints = 0;
-    uint16_t maxCompositeContours = 0;
-    uint16_t maxZones = 0;
-    uint16_t maxTwilightPoints = 0;
-    uint16_t maxStorage = 0;
-    uint16_t maxFunctionDefs = 0;
-    uint16_t maxInstructionDefs = 0;
-    uint16_t maxStackElements = 0;
-    uint16_t maxSizeOfInstructions = 0;
-    uint16_t maxComponentElements = 0;
-    uint16_t maxComponentDepth = 0;
-};
-
-class FontTable;
-class MaxpEdit;
-
-class MaxpTable : public FontTable {
-    friend class ConicGlyph;
-    friend class MaxpEdit;
+class TinyFontProvider {
 public:
-    MaxpTable (sfntFile* fontfile, TableHeader &props);
-    MaxpTable (MaxpTable* source);
-    ~MaxpTable () {};
-    void unpackData (sFont *font);
-    void packData ();
-    void edit (sFont* fnt, std::shared_ptr<FontTable> tptr, QWidget* caller);
+    TinyFontProvider (sFont* font, QWidget *parent);
+    ~TinyFontProvider () {};
 
-    void setGlyphCount (uint16_t cnt);
+    uint16_t appendOrReloadGlyph (uint16_t gid);
+    void reloadGlyphs ();
+    void compile ();
 
-    double version () const;
-    uint16_t numGlyphs () const;
-    uint16_t maxPoints () const;
-    uint16_t maxContours () const;
-    uint16_t maxCompositePoints () const;
-    uint16_t maxCompositeContours () const;
-    uint16_t maxZones () const;
-    uint16_t maxTwilightPoints () const;
-    uint16_t maxStorage () const;
-    uint16_t maxFunctionDefs () const;
-    uint16_t maxInstructionDefs () const;
-    uint16_t maxStackElements () const;
-    uint16_t maxSizeOfInstructions () const;
-    uint16_t maxComponentElements () const;
-    uint16_t maxComponentDepth () const;
+    const char *fontData () const;
+    uint32_t fontDataSize () const;
+    uint16_t gidCorr (uint16_t gid) const;
+    bool valid () const;
 
 private:
-    struct maxp_data contents;
+    void prepare ();
+
+    bool m_valid;
+    sFont* m_origFont;
+    QWidget *m_widget;
+    GlyfTable *m_origContainer;
+    sFont m_font;
+    std::map<uint16_t, uint16_t> m_gidCorr;
+    QByteArray ba;
 };

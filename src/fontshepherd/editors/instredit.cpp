@@ -768,6 +768,11 @@ void InstrEdit::edit () {
 	    FontShepherd::postError (tr ("TTF Instructions compile error"),
 		tr ("Unexpected character"), this);
 	    break;
+	  case TTFinstrs::Parse_UnexpectedEnd:
+	    set_cursor (m_edit, sel_start, sel_len);
+	    FontShepherd::postError (tr ("TTF Instructions compile error"),
+		tr ("Unexpected end of the font program"), this);
+	    break;
 	  default:
 	    set_cursor (m_edit, sel_start, sel_len);
 	    FontShepherd::postError (tr ("TTF Instructions compile error"),
@@ -793,6 +798,8 @@ static void skip_space (std::string &edited, size_t &pos) {
 
 int InstrEdit::getInstrArgs (std::vector<std::string> &args, std::string &edited, size_t &pos, int &start, int &len) {
     skip_space (edited, pos);
+    if (pos >= edited.length ())
+	return TTFinstrs::Parse_OK;
     char left = edited[pos];
     if (left != '[' && left != '(')
 	return TTFinstrs::Parse_OK;
@@ -842,7 +849,6 @@ int InstrEdit::parse (std::string &edited, std::vector<instr_data> &instr_lst, i
     size_t len = edited.length ();
     int nums_needed = 0;
     while (pos < len) {
-	skip_space (edited, pos);
 	uint8_t code = edited[pos];
 	if (std::isalpha (code)) {
 	    int len = 0;
@@ -935,6 +941,8 @@ int InstrEdit::parse (std::string &edited, std::vector<instr_data> &instr_lst, i
 	    d.toolTip = tooltip;
 	    d.nPushes = 0;
 	    d.repr = "  " + std::to_string (code);
+	} else if (std::isspace (code)) {
+	    pos++;
 	} else {
 	    sel_start = pos;
 	    sel_len = 1;

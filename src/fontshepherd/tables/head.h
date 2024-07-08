@@ -56,6 +56,7 @@ class HeadTable : public FontTable {
 
 public:
     HeadTable (sfntFile* fontfile, TableHeader &props);
+    HeadTable (HeadTable* source);
     ~HeadTable () {};
     void unpackData (sFont *font);
     void packData ();

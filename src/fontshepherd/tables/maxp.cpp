@@ -38,6 +38,10 @@ MaxpTable::MaxpTable (sfntFile *fontfile, TableHeader &props) :
     contents = {};
 }
 
+MaxpTable::MaxpTable (MaxpTable* source) : FontTable (source) {
+    contents = source->contents;
+}
+
 void MaxpTable::unpackData (sFont*) {
     uint32_t pos = 0;
     this->fillup ();

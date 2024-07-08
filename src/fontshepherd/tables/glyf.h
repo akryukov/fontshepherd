@@ -36,6 +36,7 @@ public:
     GlyfTable (sfntFile* fontfile, TableHeader &props);
     ~GlyfTable ();
     void unpackData (sFont *font);
+    void setLoca (sFont *font);
     void packData ();
     ConicGlyph* glyph (sFont* fnt, uint16_t gid);
     uint16_t addGlyph (sFont* fnt, uint8_t subfont=0);

@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE. */
 
 #include <QtWidgets>
+#include "tinyfont.h"
 #include "ftwrapper.h"
 
 #define RULER_BREADTH 24
@@ -227,6 +228,9 @@ public:
     void doHintMasksUpdate (sFont &fnt);
     void doClearHints ();
 
+signals:
+    void requestUpdateGridFit ();
+
 public slots:
     void toolSelected (QAction *action);
     void on_switchOutlines (QAction *action);
@@ -294,6 +298,9 @@ public slots:
     void switchToTab (int index);
     void showMousePointerPos (QPointF pos);
     void closeGlyphTab (int);
+
+    void updateGridFit ();
+    void updateGridFitActive ();
 
 private slots:
     void copyRequest ();
@@ -385,6 +392,7 @@ private:
     static bool m_showPoints, m_showControlPoints, m_showPointNumbering, m_showExtrema, m_showFill;
     static bool m_showHints, m_showBlues, m_showFamilyBlues, m_showGridFit;
     static bool m_settingsDone;
+    TinyFontProvider tfp;
     FTWrapper ftWrapper;
 
     UndoGroupContainer *m_ug_container;

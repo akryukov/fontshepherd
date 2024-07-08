@@ -905,7 +905,18 @@ void ConicGlyph::svgDumpHints (std::stringstream &ss) {
 	    }
 	    ss << "/>\n";
 	}
+	break;
       case OutlinesType::TT:
+	if (!instructions.empty ()) {
+	    ss << "    <fsh:tt-instrs fsh:bytecode=\"";
+	    std::stringstream hexbuf;
+	    hexbuf << std::uppercase << std::setfill ('0') << std::hex;
+	    for (uint8_t code : instructions) {
+		hexbuf << std::setw (2) << (int) code;
+	    }
+	    ss << hexbuf.str () << "\" />\n";
+	}
+	break;
       default:
 	;
     }
@@ -1570,7 +1581,7 @@ void ConicGlyph::svgParsePath (DrawableFigure &fig, const std::string &d) {
 // inverted spline direction, as we are going to inverte all y-coordinates
 // later in order to compensate for the SVG coordinate system.
 // However, this inversion is not needed if we are drawing an ellipse
-// in the graphics scene nd then immedately converting it to a path
+// in the graphics scene and then immedately converting it to a path
 void ConicGlyph::svgParseEllipse (DrawableFigure &fig, bool inv) {
     double cx, cy, rx, ry;
     ConicPoint *sp;
@@ -1877,7 +1888,7 @@ void ConicGlyph::svgProcessNode (
 
         fig.type = name;
         fig.svgState = newstate;
-	fig.order2 = false;
+	fig.order2 = (m_outType == OutlinesType::TT) ? true : false;
         if (name.compare ("path") == 0) {
             pugi::xml_attribute d_attr = root.attribute ("d");
             pugi::xml_attribute pp_attr = root.attribute ("fsh:point-properties");
@@ -2064,6 +2075,17 @@ void ConicGlyph::svgProcessNode (
 		countermasks.push_back (cm);
 	    }
 	}
+    } else if (name.compare ("fsh:tt-instrs") == 0) {
+        pugi::xml_attribute bc_attr = root.attribute ("fsh:bytecode");
+	if (bc_attr) {
+	    std::string hex = bc_attr.value ();
+	    instructions.reserve (hex.length ()/2);
+	    for (size_t i=0; i<hex.length (); i+=2) {
+		std::string bstr = hex.substr (i, 2);
+		uint8_t code = (uint8_t) strtol (bstr.c_str (), NULL, 16);
+		instructions.push_back (code);
+	    }
+	}
     }
 }
 
@@ -2180,9 +2202,9 @@ bool ConicGlyph::fromSVG (pugi::xml_document &doc, int g_idx, DrawableFigure *ta
     if (figures.empty ())
         target = nullptr;
 
-    if ((int) match.size () <= g_idx)
+    if ((int) match.size () <= g_idx) {
         return false;
-    else if (g_idx < 0 && match.size () > 0) {
+    } else if (g_idx < 0 && match.size () > 0) {
         root = match[0].node ();
         svgProcessNode (doc, root, trans, state);
     } else if (g_idx >=0) {

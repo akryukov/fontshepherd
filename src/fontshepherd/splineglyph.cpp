@@ -104,6 +104,7 @@ void ConicGlyph::clear () {
     countermasks.clear ();
     hstem.clear ();
     vstem.clear ();
+    instructions.clear ();
 }
 
 static void attachControls (ConicPoint *from, ConicPoint *to, BasePoint *cp, int &num) {
@@ -643,7 +644,7 @@ uint32_t ConicGlyph::toTTF (QBuffer &buf, QDataStream &os, MaxpTable *maxp) {
     if (figures.size ()) {
 	std::vector<int16_t> x_coords;
 	std::vector<int16_t> y_coords;
-	std::vector<uint8_t>  flags;
+	std::vector<uint8_t> flags;
 
 	uint16_t ptcnt = figures.front ().toCoordList (x_coords, y_coords, flags, GID);
 	if (ptcnt > maxp->maxPoints ())
@@ -2513,6 +2514,8 @@ bool ConicGlyph::simplify (bool selected) {
     bool ret = false;
     for (auto &fig : figures)
 	ret |= fig.simplify (selected, units_per_em);
+    if (ret)
+	renumberPoints ();
     return ret;
 }
 
@@ -2520,6 +2523,8 @@ bool ConicGlyph::correctDirection (bool) {
     bool ret = false;
     for (auto &fig : figures)
 	ret |= fig.correctDirection ();
+    if (ret)
+	renumberPoints ();
     return ret;
 }
 

@@ -42,18 +42,22 @@ GlyfTable::GlyfTable (sfntFile *fontfile, TableHeader &props) :
 GlyfTable::~GlyfTable () {
 }
 
+void GlyfTable::setLoca (sFont *font) {
+    m_loca = std::dynamic_pointer_cast<LocaTable> (font->sharedTable (CHR ('l','o','c','a')));
+    if (m_loca) {
+	m_loca->fillup ();
+	m_loca->unpackData (font);
+    }
+}
+
 void GlyfTable::unpackData (sFont *font) {
     if (td_loaded)
         return;
     GlyphContainer::unpackData (font);
+    setLoca (font);
 
-    m_loca = std::dynamic_pointer_cast<LocaTable> (font->sharedTable (CHR ('l','o','c','a')));
-    if (!m_loca)
-        return;
-
-    m_loca->fillup ();
-    m_loca->unpackData (font);
-    td_loaded = true;
+    if (m_loca)
+	td_loaded = true;
 }
 
 void GlyfTable::packData () {
@@ -134,6 +138,8 @@ void LocaTable::unpackData (sFont *font) {
         return;
     m_head->fillup ();
     m_head->unpackData (font);
+    if (is_new)
+	return;
     bool is_long = m_head->indexToLocFormat ();
     shift = is_long ? 4 : 2;
     offsets.reserve (font->glyph_cnt+1);
@@ -149,6 +155,7 @@ void LocaTable::unpackData (sFont *font) {
         offsets.push_back (off);
         pos += shift;
     }
+    td_loaded = true;
 }
 
 void LocaTable::packData () {

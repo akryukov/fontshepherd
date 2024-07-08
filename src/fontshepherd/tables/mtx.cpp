@@ -50,6 +50,8 @@ void HmtxTable::unpackData (sFont *font) {
         return;
     m_hhea->fillup ();
     m_hhea->unpackData (font);
+    if (is_new || td_loaded)
+	return;
 
     m_lbearings.resize (font->glyph_cnt);
     m_widths.resize (font->glyph_cnt);

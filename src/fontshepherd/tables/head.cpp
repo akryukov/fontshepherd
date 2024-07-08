@@ -39,6 +39,10 @@ HeadTable::HeadTable (sfntFile *fontfile, TableHeader &props) :
     contents = {};
 }
 
+HeadTable::HeadTable (HeadTable* source) : FontTable (source) {
+    contents = source->contents;
+}
+
 void HeadTable::unpackData (sFont*) {
     uint32_t pos = 0, date1, date2;
     this->fillup ();

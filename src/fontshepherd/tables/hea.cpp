@@ -37,6 +37,10 @@ HeaTable::HeaTable (sfntFile *fontfile, TableHeader &props) :
     contents = {};
 }
 
+HeaTable::HeaTable (HeaTable* source) : FontTable (source) {
+    contents = source->contents;
+}
+
 void HeaTable::unpackData (sFont*) {
     uint32_t pos = 0;
     this->fillup ();

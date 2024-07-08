@@ -52,6 +52,7 @@ class FontTable {
     friend class TableViewModel;
     friend class sfntFile;
     friend class HexTableEdit;
+    friend class TinyFontProvider;
 
 public:
     FontTable (sfntFile* fontfile, const TableHeader &props);

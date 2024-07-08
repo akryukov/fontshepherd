@@ -519,6 +519,7 @@ class ConicGlyph {
     friend class CffTable;
     friend class SvgTable;
     friend class ColrTable;
+    friend class TinyFontProvider;
 
 public:
     ConicGlyph (uint16_t gid, BaseMetrics gm);

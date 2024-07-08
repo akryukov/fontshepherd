@@ -1005,6 +1005,8 @@ void FontView::save () {
 	hmtx->packData ();
     }
     m_gcount_changed = false;
+    if (m_gv)
+	m_gv->updateGridFit ();
     emit update (m_gc_table);
 }
 
