@@ -367,6 +367,7 @@ typedef struct conicpointlist {
 
     void nearlyHvLines (extended_t err);
     void startToExtremum ();
+    bool startToPoint (ConicPoint *nst);
     void removeStupidControlPoints ();
     bool smoothControlPoints (extended_t tan_bounds, bool vert_check);
 } ConicPointList;
@@ -423,6 +424,8 @@ public:
     bool roundToInt (bool selected);
     bool correctDirection ();
     bool simplify (bool selected, int upm);
+
+    bool startToPoint (ConicPoint *nst);
 
     //DrawableFigure& operator=(const DrawableFigure &fig);
 

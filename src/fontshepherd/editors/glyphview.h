@@ -125,12 +125,44 @@ public:
     void mouseMoveEvent (QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent (QGraphicsSceneMouseEvent *event);
     void keyPressEvent (QKeyEvent * keyEvent);
+    void contextMenuEvent (QGraphicsSceneContextMenuEvent *event);
 
     void setActiveTool (GVPaletteTool active);
     GVPaletteTool activeTool ();
 
     void switchOutlines (OutlinesType val);
     OutlinesType outlinesType ();
+
+    void doCopyClear (bool copy, bool clear);
+    void setSelPointsType (enum pointtype ptype);
+
+public slots:
+    void clearSelection ();
+    void selectAll ();
+
+    void ptCornerRequest ();
+    void ptCurvedRequest ();
+    void ptTangentRequest ();
+    void setSelPointFirst ();
+    void copyRequest ();
+    void cutRequest ();
+    void clearRequest ();
+    void doPaste ();
+    void doMerge ();
+
+    void doJoin ();
+    void doUnlinkRefs ();
+
+    void doExtrema ();
+    void doSimplify ();
+    void doRound ();
+    void doOverlap ();
+    void doDirection ();
+    void doReverse ();
+
+    void doAutoHint (sFont &fnt);
+    void doHintMasksUpdate (sFont &fnt);
+    void doClearHints ();
 
 signals:
     void mousePointerMoved (QPointF pos);
@@ -142,8 +174,14 @@ signals:
     void activePanelChanged (const int pos);
 
 private:
+    void undoableCommand (bool (ConicGlyph::*fn)(bool), const char *undo_lbl);
+
     void moveSelected (QPointF move);
     void checkMovable (GlyphChangeCommand *ucmd);
+    void checkSelection ();
+
+    uint16_t numSelectedRefs ();
+    uint16_t numSelectedFigs ();
 
     // Position where the previous mouse move event occured. Comparing this
     // with the current position we can calculate the shift and apply it to
@@ -162,7 +200,7 @@ private:
     GlyphContext &m_context;
     OutlinesType m_outlines_type;
     bool m_dragValid;
-    QGraphicsItem *m_grabber;
+    QGraphicsItem *m_grabber, *m_contextGrabber;
     bool m_hasChanges;
     QUndoCommand *m_undoCmd;
     GVPaletteTool m_activeTool;
@@ -172,6 +210,12 @@ private:
     std::unique_ptr<QGraphicsRectItem> m_addRect;
     QGraphicsItem *m_rootItem;
     QGraphicsSimpleTextItem* m_awValueItem;
+
+    QAction *scene_makePtCornerAction, *scene_makePtCurvedAction, *scene_makePtTangentAction;
+    QAction *scene_makePtFirstAction;
+    QAction *scene_copyAction, *scene_cutAction, *scene_pasteAction, *scene_clearAction;
+    QAction *scene_mergeAction;
+    QAction *scene_pointPropsAction, *scene_refPropsAction;
 };
 
 class InstrEdit;
@@ -203,30 +247,10 @@ public:
     uint16_t numSelectedPoints ();
     uint16_t numSelectedRefs ();
     uint16_t numSelectedFigs ();
-    void setSelPointsType (enum pointtype ptype);
-    void clearSelection ();
-    void selectAll ();
     void updatePoints ();
     void updateFill ();
     void switchOutlines (OutlinesType val);
     OutlinesType outlinesType ();
-
-    void doCopyClear (bool copy, bool clear);
-    void doPaste ();
-    void doMerge ();
-    void doJoin ();
-    void doUnlinkRefs ();
-
-    void doExtrema ();
-    void doSimplify ();
-    void doRound ();
-    void doOverlap ();
-    void doDirection ();
-    void doReverse ();
-
-    void doAutoHint (sFont &fnt);
-    void doHintMasksUpdate (sFont &fnt);
-    void doClearHints ();
 
 signals:
     void requestUpdateGridFit ();
@@ -250,8 +274,6 @@ private slots:
     void onActiveFigureChange (const int idx);
 
 private:
-    void undoableCommand (bool (ConicGlyph::*fn)(bool), const char *undo_lbl);
-
     QDRuler *m_HorzRuler, *m_VertRuler;
     FigurePalette *m_figPal;
     InstrEdit *m_instrEdit;

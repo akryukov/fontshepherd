@@ -815,8 +815,7 @@ void GlyphViewContainer::closeGlyphTab (int idx) {
 }
 
 void GlyphViewContainer::checkSelection () {
-    GlyphView *view = qobject_cast<GlyphView *>
-        (m_glyphAreaContainer->currentWidget ());
+    GlyphView *view = qobject_cast<GlyphView *> (m_glyphAreaContainer->currentWidget ());
     int num_pts = view->numSelectedPoints ();
     int num_refs = view->numSelectedRefs ();
     int num_figs = view->numSelectedFigs ();
@@ -848,151 +847,152 @@ void GlyphViewContainer::close () {
 }
 
 void GlyphViewContainer::copyRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doCopyClear (true, false);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doCopyClear (true, false);
     //pasteAction->setEnabled (true);
 }
 
 void GlyphViewContainer::cutRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doCopyClear (true, true);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doCopyClear (true, true);
     //pasteAction->setEnabled (true);
 }
 
 void GlyphViewContainer::pasteRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doPaste ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doPaste ();
 }
 
 void GlyphViewContainer::clearRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doCopyClear (false, true);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doCopyClear (false, true);
 }
 
 void GlyphViewContainer::mergeRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doMerge ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doMerge ();
 }
 
 void GlyphViewContainer::joinRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doJoin ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doJoin ();
 }
 
 void GlyphViewContainer::selectAllRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->selectAll ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->selectAll ();
 }
 
 void GlyphViewContainer::clearSelectionRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->clearSelection ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->clearSelection ();
 }
 
 void GlyphViewContainer::addExtremaRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doExtrema ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doExtrema ();
 }
 
 void GlyphViewContainer::simplifyRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doSimplify ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doSimplify ();
 }
 
 void GlyphViewContainer::roundRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doRound ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doRound ();
 }
 
 void GlyphViewContainer::overlapRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doOverlap ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doOverlap ();
 }
 
 void GlyphViewContainer::corrDirRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doDirection ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doDirection ();
 }
 
 void GlyphViewContainer::reverseRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doReverse ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doReverse ();
 }
 
 void GlyphViewContainer::unlinkRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doUnlinkRefs ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doUnlinkRefs ();
 }
 
 void GlyphViewContainer::ptCornerRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->setSelPointsType (pt_corner);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->setSelPointsType (pt_corner);
 }
 
 void GlyphViewContainer::ptCurvedRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->setSelPointsType (pt_curve);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->setSelPointsType (pt_curve);
 }
 
 void GlyphViewContainer::ptTangentRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->setSelPointsType (pt_tangent);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->setSelPointsType (pt_tangent);
 }
 
 void GlyphViewContainer::ptFirstRequest () {
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->setSelPointFirst ();
 }
 
 void GlyphViewContainer::autoHintRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doAutoHint (m_font);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doAutoHint (m_font);
     QWidget * viewport = view->viewport ();
     viewport->update ();
 }
 
 void GlyphViewContainer::hmUpdateRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doHintMasksUpdate (m_font);
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doHintMasksUpdate (m_font);
     QWidget * viewport = view->viewport ();
     viewport->update ();
 }
 
 void GlyphViewContainer::clearHintsRequest () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
-    view->doClearHints ();
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
+    GlyphScene *gsc = qobject_cast<GlyphScene *> (view->scene ());
+    gsc->doClearHints ();
     QWidget * viewport = view->viewport ();
     viewport->update ();
 }
 
 void GlyphViewContainer::zoomIn () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
     view->doZoom (1.25);
 }
 
 void GlyphViewContainer::zoomOut () {
-    GlyphView *view = qobject_cast<GlyphView*>
-        (m_glyphAreaContainer->currentWidget ());
+    GlyphView *view = qobject_cast<GlyphView*> (m_glyphAreaContainer->currentWidget ());
     view->doZoom (.8);
 }
 
@@ -1346,183 +1346,6 @@ void GlyphView::scrolledVertically (int) {
     viewport ()->update ();
 }
 
-void GlyphView::doCopyClear (bool copy, bool clear) {
-    m_context.checkSelected ();
-    if (copy) {
-        QList<QUrl> urls;
-        urls.append (QUrl (QString ("#glyph%1").arg (m_context.gid ())));
-        ConicGlyph *g = m_context.glyph (outlinesType ());
-	uint8_t opts = SVGOptions::dumpHeader | SVGOptions::doExtras | SVGOptions::doAppSpecific | SVGOptions::onlySelected;
-        std::string svg_str = g->toSVG (nullptr, opts);
-        QClipboard *clipboard = QApplication::clipboard ();
-        QMimeData *md = new QMimeData;
-        md->setData ("image/svg+xml", svg_str.c_str ());
-        md->setUrls (urls);
-        clipboard->setMimeData (md);
-    }
-    if (clear) {
-        GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-        ucmd->setText (copy ? tr ("Cut Glyph Data") : tr ("Delete Glyph Data"));
-        if (m_context.clearSelected (false)) {
-	    m_context.render (outlinesType ());
-	    m_context.update (outlinesType ());
-	    m_context.undoGroup (true)->activeStack ()->push (ucmd);
-	} else {
-	    delete ucmd;
-	}
-    }
-}
-
-void GlyphView::doMerge () {
-    m_context.checkSelected ();
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText (tr ("Merge"));
-    if (m_context.clearSelected (true)) {
-	m_context.render (outlinesType ());
-	m_context.update (outlinesType ());
-	m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    } else {
-	delete ucmd;
-    }
-}
-
-void GlyphView::doJoin () {
-    m_context.checkSelected ();
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText (tr ("Join contours"));
-    if (m_context.joinSplines ()) {
-	m_context.render (outlinesType ());
-	m_context.update (outlinesType ());
-	m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    } else {
-	delete ucmd;
-    }
-}
-
-void GlyphView::doPaste () {
-    QClipboard *clipboard = QApplication::clipboard ();
-    const QMimeData *md = clipboard->mimeData ();
-    if (!md->hasFormat ("image/svg+xml"))
-        return;
-
-    QByteArray svg_data = md->data ("image/svg+xml");
-    BoostIn buf (svg_data.constData (), svg_data.size ());
-    ConicGlyph *g = m_context.glyph (outlinesType ());
-
-    QGraphicsItem *panel = scene ()->activePanel ();
-    FigurePathItem *ctrItem = qgraphicsitem_cast<FigurePathItem *> (panel);
-    DrawableFigure *target = ctrItem ? &ctrItem->svgFigure () : nullptr;
-
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText (tr ("Paste Glyph Data"));
-
-    m_context.clearScene ();
-    g->fromSVG (buf, 0, target);
-    bool refs_ok = m_context.resolveRefs (outlinesType ());
-    if (refs_ok) {
-        m_context.render (outlinesType ());
-        m_context.drawGlyph (g, g->gradients);
-        m_context.undoGroup (true)->activeStack ()->push (ucmd);
-        m_context.update (outlinesType ());
-    } else {
-        ucmd->undoInvalid ();
-        delete ucmd;
-    }
-}
-
-void GlyphView::doUnlinkRefs () {
-    m_context.checkSelected ();
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText ("Unlink references");
-    if (m_context.unlinkSelectedRefs ()) {
-        m_context.render (outlinesType ());
-        m_context.update (outlinesType ());
-        m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    } else {
-        delete ucmd;
-    }
-}
-
-void GlyphView::undoableCommand (bool (ConicGlyph::*fn)(bool), const char *undo_lbl) {
-    bool selected = (m_context.numSelectedPoints () > 0);
-    m_context.checkSelected ();
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText (undo_lbl);
-    ConicGlyph *g = m_context.glyph (outlinesType ());
-    if ((g->*fn) (selected)) {
-	m_context.clearScene ();
-	m_context.drawGlyph (g, g->gradients);
-        m_context.render (outlinesType ());
-        m_context.update (outlinesType ());
-        m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    } else {
-	ucmd->undoInvalid ();
-        delete ucmd;
-    }
-}
-
-void GlyphView::doExtrema () {
-    undoableCommand (&ConicGlyph::addExtrema, "Add extrema");
-}
-
-void GlyphView::doSimplify () {
-    undoableCommand (&ConicGlyph::simplify, "Simplify outlines");
-}
-
-void GlyphView::doRound () {
-    undoableCommand (&ConicGlyph::roundToInt, "Round to int");
-}
-
-void GlyphView::doOverlap () {
-}
-
-void GlyphView::doDirection () {
-    undoableCommand (&ConicGlyph::correctDirection, "Correct direction");
-}
-
-void GlyphView::doReverse () {
-    if (!m_context.numSelectedPoints ())
-	return;
-    m_context.checkSelected ();
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText ("Reverse direction");
-    ConicGlyph *g = m_context.glyph (outlinesType ());
-    g->reverseSelected ();
-    m_context.render (outlinesType ());
-    m_context.update (outlinesType ());
-    m_context.undoGroup (true)->activeStack ()->push (ucmd);
-}
-
-void GlyphView::doAutoHint (sFont &fnt) {
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText ("Autohint");
-    ConicGlyph *g = m_context.glyph (outlinesType ());
-    if (g->autoHint (fnt))
-	m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    else
-	delete ucmd;
-}
-
-void GlyphView::doHintMasksUpdate (sFont &fnt) {
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText ("Update hint masks");
-    ConicGlyph *g = m_context.glyph (outlinesType ());
-    if (g->hmUpdate (fnt))
-	m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    else
-	delete ucmd;
-}
-
-void GlyphView::doClearHints () {
-    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
-    ucmd->setText ("Autohint");
-    ConicGlyph *g = m_context.glyph (outlinesType ());
-    if (g->clearHints ())
-	m_context.undoGroup (true)->activeStack ()->push (ucmd);
-    else
-	delete ucmd;
-}
-
 uint16_t GlyphView::gid () {
     return m_context.gid ();
 }
@@ -1560,43 +1383,6 @@ uint16_t GlyphView::numSelectedFigs () {
             ret++;
     }
     return ret;
-}
-
-void GlyphView::setSelPointsType (enum pointtype ptype) {
-    QList<QGraphicsItem *> sellist = scene ()->selectedItems ();
-    uint16_t i;
-
-    for (i=0; i<sellist.size (); i++) {
-        if (sellist[i]->type () == OnCurvePointItem::Type) {
-            OnCurvePointItem* item = qgraphicsitem_cast<OnCurvePointItem*> (sellist[i]);
-            item->setPointType (ptype);
-        }
-    }
-}
-
-void GlyphView::selectAll () {
-    QList<QGraphicsItem *> items = scene ()->items ();
-    uint16_t i;
-
-    for (i=0; i<items.size (); i++) {
-        // don't select offcurve points, as we cannot handle them in a group
-        switch (items[i]->type ()) {
-          case OnCurvePointItem::Type:
-          case RefItem::Type:
-            items[i]->setSelected (true);
-          break;
-          default:
-            ;
-        }
-    }
-}
-
-void GlyphView::clearSelection () {
-    QList<QGraphicsItem *> sellist = scene ()->selectedItems ();
-    uint16_t i;
-
-    for (i=0; i<sellist.size (); i++)
-        sellist[i]->setSelected (false);
 }
 
 void GlyphView::updatePoints () {
@@ -1750,6 +1536,7 @@ GlyphScene::GlyphScene (sFont &fnt, FTWrapper &ftw, GlyphContext &gctx, Outlines
     m_outlines_type (gtype),
     m_dragValid (false),
     m_grabber (nullptr),
+    m_contextGrabber (nullptr),
     m_hasChanges (false),
     m_undoCmd (nullptr),
     m_rootItem (nullptr)
@@ -1766,6 +1553,30 @@ GlyphScene::GlyphScene (sFont &fnt, FTWrapper &ftw, GlyphContext &gctx, Outlines
     m_awValueItem->setFont (awfnt);
     m_awValueItem->setFlag (QGraphicsItem::ItemIgnoresTransformations);
     addItem (m_awValueItem);
+
+    scene_makePtCornerAction = new QAction (tr ("Make Point &Corner"), this);
+    scene_makePtCurvedAction = new QAction (tr ("Make Point C&urved"), this);
+    scene_makePtTangentAction = new QAction (tr ("Make Point &Tangent"), this);
+    scene_makePtFirstAction = new QAction (tr ("Make Point &First"), this);
+    scene_cutAction = new QAction (tr ("C&ut"), this);
+    scene_copyAction = new QAction (tr ("&Copy"), this);
+    scene_pasteAction = new QAction (tr ("&Paste"), this);
+    scene_clearAction = new QAction (tr ("&Delete"), this);
+    scene_mergeAction = new QAction (tr ("&Merge"), this);
+    scene_pointPropsAction = new QAction (tr ("Point p&roperties"), this);
+    scene_pointPropsAction->setEnabled (false);
+    scene_refPropsAction = new QAction (tr ("Reference p&roperties"), this);
+    scene_refPropsAction->setEnabled (false);
+
+    connect (scene_makePtCornerAction, &QAction::triggered, this, &GlyphScene::ptCornerRequest);
+    connect (scene_makePtCurvedAction, &QAction::triggered, this, &GlyphScene::ptCurvedRequest);
+    connect (scene_makePtTangentAction, &QAction::triggered, this, &GlyphScene::ptTangentRequest);
+    connect (scene_makePtFirstAction, &QAction::triggered, this, &GlyphScene::setSelPointFirst);
+    connect (scene_copyAction, &QAction::triggered, this, &GlyphScene::copyRequest);
+    connect (scene_cutAction, &QAction::triggered, this, &GlyphScene::cutRequest);
+    connect (scene_pasteAction, &QAction::triggered, this, &GlyphScene::doPaste);
+    connect (scene_clearAction, &QAction::triggered, this, &GlyphScene::clearRequest);
+    connect (scene_mergeAction, &QAction::triggered, this, &GlyphScene::doMerge);
 }
 
 static void show_hint (QPainter *painter, const QRectF &exposed, const StemInfo &stem, bool is_v) {
@@ -2192,10 +2003,36 @@ void GlyphScene::mouseDoubleClickEvent (QGraphicsSceneMouseEvent *event) {
 }
 
 void GlyphScene::mousePressEvent (QGraphicsSceneMouseEvent *event) {
+    QGraphicsView *view = event->widget () ?
+	qobject_cast<QGraphicsView *> (event->widget ()->parentWidget ()) : nullptr;
+
+    // Basically the right click is handled in ::contextMenuEvent, but need to
+    // know the item under mouse. However, can't call the default implementation,
+    // as it sets the mouseGrabberItem, but also unselects everything selected.
+    // Also, the mouse should then be ungrabbed, as otherwise the mouseGrabberItem
+    // may interfere with subsequent left mouse clicks, which produces really strange
+    // results. So use a class variable (separare from the normal m_grabber)
+    // especially to store the last item clicked with the right mouse button
+    if (event->button () == Qt::RightButton) {
+	m_contextGrabber = itemAt (event->scenePos (), view ? view->transform () : QTransform ());
+	if (m_contextGrabber) {
+	    QGraphicsItem *parent = m_contextGrabber;
+	    // for some reason QGraphicsItem::group always returns nullptr
+	    while (parent->parentItem ()) {
+		parent = parent->parentItem ();
+		if (parent->type () == RefItem::Type) {
+		    m_contextGrabber = parent;
+		    break;
+		}
+	    }
+	}
+	return;
+    }
     switch (m_activeTool) {
       case (GVPaletteTool::pointer): {
         // Call the standard implementation first, as otherwise grabber would be nullptr
         QGraphicsScene::mousePressEvent (event);
+
         m_grabber = mouseGrabberItem ();
 	if (m_grabber && m_grabber->isActive () && m_grabber->type () == FigurePathItem::Type)
 	    m_grabber = nullptr;
@@ -2302,15 +2139,15 @@ void GlyphScene::mousePressEvent (QGraphicsSceneMouseEvent *event) {
 }
 
 static int signnum_typical (double x) {
-  if (x > 0.0) return 1;
-  if (x < 0.0) return -1;
-  return 0;
+    if (x > 0.0) return 1;
+    if (x < 0.0) return -1;
+    return 0;
 }
 
 void GlyphScene::mouseMoveEvent (QGraphicsSceneMouseEvent *event) {
     // Used to check mouse grabber item inside this routine, but this
     // may return a recently selected item which we have no intention to move.
-    // So use a class level variable insted, sed in mousePressEvent and
+    // So use a class level variable instead, set in mousePressEvent and
     // unset in mouseReleaseEvent
 
     switch (m_activeTool) {
@@ -2331,7 +2168,8 @@ void GlyphScene::mouseMoveEvent (QGraphicsSceneMouseEvent *event) {
 		items (m_selectionRect.mapToScene (area), Qt::ContainsItemShape);
 	    for (auto item: items ()) {
 		if (item->type () == OnCurvePointItem::Type ||
-		    item->type () == FigurePathItem::Type ||
+		    item->type () == RefItem::Type ||
+		    //item->type () == FigurePathItem::Type ||
 		    item->type () == FigureEllipseItem::Type ||
 		    item->type () == FigureRectItem::Type) {
 		    item->setSelected (selectable.contains (item));
@@ -2504,7 +2342,8 @@ void GlyphScene::mouseReleaseEvent (QGraphicsSceneMouseEvent *event) {
 	// NB: the default implementation causes everything but items in the
 	// selection area to be unselected. We don't want this if we have
 	// for example just selected an entire contour with a double click.
-        QGraphicsScene::mouseReleaseEvent (event);
+	if (event->button () == Qt::LeftButton)
+            QGraphicsScene::mouseReleaseEvent (event);
     }
     if (m_undoCmd) {
         if (m_hasChanges) {
@@ -2536,6 +2375,55 @@ void GlyphScene::keyPressEvent (QKeyEvent * event) {
       default:
         QGraphicsScene::keyPressEvent (event);
     }
+}
+
+void GlyphScene::checkSelection () {
+    int num_pts = m_context.numSelectedPoints ();
+    int num_refs = numSelectedRefs ();
+    int num_figs = numSelectedFigs ();
+
+    scene_makePtCornerAction->setEnabled (num_pts);
+    scene_makePtCurvedAction->setEnabled (num_pts);
+    scene_makePtTangentAction->setEnabled (num_pts);
+    scene_makePtFirstAction->setEnabled (num_pts == 1);
+
+    scene_cutAction->setEnabled (num_pts + num_refs + num_figs);
+    scene_copyAction->setEnabled (num_pts + num_refs + num_figs);
+    scene_clearAction->setEnabled (num_pts + num_refs + num_figs);
+    scene_mergeAction->setEnabled (num_pts);
+
+    QClipboard *clipboard = QApplication::clipboard ();
+    const QMimeData *md = clipboard->mimeData ();
+    scene_pasteAction->setEnabled (md->hasFormat ("image/svg+xml"));
+}
+
+void GlyphScene::contextMenuEvent (QGraphicsSceneContextMenuEvent *event) {
+    QMenu menu (event->widget ());
+    QObject::connect (&menu, &QMenu::aboutToShow, this, &GlyphScene::checkSelection);
+
+    menu.addAction (scene_makePtCornerAction);
+    menu.addAction (scene_makePtCurvedAction);
+    menu.addAction (scene_makePtTangentAction);
+    menu.addAction (scene_makePtFirstAction);
+    menu.addSeparator ();
+    menu.addAction (scene_cutAction);
+    menu.addAction (scene_copyAction);
+    menu.addAction (scene_pasteAction);
+    menu.addAction (scene_mergeAction);
+
+    if (m_contextGrabber) {
+	switch (m_contextGrabber->type ()) {
+	  case OnCurvePointItem::Type:
+	    menu.addSeparator ();
+	    menu.addAction (scene_pointPropsAction);
+	    break;
+	  case RefItem::Type:
+	    menu.addSeparator ();
+	    menu.addAction (scene_refPropsAction);
+	    break;
+	}
+    }
+    menu.exec (event->screenPos ());
 }
 
 void GlyphScene::setActiveTool (GVPaletteTool active) {
@@ -2631,4 +2519,286 @@ void GlyphScene::switchOutlines (OutlinesType gtype) {
 
 OutlinesType GlyphScene::outlinesType () {
     return (m_outlines_type);
+}
+
+void GlyphScene::selectAll () {
+    for (auto item : items ()) {
+        // don't select offcurve points, as we cannot handle them in a group
+        switch (item->type ()) {
+          case OnCurvePointItem::Type:
+          case RefItem::Type:
+            item->setSelected (true);
+          break;
+          default:
+            ;
+        }
+    }
+}
+
+void GlyphScene::clearSelection () {
+    for (auto item : selectedItems ())
+        item->setSelected (false);
+}
+
+void GlyphScene::ptCornerRequest () {
+    setSelPointsType (pt_corner);
+}
+
+void GlyphScene::ptCurvedRequest () {
+    setSelPointsType (pt_curve);
+}
+
+void GlyphScene::ptTangentRequest () {
+    setSelPointsType (pt_tangent);
+}
+
+void GlyphScene::setSelPointFirst () {
+    OnCurvePointItem *pt_item = nullptr;
+    ConicPointItem *parent = nullptr;
+    for (auto item : selectedItems ()) {
+        if (item->type () == OnCurvePointItem::Type) {
+	    pt_item = qgraphicsitem_cast<OnCurvePointItem *> (item);
+	    parent = qgraphicsitem_cast<ConicPointItem *> (pt_item->parentItem ());
+	    break;
+        }
+    }
+    if (parent) {
+	ConicPoint *nst = parent->conicPoint ();
+	QGraphicsItem *panel = activePanel ();
+	FigurePathItem *ctrItem = qgraphicsitem_cast<FigurePathItem *> (panel);
+	DrawableFigure *fig = ctrItem ? &ctrItem->svgFigure () : nullptr;
+        GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+        ucmd->setText (tr ("Set First Point"));
+        if (fig->startToPoint (nst)) {
+	    m_context.updatePointNumbers ();
+	    m_context.undoGroup (true)->activeStack ()->push (ucmd);
+	    update ();
+	} else {
+	    delete ucmd;
+	}
+    }
+}
+
+void GlyphScene::copyRequest () {
+    doCopyClear (true, false);
+    //pasteAction->setEnabled (true);
+}
+
+void GlyphScene::cutRequest () {
+    doCopyClear (true, true);
+    //pasteAction->setEnabled (true);
+}
+
+void GlyphScene::clearRequest () {
+    doCopyClear (false, true);
+}
+
+void GlyphScene::setSelPointsType (enum pointtype ptype) {
+    QList<QGraphicsItem *> sellist = selectedItems ();
+    uint16_t i;
+
+    for (i=0; i<sellist.size (); i++) {
+        if (sellist[i]->type () == OnCurvePointItem::Type) {
+            OnCurvePointItem* item = qgraphicsitem_cast<OnCurvePointItem*> (sellist[i]);
+            item->setPointType (ptype);
+        }
+    }
+}
+
+void GlyphScene::doCopyClear (bool copy, bool clear) {
+    m_context.checkSelected ();
+    if (copy) {
+        QList<QUrl> urls;
+        urls.append (QUrl (QString ("#glyph%1").arg (m_context.gid ())));
+        ConicGlyph *g = m_context.glyph (outlinesType ());
+	uint8_t opts = SVGOptions::dumpHeader | SVGOptions::doExtras | SVGOptions::doAppSpecific | SVGOptions::onlySelected;
+        std::string svg_str = g->toSVG (nullptr, opts);
+        QClipboard *clipboard = QApplication::clipboard ();
+        QMimeData *md = new QMimeData;
+        md->setData ("image/svg+xml", svg_str.c_str ());
+        md->setUrls (urls);
+        clipboard->setMimeData (md);
+    }
+    if (clear) {
+        GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+        ucmd->setText (copy ? tr ("Cut Glyph Data") : tr ("Delete Glyph Data"));
+        if (m_context.clearSelected (false)) {
+	    m_context.render (outlinesType ());
+	    m_context.update (outlinesType ());
+	    m_context.undoGroup (true)->activeStack ()->push (ucmd);
+	} else {
+	    delete ucmd;
+	}
+    }
+}
+
+void GlyphScene::doPaste () {
+    QClipboard *clipboard = QApplication::clipboard ();
+    const QMimeData *md = clipboard->mimeData ();
+    if (!md->hasFormat ("image/svg+xml"))
+        return;
+
+    QByteArray svg_data = md->data ("image/svg+xml");
+    BoostIn buf (svg_data.constData (), svg_data.size ());
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+
+    QGraphicsItem *panel = activePanel ();
+    FigurePathItem *ctrItem = qgraphicsitem_cast<FigurePathItem *> (panel);
+    DrawableFigure *target = ctrItem ? &ctrItem->svgFigure () : nullptr;
+
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText (tr ("Paste Glyph Data"));
+
+    m_context.clearScene ();
+    g->fromSVG (buf, 0, target);
+    bool refs_ok = m_context.resolveRefs (outlinesType ());
+    if (refs_ok) {
+        m_context.render (outlinesType ());
+        m_context.drawGlyph (g, g->gradients);
+        m_context.undoGroup (true)->activeStack ()->push (ucmd);
+        m_context.update (outlinesType ());
+    } else {
+        ucmd->undoInvalid ();
+        delete ucmd;
+    }
+}
+
+void GlyphScene::doMerge () {
+    m_context.checkSelected ();
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText (tr ("Merge"));
+    if (m_context.clearSelected (true)) {
+	m_context.render (outlinesType ());
+	m_context.update (outlinesType ());
+	m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    } else {
+	delete ucmd;
+    }
+}
+
+void GlyphScene::doJoin () {
+    m_context.checkSelected ();
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText (tr ("Join contours"));
+    if (m_context.joinSplines ()) {
+	m_context.render (outlinesType ());
+	m_context.update (outlinesType ());
+	m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    } else {
+	delete ucmd;
+    }
+}
+
+void GlyphScene::doUnlinkRefs () {
+    m_context.checkSelected ();
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText ("Unlink references");
+    if (m_context.unlinkSelectedRefs ()) {
+        m_context.render (outlinesType ());
+        m_context.update (outlinesType ());
+        m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    } else {
+        delete ucmd;
+    }
+}
+
+void GlyphScene::undoableCommand (bool (ConicGlyph::*fn)(bool), const char *undo_lbl) {
+    bool selected = (m_context.numSelectedPoints () > 0);
+    m_context.checkSelected ();
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText (undo_lbl);
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+    if ((g->*fn) (selected)) {
+	m_context.clearScene ();
+	m_context.drawGlyph (g, g->gradients);
+        m_context.render (outlinesType ());
+        m_context.update (outlinesType ());
+        m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    } else {
+	ucmd->undoInvalid ();
+        delete ucmd;
+    }
+}
+
+void GlyphScene::doExtrema () {
+    undoableCommand (&ConicGlyph::addExtrema, "Add extrema");
+}
+
+void GlyphScene::doSimplify () {
+    undoableCommand (&ConicGlyph::simplify, "Simplify outlines");
+}
+
+void GlyphScene::doRound () {
+    undoableCommand (&ConicGlyph::roundToInt, "Round to int");
+}
+
+void GlyphScene::doOverlap () {
+}
+
+void GlyphScene::doDirection () {
+    undoableCommand (&ConicGlyph::correctDirection, "Correct direction");
+}
+
+void GlyphScene::doReverse () {
+    if (!m_context.numSelectedPoints ())
+	return;
+    m_context.checkSelected ();
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText ("Reverse direction");
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+    g->reverseSelected ();
+    m_context.render (outlinesType ());
+    m_context.update (outlinesType ());
+    m_context.undoGroup (true)->activeStack ()->push (ucmd);
+}
+
+void GlyphScene::doAutoHint (sFont &fnt) {
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText ("Autohint");
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+    if (g->autoHint (fnt))
+	m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    else
+	delete ucmd;
+}
+
+void GlyphScene::doHintMasksUpdate (sFont &fnt) {
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText ("Update hint masks");
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+    if (g->hmUpdate (fnt))
+	m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    else
+	delete ucmd;
+}
+
+void GlyphScene::doClearHints () {
+    GlyphChangeCommand *ucmd = new GlyphChangeCommand (m_context, outlinesType ());
+    ucmd->setText ("Autohint");
+    ConicGlyph *g = m_context.glyph (outlinesType ());
+    if (g->clearHints ())
+	m_context.undoGroup (true)->activeStack ()->push (ucmd);
+    else
+	delete ucmd;
+}
+
+uint16_t GlyphScene::numSelectedRefs () {
+    QList<QGraphicsItem *> sellist = selectedItems ();
+    uint16_t i, ret=0;
+
+    for (i=0; i<sellist.size (); i++) {
+        if (sellist[i]->type () == RefItem::Type)
+            ret++;
+    }
+    return ret;
+}
+
+uint16_t GlyphScene::numSelectedFigs () {
+    uint16_t ret=0;
+
+    for (QGraphicsItem *child : m_rootItem->childItems ()) {
+	if (child->isPanel () && child->isSelected ())
+            ret++;
+    }
+    return ret;
 }

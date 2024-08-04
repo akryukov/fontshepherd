@@ -121,6 +121,7 @@ public:
 
     void drawGlyph (ConicGlyph *gref, std::map<std::string, Gradient> &gradients, RefItem *group=nullptr);
     void updatePoints ();
+    void updatePointNumbers ();
     void updateFill ();
 
     uint16_t numSelectedPoints ();
@@ -139,7 +140,6 @@ public:
 
 private:
     void renderGlyph (ConicGlyph *gref, QTransform trans, SvgState &state, std::map<std::string, Gradient> &gradients, QPainter &painter);
-    void updatePointNumbers ();
     void updateControlPoints ();
     void updateCleanupPoints ();
     void colorizeFigure (QGraphicsItem *item, SvgState state);

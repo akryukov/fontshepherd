@@ -486,6 +486,7 @@ void GlyphContext::drawGlyph (ConicGlyph *gref, std::map<std::string, Gradient> 
                 if (!(item->flags () & QGraphicsItem::ItemHasNoContents)) {
                     item->setTransform (reftrans);
                     group->addToGroup (item);
+		    item->setGroup (group);
                 }
             }
             delete g;

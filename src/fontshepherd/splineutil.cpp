@@ -4275,6 +4275,20 @@ uint16_t DrawableFigure::toCoordList (std::vector<int16_t> &x_coords,
     return ptcnt;
 }
 
+bool DrawableFigure::startToPoint (ConicPoint *nst) {
+    for (auto &spls: contours) {
+	int first_num = spls.first->ttfindex;
+	if (order2 && first_num == -1 && spls.first->prev && !spls.first->noprevcp)
+	    first_num = spls.first->prev->from->nextcpindex;
+
+	if (spls.startToPoint (nst)) {
+	    renumberPoints (first_num);
+	    return true;
+	}
+    }
+    return false;
+}
+
 void Spline1::figure (extended_t t0, extended_t t1, Conic1D &spl) {
     extended_t s = (t1-t0);
     if (spl.a==0 && spl.b==0) {
@@ -4836,6 +4850,22 @@ void ConicPointList::startToExtremum () {
         if (sp!=this->first)
 	    this->first = this->last = sp;
     }
+}
+
+bool ConicPointList::startToPoint (ConicPoint *nst) {
+    if (first != last || nst == first)
+	return false;
+    ConicPoint *sp = this->first;
+    do {
+	if (sp == nst) {
+	    first->isfirst = false;
+	    first = last = nst;
+	    nst->isfirst = true;
+	    return true;
+	}
+        sp = (sp->next) ? sp->next->to : nullptr;
+    } while (sp && sp != this->first);
+    return false;
 }
 
 void ConicPointList::removeStupidControlPoints () {
